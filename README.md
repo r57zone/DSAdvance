@@ -5,7 +5,7 @@
 # DSAdvance
 Advanced Xbox gamepad emulation for Sony DualSense and DualShock 4. Supports aiming and driving by tilting the gamepad, as well as emulation of sticks on the touchpad. Works based on the driver [ViGEm](https://github.com/ViGEm).
 
-# Режимы работы
+# Working modes
 Several operating modes are supported, they are switched by pressing the touchpad. Brightness is adjustable without pressing.
 
 ![](https://user-images.githubusercontent.com/9499881/164546699-7aa59a26-50ff-4b49-82b9-60c666fd6b9a.png)
@@ -28,6 +28,7 @@ The "PS" button simulates pressing "Win" + "G", and the microphone button "Win" 
 **[Download](https://github.com/r57zone/DSAdvance/releases)**
 
 ## Thanks
+* Sony for the most advanced gamepads and investing in innovation.
 * [ViGEm](https://github.com/ViGEm) for the ability to emulate different gamepads.
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation.

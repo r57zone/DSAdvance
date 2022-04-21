@@ -27,6 +27,7 @@
 **[Загрузить](https://github.com/r57zone/DSAdvance/releases)**
 
 ## Благодарности
+* Sony за самые продвинутые геймпады и инвестирование в инновации.
 * [ViGEm](https://github.com/ViGEm) за возможность эмуляции разных геймпадов.
 * [HIDAPI library](https://github.com/signal11/hidapi), с [исправлениями](https://github.com/libusb/hidapi), за библиотеку для работы с USB устройства. В проекте используется этот [форк](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) за классную библиотеку геймпадов, позволяющую легко получить вращение контроллера.
