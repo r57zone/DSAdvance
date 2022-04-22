@@ -21,6 +21,7 @@ The "PS" button simulates pressing "Win" + "G", and the microphone button "Win" 
 3. Connect a Sony DualSense or DualShock 4 gamepad via USB (wireless mode is not supported yet).
 4. Unzip and launch "DSAdvance".
 5. If necessary, change the dead zones of the sticks or other parameters in the configuration file "Config.ini".
+6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
 
 ## Download
 >Version for Windows 10.
