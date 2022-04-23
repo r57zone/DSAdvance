@@ -5,6 +5,9 @@
 # DSAdvance
 Advanced Xbox gamepad emulation for Sony DualSense and DualShock 4. Supports aiming and driving by tilting the gamepad, as well as emulation of sticks on the touchpad. Works based on the driver [ViGEm](https://github.com/ViGEm).
 
+[![](https://user-images.githubusercontent.com/9499881/164945071-5b9f86dd-c396-45a5-817b-fc7068450f02.gif)](https://youtu.be/gkyqO_HuPnk)
+[![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
+
 # Working modes
 Several operating modes are supported, they are switched by pressing the touchpad. Brightness is adjustable without pressing.
 
@@ -13,14 +16,14 @@ Several operating modes are supported, they are switched by pressing the touchpa
 In order to exit the stick emulation mode on the touchpad, need to switch to the default mode.
 
 
-The "PS" button simulates pressing "Win" + "G", and the microphone button "Win" + "Alt" + "PrtScr".
+The `PS` button simulates pressing `Win+G`, and the microphone button `Win+Alt+PrtScr`.
 
 ## Setup
 1. Install [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
 2. Install Microsoft Visual C++ Redistributable 2017 or newer.
 3. Connect a Sony DualSense or DualShock 4 gamepad via USB (wireless mode is not supported yet).
-4. Unzip and launch "DSAdvance".
-5. If necessary, change the dead zones of the sticks or other parameters in the configuration file "Config.ini".
+4. Unzip and launch DSAdvance.
+5. If necessary, change the dead zones of the sticks or other parameters in the configuration file `Config.ini`.
 6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
 
 ## Download
