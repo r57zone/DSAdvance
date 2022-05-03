@@ -12,6 +12,8 @@ struct Gamepad {
 	hid_device *HidHandle;
 	WORD ControllerType;
 	bool USBConnection;
+	unsigned char BatteryMode;
+	unsigned char BatteryLevel;
 	wchar_t *serial_number;
 };
 
@@ -21,27 +23,67 @@ InputOutState GamepadOutState;
 void GamepadSetState(InputOutState OutState)
 {
 	if (CurGamepad.HidHandle != NULL) {
-		if (CurGamepad.ControllerType == SONY_DUALSENSE && CurGamepad.USBConnection) { // https://github.com/broken-bytes/DualSense4Windows/blob/master/src/DualSense.cxx & https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/
-			unsigned char outputReport[48];
-			memset(outputReport, 0, 48);
-			
-			outputReport[0] = 0x02;
-			outputReport[1] = 0xff;
-			outputReport[2] = 0x15;
-			outputReport[3] = OutState.LargeMotor;
-			outputReport[4] = OutState.SmallMotor;
-			outputReport[5] = 0xff;
-			outputReport[6] = 0xff;
-			outputReport[7] = 0xff;
-			outputReport[8] = 0x0c;
-			outputReport[38] = 0x07;
-			outputReport[45] = std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255);
-			outputReport[46] = std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255);
-			outputReport[47] = std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255);
+		if (CurGamepad.ControllerType == SONY_DUALSENSE) { // https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/
 
-			hid_write(CurGamepad.HidHandle, outputReport, 48);
+			unsigned char PlayersDSPacket = 0;
 
-		} else if (CurGamepad.ControllerType == SONY_DUALSHOCK4 && CurGamepad.USBConnection) { // JyoShockLibrary rumble working for USB DS4 ??? 
+			if (OutState.PlayersCount == 0) PlayersDSPacket = 0;
+			else if (OutState.PlayersCount == 1) PlayersDSPacket = 4;
+			else if (OutState.PlayersCount == 2) PlayersDSPacket = 2; // Center 2
+			else if (OutState.PlayersCount == 5) PlayersDSPacket = 1; // Both 2
+			else if (OutState.PlayersCount == 3) PlayersDSPacket = 5;
+			else if (OutState.PlayersCount == 4) PlayersDSPacket = 3;
+
+			if (CurGamepad.USBConnection) {
+				unsigned char outputReport[48];
+				memset(outputReport, 0, 48);
+
+				outputReport[0] = 0x02;
+				outputReport[1] = 0xff;
+				outputReport[2] = 0x15;
+				outputReport[3] = OutState.LargeMotor;
+				outputReport[4] = OutState.SmallMotor;
+				outputReport[5] = 0xff;
+				outputReport[6] = 0xff;
+				outputReport[7] = 0xff;
+				outputReport[8] = 0x0c;
+				outputReport[38] = 0x07;
+				outputReport[44] = PlayersDSPacket;
+				outputReport[45] = std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255);
+				outputReport[46] = std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255);
+				outputReport[47] = std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255);
+
+				hid_write(CurGamepad.HidHandle, outputReport, 48);
+
+			} else { // BT
+				unsigned char outputReport[79];
+				memset(outputReport, 0, 79);
+
+				outputReport[0] = 0xa2;
+				outputReport[1] = 0x31;
+				outputReport[2] = 0x02;
+				outputReport[3] = 0x03;
+				outputReport[4] = 0x54;
+				outputReport[5] = OutState.LargeMotor;
+				outputReport[6] = OutState.SmallMotor;
+				outputReport[11] = 0x00;
+				outputReport[41] = 0x02;
+				outputReport[44] = 0x02;
+				outputReport[45] = 0x02;
+				outputReport[46] = PlayersDSPacket;
+				outputReport[46] &= ~(1 << 7);
+				outputReport[46] &= ~(1 << 8);
+				outputReport[47] = std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255);
+				outputReport[48] = std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255);
+				outputReport[49] = std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255);
+				uint32_t crc = crc_32(outputReport, 75);
+				memcpy(&outputReport[75], &crc, 4);
+
+				hid_write(CurGamepad.HidHandle, &outputReport[1], 78);
+			}
+
+		}
+		else if (CurGamepad.ControllerType == SONY_DUALSHOCK4 && CurGamepad.USBConnection) { // JoyShockLibrary rumble working for USB DS4 ??? 
 			unsigned char outputReport[31];
 			memset(outputReport, 0, 31);
 
@@ -60,31 +102,65 @@ void GamepadSetState(InputOutState OutState)
 				JslSetLightColour(0, (std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255) << 16) + (std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255) << 8) + std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255)); // https://github.com/CyberPlaton/_Nautilus_/blob/master/Engine/PSGamepad.cpp
 			JslSetRumble(0, OutState.SmallMotor, OutState.LargeMotor); // Not working with DualSense USB connection
 		}
-	}
+	} else // Unknown controllers - Pro controller, Joy-cons
+		JslSetRumble(0, OutState.SmallMotor, OutState.LargeMotor);
 }
 
 void GamepadSearch() {
 	struct hid_device_info *cur_dev;
 	cur_dev = hid_enumerate(SONY_VENDOR, 0x0);
 	while (cur_dev) {
-		if (cur_dev->product_id == SONY_DS5_USB || cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB)
+		if (cur_dev->product_id == SONY_DS5 || cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB)
 		{
 			CurGamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
 			hid_set_nonblocking(CurGamepad.HidHandle, 1);
 			
-			if (cur_dev->product_id == SONY_DS5_USB)
+			if (cur_dev->product_id == SONY_DS5) {
 				CurGamepad.ControllerType = SONY_DUALSENSE;
+				CurGamepad.USBConnection = true;
+
+				// BT detection https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp
+				unsigned char buf[64];
+				memset(buf, 0, 64);
+				hid_read_timeout(CurGamepad.HidHandle, buf, 64, 100); 
+				if (buf[0] == 0x31)
+					CurGamepad.USBConnection = false;
+			}
 			else if (cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB)
+			{
 				CurGamepad.ControllerType = SONY_DUALSHOCK4;
-			
-			CurGamepad.USBConnection = true;
-			//printf("DS found\n");
+				CurGamepad.USBConnection = true;
+			}
 			break;
 		}
 		cur_dev = cur_dev->next;
 	}
 	if (cur_dev)
 		hid_free_enumeration(cur_dev);
+}
+
+void GetBatteryInfo() {
+	if (CurGamepad.HidHandle != NULL) {
+		if (CurGamepad.ControllerType == SONY_DUALSENSE) {
+			if (CurGamepad.USBConnection) {
+				unsigned char buf[64];
+				memset(buf, 0, 64);
+				hid_read(CurGamepad.HidHandle, buf, 64);
+				CurGamepad.BatteryLevel = (buf[53] & 0x0f) / 2;
+				//CurGamepad.BatteryMode = buf[30]; //???
+			} else { // BT
+				unsigned char buf[64];
+				memset(buf, 0, 64);
+				hid_read(CurGamepad.HidHandle, buf, 64);
+				CurGamepad.BatteryLevel = (buf[54] & 0x0f) / 2;
+				//CurGamepad.BatteryMode = buf[31];  //???
+			}
+			if (CurGamepad.BatteryLevel > 4)
+				CurGamepad.BatteryLevel = 4;
+			//printf("%d ", CurGamepad.BatteryLevel);
+			//printf("%d\n", CurGamepad.BatteryMode);
+		}
+	}	
 }
 
 static std::mutex m;
@@ -207,7 +283,7 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.2");
+	SetConsoleTitle("DSAdvance 0.3");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 	int KEY_ID_EXIT = IniFile.ReadInteger("Main", "ExitBtn", 192); // "~" by default for RU, US and not for UK
@@ -233,11 +309,13 @@ int main(int argc, char **argv)
 	float MotionSensY = IniFile.ReadFloat("Motion", "SensY", 3);
 
 	GamepadSearch();
+	GamepadOutState.PlayersCount = 0;
 	GamepadOutState.LEDBlue = 255;
 	GamepadOutState.LEDBrightness = std::clamp((int)(255 - IniFile.ReadInteger("Gamepad", "DefaultBrightness", 100) * 2.55), 0, 255);
 	GamepadSetState(GamepadOutState);
 
 	int SkipPollCount = 0;
+	int BatteryShowCounter = 0;
 	bool DeadZoneMode = false;
 	int GamepadMode = 0; int LastAIMProCtrlMode = 2;
 	EulerAngles AnglesOffset;
@@ -248,7 +326,7 @@ int main(int argc, char **argv)
 
 	system("cls");
 	if (controllersCount == 0)
-		printf("\n Connect DualSense, DualShock 4, Pro controller via USB and restart the app.");
+		printf("\n Connect DualSense, DualShock 4, Pro controller and restart the app.");
 	printf("\n Press \"ALT\" + \"Escape\" or \"exit key\" to exit.\n");
 	
 	JOY_SHOCK_STATE InputState;
@@ -299,7 +377,7 @@ int main(int argc, char **argv)
 
 			TouchState = JslGetTouchState(deviceID[0]);
 
-			if (TouchState.t0Down && TouchState.t0Y <= 0.1 && TouchState.t0X >= 0.325 && TouchState.t0X <= 0.675) {
+			if (TouchState.t0Down && TouchState.t0Y <= 0.1 && TouchState.t0X >= 0.325 && TouchState.t0X <= 0.675) { // Brightness change
 				GamepadOutState.LEDBrightness = std::clamp((int)((TouchState.t0X - 0.325) * 255 * 2.9), 0, 255);
 				//printf("%5.2f\n", (TouchState.t0X - 0.325) * 255 * 2.9);
 				GamepadSetState(GamepadOutState);
@@ -307,26 +385,26 @@ int main(int argc, char **argv)
 
 			if (InputState.buttons & JSMASK_TOUCHPAD_CLICK) {
 				if (TouchState.t0Y > 0.1) {
-					if (TouchState.t0X > 0 && TouchState.t0X <= 1 / 3.0 && GamepadMode != 4) { // [O--]
+					if (TouchState.t0X > 0 && TouchState.t0X <= 1 / 3.0 && GamepadMode != 4) { // [O--] - Driving mode
 						GamepadMode = 1;
 						AnglesOffset = MotionAngles;
 						GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
 					}
-					else if (TouchState.t0X > 1 / 3.0 && TouchState.t0X <= 1 / 3.0 * 2.0) { // [-O-]
-
-						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.5) {
+					else if (TouchState.t0X > 1 / 3.0 && TouchState.t0X <= 1 / 3.0 * 2.0) { // [-O-] // Default & touch sticks modes
+						
+						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.7) { // Default mode
 							GamepadMode = 0;
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0;
-							// Show battery level - JslSetPlayerNumber(deviceID[0], 5);
-						}
-						else {
+							// Show battery level
+							GetBatteryInfo(); BatteryShowCounter = 35; GamepadOutState.PlayersCount = CurGamepad.BatteryLevel; GamepadSetState(GamepadOutState); // JslSetPlayerNumber(deviceID[0], 5);						
+						} else {  // Touch sticks mode
 							GamepadMode = 4;
 							JslSetRumble(0, 255, 255);
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
 						}
 
 					}
-					else if (TouchState.t0X > (1 / 3.0) * 2.0 && TouchState.t0X <= 1 && GamepadMode != 4) { // [--O]
+					else if (TouchState.t0X > (1 / 3.0) * 2.0 && TouchState.t0X <= 1 && GamepadMode != 4) { // [--O] Aiming mode
 
 						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.5) { // Motion AIM always
 							GamepadMode = 3;
@@ -458,6 +536,7 @@ int main(int argc, char **argv)
 
 		ret = vigem_target_x360_update(client, x360, report);
 
+		if (BatteryShowCounter > 0) { if (BatteryShowCounter == 1) { GamepadOutState.PlayersCount = 0; GamepadSetState(GamepadOutState); } BatteryShowCounter--; }
 		if (SkipPollCount > 0) SkipPollCount--;
 		Sleep(SleepTimeOut);
 	}
