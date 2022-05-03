@@ -24,7 +24,7 @@ The `PS` button simulates pressing `Win+G`, and the microphone button `Win+Alt+P
 ## Setup
 1. Install [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
 2. Install Microsoft Visual C++ Redistributable 2017 or newer.
-3. Connect the Sony DualSense, DualShock 4, Nintendo Pro controller via USB.
+3. Connect the Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-Cons.
 4. Unzip and launch DSAdvance.
 5. If necessary, change the dead zones of the sticks or other parameters in the configuration file `Config.ini`.
 6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
