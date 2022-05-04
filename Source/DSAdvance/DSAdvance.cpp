@@ -122,7 +122,7 @@ void GamepadSearch() {
 				// BT detection https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp
 				unsigned char buf[64];
 				memset(buf, 0, 64);
-				hid_read_timeout(CurGamepad.HidHandle, buf, 64, 100); 
+				hid_read_timeout(CurGamepad.HidHandle, buf, 64, 100);
 				if (buf[0] == 0x31)
 					CurGamepad.USBConnection = false;
 			}
@@ -281,9 +281,15 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 	return LeftAxisX;
 }
 
+void DefMainText() {
+	system("cls");
+	printf("\n Press \"ALT\" + \"Escape\" or \"exit key\" to exit.\n");
+	printf(" Press \"CTRL\" + \"R\" to reset.\n");
+}
+
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.3");
+	SetConsoleTitle("DSAdvance 0.3.1");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 	int KEY_ID_EXIT = IniFile.ReadInteger("Main", "ExitBtn", 192); // "~" by default for RU, US and not for UK
@@ -320,6 +326,7 @@ int main(int argc, char **argv)
 	int GamepadMode = 0; int LastAIMProCtrlMode = 2;
 	EulerAngles AnglesOffset;
 
+	int BTReset = 180;
 	int controllersCount = JslConnectDevices();
 	int deviceID[4];
 	JslGetConnectedDeviceHandles(deviceID, controllersCount);
@@ -328,6 +335,7 @@ int main(int argc, char **argv)
 	if (controllersCount == 0)
 		printf("\n Connect DualSense, DualShock 4, Pro controller and restart the app.");
 	printf("\n Press \"ALT\" + \"Escape\" or \"exit key\" to exit.\n");
+	printf(" Press \"CTRL\" + \"R\" to reset.\n");
 	
 	JOY_SHOCK_STATE InputState;
 	MOTION_STATE MotionState;
@@ -351,10 +359,7 @@ int main(int argc, char **argv)
 		if ((GetAsyncKeyState(VK_F9) & 0x8000) != 0 && ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && SkipPollCount == 0)
 		{
 			DeadZoneMode = !DeadZoneMode;
-			if (DeadZoneMode == false) {
-				system("cls");
-				printf("\n Press \"ALT\" + \"Escape\" or \"exit key\" to exit.\n");
-			}
+			if (DeadZoneMode == false) DefMainText();
 			SkipPollCount = 15;
 		}
 
@@ -363,6 +368,17 @@ int main(int argc, char **argv)
 			printf("Y=%6.2f\t", abs(InputState.stickLY));
 			printf("Right Stick X=%6.2f ", abs(InputState.stickRX));
 			printf("Y=%6.2f\n", abs(InputState.stickRY));
+		}
+
+		if ( ( (GetAsyncKeyState('R') & 0x8000) != 0 && ((GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0) && SkipPollCount == 0 ) || (BTReset == 1 && CurGamepad.USBConnection) )
+		{
+			controllersCount = JslConnectDevices();
+			JslGetConnectedDeviceHandles(deviceID, controllersCount);
+			if (CurGamepad.HidHandle != NULL)
+				hid_close(CurGamepad.HidHandle);
+			GamepadSearch();
+			SkipPollCount = 15;
+			DefMainText();
 		}
 
 		XUSB_REPORT_INIT(&report);
@@ -538,6 +554,7 @@ int main(int argc, char **argv)
 
 		if (BatteryShowCounter > 0) { if (BatteryShowCounter == 1) { GamepadOutState.PlayersCount = 0; GamepadSetState(GamepadOutState); } BatteryShowCounter--; }
 		if (SkipPollCount > 0) SkipPollCount--;
+		if (BTReset > 0) BTReset--;
 		Sleep(SleepTimeOut);
 	}
 

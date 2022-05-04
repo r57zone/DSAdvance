@@ -29,6 +29,9 @@ The `PS` button simulates pressing `Win+G`, and the microphone button `Win+Alt+P
 5. If necessary, change the dead zones of the sticks or other parameters in the configuration file `Config.ini`.
 6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
 
+## Possible problems
+Some games are incompatible with this method, since they are not designed to use a mouse and a gamepad at the same time. Some games can constantly change button icons (from keyboard to gamepad and vice versa).
+
 ## Download
 >Version for Windows 10.
 
