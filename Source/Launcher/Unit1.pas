@@ -18,12 +18,15 @@ type
     SetupBtn: TMenuItem;
     N1: TMenuItem;
     ConfigBtn: TMenuItem;
+    N4: TMenuItem;
+    GamepadTestBtn: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure CloseBtnClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure RunInBgBtnClick(Sender: TObject);
     procedure RunStopBtnClick(Sender: TObject);
     procedure ConfigBtnClick(Sender: TObject);
+    procedure GamepadTestBtnClick(Sender: TObject);
   private
     procedure DefaultHandler(var Message); override;
   protected
@@ -113,6 +116,7 @@ begin
     SetupBtn.Caption:='Setup';
     ConfigBtn.Caption:='Options';
     RunInBgBtn.Caption:='Run in background';
+    GamepadTestBtn.Caption:='Gamepad test';
     CloseBtn.Caption:='Exit';
   end;
 end;
@@ -174,6 +178,11 @@ end;
 procedure TMain.ConfigBtnClick(Sender: TObject);
 begin
   ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'Config.ini'), nil, nil, SW_SHOWNORMAL);
+end;
+
+procedure TMain.GamepadTestBtnClick(Sender: TObject);
+begin
+  ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'XInputTest.exe'), nil, nil, SW_SHOWNORMAL);
 end;
 
 end.

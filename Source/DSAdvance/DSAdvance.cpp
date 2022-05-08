@@ -17,9 +17,19 @@ struct Gamepad {
 	wchar_t *serial_number;
 };
 
-Gamepad CurGamepad;
+struct InputOutState {
+	unsigned char LEDRed;
+	unsigned char LEDGreen;
+	unsigned char LEDBlue;
+	unsigned char LEDBrightness;
+	unsigned char LargeMotor;
+	unsigned char SmallMotor;
+	unsigned char PlayersCount;
+};
 
+Gamepad CurGamepad;
 InputOutState GamepadOutState;
+
 void GamepadSetState(InputOutState OutState)
 {
 	if (CurGamepad.HidHandle != NULL) {
@@ -146,13 +156,13 @@ void GetBatteryInfo() {
 				unsigned char buf[64];
 				memset(buf, 0, 64);
 				hid_read(CurGamepad.HidHandle, buf, 64);
-				CurGamepad.BatteryLevel = (buf[53] & 0x0f) / 2;
+				CurGamepad.BatteryLevel = (buf[53] & 0x0f) / 2; // ?
 				//CurGamepad.BatteryMode = buf[30]; //???
 			} else { // BT
 				unsigned char buf[64];
 				memset(buf, 0, 64);
 				hid_read(CurGamepad.HidHandle, buf, 64);
-				CurGamepad.BatteryLevel = (buf[54] & 0x0f) / 2;
+				CurGamepad.BatteryLevel = (buf[54] & 0x0f) / 2; // ?
 				//CurGamepad.BatteryMode = buf[31];  //???
 			}
 			if (CurGamepad.BatteryLevel > 4)
@@ -281,18 +291,19 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 	return LeftAxisX;
 }
 
-void DefMainText() {
+void DefMainText(int TextMode) {
 	system("cls");
-	printf("\n Press \"ALT\" + \"Escape\" or \"exit key\" to exit.\n");
-	printf(" Press \"CTRL\" + \"R\" to reset.\n");
+	if (TextMode == 1)
+		printf("\n Connect DualSense, DualShock 4, Pro controller or Joycons and reset.");
+	printf("\n Press \"CTRL\" + \"R\" to reset.\n");
+	printf(" Press \"ALT\" + \"Escape\" to exit.\n");
 }
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.3.1");
+	SetConsoleTitle("DSAdvance 0.4");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
-	int KEY_ID_EXIT = IniFile.ReadInteger("Main", "ExitBtn", 192); // "~" by default for RU, US and not for UK
 
 	bool InvertLeftStickX = IniFile.ReadBoolean("Gamepad", "InvertLeftStickX", false);
 	bool InvertLeftStickY = IniFile.ReadBoolean("Gamepad", "InvertLeftStickY", false);
@@ -326,16 +337,12 @@ int main(int argc, char **argv)
 	int GamepadMode = 0; int LastAIMProCtrlMode = 2;
 	EulerAngles AnglesOffset;
 
-	int BTReset = 180;
+	bool BTReset = true; // Problems with BlueTooth, on first connection. Reconnecting fixes the problem.
 	int controllersCount = JslConnectDevices();
 	int deviceID[4];
 	JslGetConnectedDeviceHandles(deviceID, controllersCount);
 
-	system("cls");
-	if (controllersCount == 0)
-		printf("\n Connect DualSense, DualShock 4, Pro controller and restart the app.");
-	printf("\n Press \"ALT\" + \"Escape\" or \"exit key\" to exit.\n");
-	printf(" Press \"CTRL\" + \"R\" to reset.\n");
+	if (controllersCount == 0) DefMainText(1); else DefMainText(0);
 	
 	JOY_SHOCK_STATE InputState;
 	MOTION_STATE MotionState;
@@ -353,13 +360,13 @@ int main(int argc, char **argv)
 	bool FirstTouch, SecondTouch;
 	float InitFirstTouchAxisX, InitFirstTouchAxisY, FirstTouchAxisX, FirstTouchAxisY, InitSecondTouchAxisX, InitSecondTouchAxisY, SecondTouchAxisX, SecondTouchAxisY, TouchAxisLX, TouchAxisLY, TouchAxisRX, TouchAxisRY;
 	
-	while (!((GetAsyncKeyState(KEY_ID_EXIT) & 0x8000) || ((GetAsyncKeyState(VK_LMENU) & 0x8000) && (GetAsyncKeyState(VK_ESCAPE) & 0x8000)))) // "~" by default
+	while (! ( GetAsyncKeyState(VK_LMENU) & 0x8000 && GetAsyncKeyState(VK_ESCAPE) & 0x8000 ) )
 	{
 		// Dead zones
 		if ((GetAsyncKeyState(VK_F9) & 0x8000) != 0 && ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && SkipPollCount == 0)
 		{
 			DeadZoneMode = !DeadZoneMode;
-			if (DeadZoneMode == false) DefMainText();
+			if (DeadZoneMode == false) DefMainText(0);
 			SkipPollCount = 15;
 		}
 
@@ -370,15 +377,17 @@ int main(int argc, char **argv)
 			printf("Y=%6.2f\n", abs(InputState.stickRY));
 		}
 
-		if ( ( (GetAsyncKeyState('R') & 0x8000) != 0 && ((GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0) && SkipPollCount == 0 ) || (BTReset == 1 && CurGamepad.USBConnection) )
+		if ( ( (GetAsyncKeyState('R') & 0x8000) != 0 && ((GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0) && SkipPollCount == 0 ) || BTReset)
 		{
 			controllersCount = JslConnectDevices();
 			JslGetConnectedDeviceHandles(deviceID, controllersCount);
 			if (CurGamepad.HidHandle != NULL)
 				hid_close(CurGamepad.HidHandle);
 			GamepadSearch();
+			GamepadSetState(GamepadOutState);
 			SkipPollCount = 15;
-			DefMainText();
+			BTReset = false;
+			DefMainText(0);
 		}
 
 		XUSB_REPORT_INIT(&report);
@@ -405,22 +414,21 @@ int main(int argc, char **argv)
 						GamepadMode = 1;
 						AnglesOffset = MotionAngles;
 						GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
-					}
-					else if (TouchState.t0X > 1 / 3.0 && TouchState.t0X <= 1 / 3.0 * 2.0) { // [-O-] // Default & touch sticks modes
+					
+					} else if (TouchState.t0X > 1 / 3.0 && TouchState.t0X <= 1 / 3.0 * 2.0) { // [-O-] // Default & touch sticks modes
 						
 						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.7) { // Default mode
 							GamepadMode = 0;
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0;
 							// Show battery level
-							GetBatteryInfo(); BatteryShowCounter = 35; GamepadOutState.PlayersCount = CurGamepad.BatteryLevel; GamepadSetState(GamepadOutState); // JslSetPlayerNumber(deviceID[0], 5);						
+							GetBatteryInfo(); BatteryShowCounter = 40; GamepadOutState.PlayersCount = CurGamepad.BatteryLevel; GamepadSetState(GamepadOutState); // JslSetPlayerNumber(deviceID[0], 5);						
 						} else {  // Touch sticks mode
 							GamepadMode = 4;
 							JslSetRumble(0, 255, 255);
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
 						}
 
-					}
-					else if (TouchState.t0X > (1 / 3.0) * 2.0 && TouchState.t0X <= 1 && GamepadMode != 4) { // [--O] Aiming mode
+					} else if (TouchState.t0X > (1 / 3.0) * 2.0 && TouchState.t0X <= 1 && GamepadMode != 4) { // [--O] Aiming mode
 
 						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.5) { // Motion AIM always
 							GamepadMode = 3;
@@ -497,9 +505,9 @@ int main(int argc, char **argv)
 			float NewY = OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch))  * -1;
 			if (GamepadMode == 3 || (GamepadMode == 2 && InputState.lTrigger > 0) ) 
 				MouseMove(NewX * MotionSensX, NewY * MotionSensY);
-			AnglesOffset = MotionAngles;
-		}
-		else if (GamepadMode == 4) { // [-_-] Touchpad sticks
+			AnglesOffset = MotionAngles; // Not the best way but it works
+		
+		} else if (GamepadMode == 4) { // [-_-] Touchpad sticks
 
 			if (TouchState.t0Down) {
 				if (FirstTouch == false) {
@@ -554,7 +562,6 @@ int main(int argc, char **argv)
 
 		if (BatteryShowCounter > 0) { if (BatteryShowCounter == 1) { GamepadOutState.PlayersCount = 0; GamepadSetState(GamepadOutState); } BatteryShowCounter--; }
 		if (SkipPollCount > 0) SkipPollCount--;
-		if (BTReset > 0) BTReset--;
 		Sleep(SleepTimeOut);
 	}
 

@@ -34,6 +34,13 @@ object Main: TMain
       object N1: TMenuItem
         Caption = '-'
       end
+      object GamepadTestBtn: TMenuItem
+        Caption = #1055#1088#1086#1074#1077#1088#1082#1072' '#1075#1077#1081#1084#1087#1072#1076#1072
+        OnClick = GamepadTestBtnClick
+      end
+      object N4: TMenuItem
+        Caption = '-'
+      end
       object RunInBgBtn: TMenuItem
         Caption = #1047#1072#1087#1091#1089#1082#1072#1090#1100' '#1074' '#1092#1086#1085#1077
         OnClick = RunInBgBtnClick
