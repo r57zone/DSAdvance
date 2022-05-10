@@ -2,30 +2,11 @@
 #include <math.h>
 #include <mutex>
 #include <iostream>
-#include <ViGEm/Client.h>
+#include "ViGEm\Client.h"
 #include "IniReader\IniReader.h"
 #include "JoyShockLibrary\JoyShockLibrary.h"
 #include "hidapi.h"
 #include "DSAdvance.h"
-
-struct Gamepad {
-	hid_device *HidHandle;
-	WORD ControllerType;
-	bool USBConnection;
-	unsigned char BatteryMode;
-	unsigned char BatteryLevel;
-	wchar_t *serial_number;
-};
-
-struct InputOutState {
-	unsigned char LEDRed;
-	unsigned char LEDGreen;
-	unsigned char LEDBlue;
-	unsigned char LEDBrightness;
-	unsigned char LargeMotor;
-	unsigned char SmallMotor;
-	unsigned char PlayersCount;
-};
 
 Gamepad CurGamepad;
 InputOutState GamepadOutState;

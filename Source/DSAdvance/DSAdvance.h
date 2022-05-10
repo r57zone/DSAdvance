@@ -25,6 +25,25 @@
 #define XINPUT_GAMEPAD_X                0x4000
 #define XINPUT_GAMEPAD_Y				0x8000
 
+struct Gamepad {
+	hid_device *HidHandle;
+	WORD ControllerType;
+	bool USBConnection;
+	unsigned char BatteryMode;
+	unsigned char BatteryLevel;
+	wchar_t *serial_number;
+};
+
+struct InputOutState {
+	unsigned char LEDRed;
+	unsigned char LEDGreen;
+	unsigned char LEDBlue;
+	unsigned char LEDBrightness;
+	unsigned char LargeMotor;
+	unsigned char SmallMotor;
+	unsigned char PlayersCount;
+};
+
 // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp
 uint32_t crc_table[256] = {
 		0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
