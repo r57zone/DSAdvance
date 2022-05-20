@@ -38,7 +38,7 @@ Some games are incompatible with this method, since they are not designed to use
 **[Download](https://github.com/r57zone/DSAdvance/releases)**
 
 ## Thanks
-* Sony for the most advanced gamepads and investing in innovation.
+* Sony for the most advanced gamepads and investing in innovation, as well as Nintendo for promoting similar innovations in games.
 * [ViGEm](https://github.com/ViGEm) for the ability to emulate different gamepads.
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also some code from this library is used.
