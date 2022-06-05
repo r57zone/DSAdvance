@@ -9,7 +9,7 @@
 #include "DSAdvance.h"
 
 Gamepad CurGamepad;
-InputOutState GamepadOutState; unsigned LEDsTemp[3];
+InputOutState GamepadOutState; unsigned char LEDsTemp[3];
 
 void GamepadSetState(InputOutState OutState)
 {
