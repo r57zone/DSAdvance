@@ -25,6 +25,8 @@
 #define XINPUT_GAMEPAD_X                0x4000
 #define XINPUT_GAMEPAD_Y				0x8000
 
+#define	SkipPollTimeOut					15
+
 struct Gamepad {
 	hid_device *HidHandle;
 	WORD ControllerType;
@@ -42,6 +44,18 @@ struct InputOutState {
 	unsigned char LargeMotor;
 	unsigned char SmallMotor;
 	unsigned char PlayersCount;
+};
+
+struct EulerAngles {
+	double Yaw;
+	double Pitch;
+	double Roll;
+};
+
+struct TouchpadTouch {
+	bool Touched;
+	float InitAxisX, InitAxisY, AxisX, AxisY;
+	float LastAxisX = 0, LastAxisY = 0;
 };
 
 // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp

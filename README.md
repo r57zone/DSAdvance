@@ -11,7 +11,7 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 # Working modes
 Several working modes are supported, they are switched by pressing the touchpad for DualSene & DualShock 4 and for Pro controllers & Joy-Cons to the `+`, and `-` buttons. Brightness is adjustable without pressing.
 
-![](https://user-images.githubusercontent.com/9499881/164546699-7aa59a26-50ff-4b49-82b9-60c666fd6b9a.png)
+![](https://user-images.githubusercontent.com/9499881/172054944-d8fcfc33-7322-4ad7-9b5b-4ec38be53801.png)
 
 In order to exit the stick emulation mode on the touchpad, need to switch to the default mode.
 
