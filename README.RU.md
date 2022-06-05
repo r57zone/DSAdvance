@@ -23,7 +23,7 @@
 ## Настройка
 1. Установить [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
 2. Установите Microsoft Visual C++ Redistributable 2017 или новее.
-3. Подключить геймпад Sony DualSense, DualShock 4, Nintendo Pro controller или JoyCon-ы.
+3. Подключить геймпад Sony DualSense, DualShock 4, Nintendo Pro controller или JoyCon-ы (рекомендуется по проводу, прицеливание работает лучше).
 4. Распаковать и запустить DSAdvance.
 5. При необходимости измените мёртвые зоны стиков или другие параметры, в конфигурационном файле `Config.ini`.
 6. При использовании со Steam играми, в настройках контроллера, отключите "персональные настройки Playstation".
