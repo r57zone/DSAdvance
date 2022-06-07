@@ -284,7 +284,7 @@ void DefMainText(int TextMode, int EmuMode, int AimMode) {
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.5");
+	SetConsoleTitle("DSAdvance 0.5.1");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -321,7 +321,7 @@ int main(int argc, char **argv)
 	int BackOutStateCounter = 0;
 	bool DeadZoneMode = false;
 	int GamepadMode = 0; int LastAIMProCtrlMode = 2;
-	EulerAngles MotionAngles, LastAngles, DeltaAngles, AnglesOffset;
+	EulerAngles MotionAngles, AnglesOffset;
 	bool XboxGamepadEmulation = true;
 
 	bool BTReset = true; // Problems with BlueTooth, on first connection. Reconnecting fixes the problem.
@@ -445,7 +445,7 @@ int main(int argc, char **argv)
 						}
 
 					} else if (TouchState.t0X > (1 / 3.0) * 2.0 && TouchState.t0X <= 1 && GamepadMode != 4) { // [--O] Aiming mode
-						DeltaAngles = MotionAngles;
+						AnglesOffset = MotionAngles;
 						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.5) { // Motion AIM always
 							GamepadMode = 3;
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
@@ -517,17 +517,17 @@ int main(int argc, char **argv)
 		if (GamepadMode == 1) // Motion racing  [O--]
 			report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Roll), RadToDeg(AnglesOffset.Roll)) * -1, MotionWheelAngle);
 		else if (GamepadMode == 2 || GamepadMode == 3) { // Motion aiming  [--õ]
-			DeltaAngles.Yaw = OffsetYPR(MotionAngles.Yaw, LastAngles.Yaw) * -1;
-			DeltaAngles.Pitch = OffsetYPR(MotionAngles.Pitch, LastAngles.Pitch) * -1;
+			float DeltaX = OffsetYPR(MotionAngles.Yaw, AnglesOffset.Yaw) * -1;
+			float DeltaY = OffsetYPR(MotionAngles.Pitch, AnglesOffset.Pitch)  * -1;
 			if (GamepadMode == 3 || (GamepadMode == 2 && InputState.lTrigger > 0) )
 				if (AimMode)
-					MouseMove(RadToDeg(DeltaAngles.Yaw) * MotionSensX, RadToDeg(DeltaAngles.Pitch) * MotionSensY);
+					MouseMove(RadToDeg(DeltaX) * MotionSensX, RadToDeg(DeltaY) * MotionSensY);
 				else {
-					report.sThumbRX = std::clamp((int)(ClampFloat((DeltaAngles.Yaw) * JoySensX, -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
-					report.sThumbRY = std::clamp((int)(ClampFloat(-(DeltaAngles.Pitch) * JoySensY, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
+					report.sThumbRX = std::clamp((int)(ClampFloat((DeltaX) * JoySensX, -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
+					report.sThumbRY = std::clamp((int)(ClampFloat(-(DeltaY) * JoySensY, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
 				}
 
-			LastAngles = MotionAngles;
+			AnglesOffset = MotionAngles; // Not the best way but it works
 		} else if (GamepadMode == 4) { // [-_-] Touchpad sticks
 
 			if (TouchState.t0Down) {
