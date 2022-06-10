@@ -15,12 +15,17 @@ object Main: TMain
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
-  object PopupMenu1: TPopupMenu
+  object TrayPopupMenu: TPopupMenu
     Left = 8
     Top = 8
     object RunStopBtn: TMenuItem
       Caption = #1047#1072#1087#1091#1089#1090#1080#1090#1100
       OnClick = RunStopBtnClick
+    end
+    object ShowHideAppBtn: TMenuItem
+      Caption = #1055#1086#1082#1072#1079#1072#1090#1100
+      Visible = False
+      OnClick = ShowHideAppBtnClick
     end
     object N3: TMenuItem
       Caption = '-'
@@ -53,6 +58,13 @@ object Main: TMain
       Caption = #1042#1099#1093#1086#1076
       OnClick = CloseBtnClick
     end
+  end
+  object CheckAppClosedTimer: TTimer
+    Enabled = False
+    Interval = 60000
+    OnTimer = CheckAppClosedTimerTimer
+    Left = 72
+    Top = 8
   end
   object XPManifest1: TXPManifest
     Left = 40

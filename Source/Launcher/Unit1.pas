@@ -4,22 +4,24 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, Menus, ShellAPI, IniFiles, XPMan;
+  Dialogs, Menus, ExtCtrls, ShellAPI, IniFiles, XPMan;
 
 type
   TMain = class(TForm)
-    PopupMenu1: TPopupMenu;
+    TrayPopupMenu: TPopupMenu;
     CloseBtn: TMenuItem;
     N2: TMenuItem;
     N3: TMenuItem;
     RunStopBtn: TMenuItem;
     RunInBgBtn: TMenuItem;
-    XPManifest1: TXPManifest;
     SetupBtn: TMenuItem;
     N1: TMenuItem;
     ConfigBtn: TMenuItem;
     N4: TMenuItem;
     GamepadTestBtn: TMenuItem;
+    ShowHideAppBtn: TMenuItem;
+    CheckAppClosedTimer: TTimer;
+    XPManifest1: TXPManifest;
     procedure FormCreate(Sender: TObject);
     procedure CloseBtnClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -27,6 +29,8 @@ type
     procedure RunStopBtnClick(Sender: TObject);
     procedure ConfigBtnClick(Sender: TObject);
     procedure GamepadTestBtnClick(Sender: TObject);
+    procedure ShowHideAppBtnClick(Sender: TObject);
+    procedure CheckAppClosedTimerTimer(Sender: TObject);
   private
     procedure DefaultHandler(var Message); override;
   protected
@@ -39,16 +43,18 @@ type
 var
   Main: TMain;
   WM_TASKBARCREATED: Cardinal;
-  LaunchedIcon: boolean;
-  IconFull: TIcon;
+  DSAdvanceStarted: boolean;
+  IconStarted: TIcon;
+  DSAdvanceTitle: string;
+  AppHiden: boolean;
 
-  IDS_RUN, IDS_STOP, IDS_LAST_UPDATE: string;
+  IDS_RUN, IDS_STOP, IDS_SHOW, IDS_HIDE, IDS_LAST_UPDATE: string;
 
 implementation
 
 {$R *.dfm}
 
-procedure Tray(ActInd: integer);  //1 - Add, 2 - Update, 3 - Remove
+procedure Tray(ActInd: integer);  // 1 - Add, 2 - Update, 3 - Remove
 var
   NIM: TNotifyIconData;
 begin
@@ -58,10 +64,10 @@ begin
     uId:=1;
     uFlags:=NIF_MESSAGE or NIF_ICON or NIF_TIP;
     
-    if LaunchedIcon = false then
+    if DSAdvanceStarted = false then
       hIcon:=SendMessage(Application.Handle, WM_GETICON, ICON_SMALL2, 0)
     else
-      hIcon:=IconFull.Handle;
+      hIcon:=IconStarted.Handle;
 
     uCallBackMessage:=WM_USER + 1;
     StrCopy(szTip, PChar(Application.Title));
@@ -95,13 +101,14 @@ var
 begin
   Ini:=TIniFile.Create(ExtractFilePath(ParamStr(0)) + 'Config.ini');
   if Ini.ReadBool('Launcher', 'RunInBackground', false) then RunInBgBtn.Click;
+  DSAdvanceTitle:=Ini.ReadString('Launcher', 'DSAdvanceTitle', 'DSAdvance');
   Ini.Free;
   Application.Title:=Caption;
   WM_TASKBARCREATED:=RegisterWindowMessage('TaskbarCreated');
   
-  IconFull:=TIcon.Create;
-  IconFull.LoadFromFile('Launched.ico');
-  LaunchedIcon:=false;
+  IconStarted:=TIcon.Create;
+  IconStarted.LoadFromFile('Launched.ico');
+  DSAdvanceStarted:=false;
 
   Tray(1);
   SetWindowLong(Application.Handle, GWL_EXSTYLE, GetWindowLong(Application.Handle, GWL_EXSTYLE) or WS_EX_TOOLWINDOW);
@@ -109,10 +116,14 @@ begin
   if GetLocaleInformation(LOCALE_SENGLANGUAGE) = 'Russian' then begin
     IDS_RUN:='Запустить';
     IDS_STOP:='Остановить';
+    IDS_SHOW:='Показать';
+    IDS_HIDE:='Скрыть';
   end else begin
     IDS_RUN:='Run';
     IDS_STOP:='Stop';
     RunStopBtn.Caption:=IDS_RUN;
+    IDS_SHOW:='Show';
+    IDS_HIDE:='Hide';
     SetupBtn.Caption:='Setup';
     ConfigBtn.Caption:='Options';
     RunInBgBtn.Caption:='Run in background';
@@ -132,7 +143,7 @@ begin
     WM_RBUTTONDOWN:
     begin
       SetForegroundWindow(Handle);
-      PopupMenu1.Popup(Mouse.CursorPos.X, Mouse.CursorPos.Y);
+      TrayPopupMenu.Popup(Mouse.CursorPos.X, Mouse.CursorPos.Y);
     end;
   end;
 end;
@@ -145,7 +156,7 @@ end;
 procedure TMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   Tray(3);
-  IconFull.Free;
+  IconStarted.Free;
 end;
 
 procedure TMain.RunInBgBtnClick(Sender: TObject);
@@ -160,17 +171,23 @@ end;
 
 procedure TMain.RunStopBtnClick(Sender: TObject);
 begin
-  if LaunchedIcon = false then begin
-    LaunchedIcon:=true;
+  if DSAdvanceStarted = false then begin
+    CheckAppClosedTimer.Enabled:=true;
+    DSAdvanceStarted:=true;
     RunStopBtn.Caption:=IDS_STOP;
-    if RunInBgBtn.Checked then
-      ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'DSAdvance.exe'), nil, nil, SW_HIDE)
-    else
+    if RunInBgBtn.Checked then begin
+      ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'DSAdvance.exe'), nil, nil, SW_HIDE);
+      ShowHideAppBtn.Visible:=true;
+      ShowHideAppBtn.Caption:=IDS_SHOW;
+      AppHiden:=true;
+    end else
       ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'DSAdvance.exe'), nil, nil, SW_SHOWNORMAL);
   end else begin
-    LaunchedIcon:=false;
+    DSAdvanceStarted:=false;
+    AppHiden:=false;
     RunStopBtn.Caption:=IDS_RUN;
     WinExec('taskkill /f /im DSAdvance.exe', SW_HIDE);
+    if RunInBgBtn.Checked then ShowHideAppBtn.Visible:=false;
   end;
   Tray(2);
 end;
@@ -183,6 +200,39 @@ end;
 procedure TMain.GamepadTestBtnClick(Sender: TObject);
 begin
   ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'XInputTest.exe'), nil, nil, SW_SHOWNORMAL);
+end;
+
+procedure TMain.ShowHideAppBtnClick(Sender: TObject);
+var
+  DSAdvanceApp: HWND;
+begin
+  DSAdvanceApp:=FindWindow(nil, PChar(DSAdvanceTitle));
+
+  if DSAdvanceApp = 0 then begin
+    ShowHideAppBtn.Visible:=false;
+    Exit;
+  end;
+
+  if AppHiden then begin
+    ShowWindow(DSAdvanceApp, SW_SHOW);
+    ShowHideAppBtn.Caption:=IDS_HIDE;
+    AppHiden:=false;
+  end else begin
+    ShowWindow(DSAdvanceApp, SW_HIDE);
+    ShowHideAppBtn.Caption:=IDS_SHOW;
+    AppHiden:=true;
+  end;
+end;
+
+procedure TMain.CheckAppClosedTimerTimer(Sender: TObject);
+var
+  DSAdvanceApp: HWND;
+begin
+  DSAdvanceApp:=FindWindow(nil, PChar(DSAdvanceTitle));
+  if (DSAdvanceApp = 0) and (DSAdvanceStarted) then begin
+    RunStopBtn.Click;
+    CheckAppClosedTimer.Enabled:=false;
+  end;
 end;
 
 end.
