@@ -1,6 +1,6 @@
 [![EN](https://user-images.githubusercontent.com/9499881/33184537-7be87e86-d096-11e7-89bb-f3286f752bc6.png)](https://github.com/r57zone/DSAdvance/) 
 [![RU](https://user-images.githubusercontent.com/9499881/27683795-5b0fbac6-5cd8-11e7-929c-057833e01fb1.png)](https://github.com/r57zone/DSAdvance/blob/master/README.RU.md)
-&#8211; Other languages
+&#8211; Other languages / Другие языки
 
 # DSAdvance
 Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, as well as emulation of sticks on the touchpad. Works based on the driver [ViGEm](https://github.com/ViGEm).
@@ -30,7 +30,15 @@ The `PS` button simulates pressing `Win+G`, and the microphone button `Win+Alt+P
 6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
 
 ## Possible problems
-Some games are incompatible with "mouse" aiming, since they are not designed to use a mouse and a gamepad at the same time. Some games can constantly change button icons (from keyboard to gamepad and vice versa).
+• **Permanently changing keyboard and gamepad icons**
+
+If this bothers you, then change the aiming mode to "mouse-joystick", in the program, or use aiming, using the left trigger.
+
+
+
+• **Driving don't work in DualSense games**
+
+Launch DSAdvance first, and only then the game itself, the game can give priority to the emulated Xbox controller and driving will work. You can also enable "Only driving & aiming" emulation mode so that the controller will only turn on in driving mode.
 
 ## Download
 >Version for Windows 10.

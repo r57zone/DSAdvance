@@ -9,7 +9,7 @@
 #include "DSAdvance.h"
 
 Gamepad CurGamepad;
-InputOutState GamepadOutState; unsigned char LEDsTemp[3];
+InputOutState GamepadOutState;
 
 void GamepadSetState(InputOutState OutState)
 {
@@ -187,10 +187,10 @@ double RadToDeg(double Rad)
 double OffsetYPR(float f, float f2)
 {
 	f -= f2;
-	if (f < -180) {
+	if (f < -180)
 		f += 360;
-	} else if (f > 180) {
-		f -= 360; }
+	else if (f > 180)
+		f -= 360;
 	return f;
 }
 
@@ -266,25 +266,27 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 	return LeftAxisX;
 }
 
-void DefMainText(int TextMode, int EmuMode, int AimMode) {
+void DefMainText(int ControllerCount, int EmuMode, int AimMode) {
 	system("cls");
-	if (TextMode == 1)
+	if (ControllerCount < 1)
 		printf("\n Connect DualSense, DualShock 4, Pro controller or Joycons and reset.");
-	printf("\n Press \"CTRL\" + \"R\" to reset.");
-	if (EmuMode == 1)
-		printf("\n Emulation: Xbox gamepad, press \"ALT\" + \"Q\" to turn off.");
+	printf("\n Press \"CTRL\" + \"R\" to reset controllers.");
+	if (EmuMode == XboxGamepadEnabled)
+		printf("\n Emulation: Xbox gamepad, press \"ALT\" + \"Q\" to switch.");
+	else if (EmuMode == XboxGamepadOnlyDriving)
+		printf("\n Emulation: Xbox gamepad (only driving & mouse aiming), press \"ALT\" + \"Q\" to turn off.");
 	else
 		printf("\n Emulation: -, press \"ALT\" + \"Q\" to turn on.");
 	if (AimMode == 1)
-		printf("\n AIM mode = mouse\n");
+		printf("\n AIM mode = mouse, press \"ALT\" + \"A\" to switch.\n");
 	else
-		printf("\n AIM mode = mouse-joystick\n");
+		printf("\n AIM mode = mouse-joystick, press \"ALT\" + \"A\" to switch.\n");
 	printf(" Press \"ALT\" + \"Escape\" to exit.\n");
 }
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.5.1");
+	SetConsoleTitle("DSAdvance 0.6");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -304,17 +306,22 @@ int main(int argc, char **argv)
 	float TouchRightStickX = IniFile.ReadFloat("Gamepad", "TouchRightStickSensX", 4);
 	float TouchRightStickY = IniFile.ReadFloat("Gamepad", "TouchRightStickSensY", 4);
 
+	unsigned char DefaultLEDBrightness = std::clamp((int)(255 - IniFile.ReadInteger("Gamepad", "DefaultBrightness", 100) * 2.55), 0, 255);
+	bool LockedChangeBrightness = IniFile.ReadBoolean("Gamepad", "LockChangeBrightness", false);
+	bool LockChangeBrightness = true;
+	int BrightnessAreaPressed = 0;
+
 	bool AimMode = IniFile.ReadBoolean("Motion", "AimMode", false);
 	float MotionWheelAngle = IniFile.ReadFloat("Motion", "WheelAngle", 75);
 	float MotionSensX = IniFile.ReadFloat("Motion", "MouseSensX", 3);
 	float MotionSensY = IniFile.ReadFloat("Motion", "MouseSensY", 3);
-	float JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 3);
-	float JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 3);
+	float JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 3) * 10.0f;
+	float JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 3) * 10.0f;
 
 	GamepadSearch();
 	GamepadOutState.PlayersCount = 0;
 	GamepadOutState.LEDBlue = 255;
-	GamepadOutState.LEDBrightness = std::clamp((int)(255 - IniFile.ReadInteger("Gamepad", "DefaultBrightness", 100) * 2.55), 0, 255);
+	GamepadOutState.LEDBrightness = DefaultLEDBrightness;
 	GamepadSetState(GamepadOutState);
 
 	int SkipPollCount = 0;
@@ -322,14 +329,15 @@ int main(int argc, char **argv)
 	bool DeadZoneMode = false;
 	int GamepadMode = 0; int LastAIMProCtrlMode = 2;
 	EulerAngles MotionAngles, AnglesOffset;
-	bool XboxGamepadEmulation = true;
+	int XboxGamepadEmuMode = XboxGamepadEnabled;
+	bool XboxGamepadReset = false;
 
 	bool BTReset = true; // Problems with BlueTooth, on first connection. Reconnecting fixes the problem.
 	int controllersCount = JslConnectDevices();
 	int deviceID[4];
 	JslGetConnectedDeviceHandles(deviceID, controllersCount);
 
-	if (controllersCount == 0) DefMainText(1, XboxGamepadEmulation, AimMode); else DefMainText(0, XboxGamepadEmulation, AimMode);
+	DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
 
 	JOY_SHOCK_STATE InputState;
 	MOTION_STATE MotionState;
@@ -352,7 +360,7 @@ int main(int argc, char **argv)
 		if ((GetAsyncKeyState(VK_F9) & 0x8000) != 0 && ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && SkipPollCount == 0)
 		{
 			DeadZoneMode = !DeadZoneMode;
-			if (DeadZoneMode == false) DefMainText(0, XboxGamepadEmulation, AimMode);
+			if (DeadZoneMode == false) DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
 			SkipPollCount = SkipPollTimeOut;
 		}
 
@@ -373,27 +381,33 @@ int main(int argc, char **argv)
 			GamepadSetState(GamepadOutState);
 			SkipPollCount = SkipPollTimeOut;
 			BTReset = false;
-			DefMainText(0, XboxGamepadEmulation, AimMode);
+			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
 		}
 
-
-		if ((GetAsyncKeyState('Q') & 0x8000) != 0 && ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && SkipPollCount == 0) // Disable Xbox controller emulation for games that support DualSense, DualShock, Nintendo controllers
+		if ((GetAsyncKeyState('Q') & 0x8000) != 0 && ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && SkipPollCount == 0) // Disable Xbox controller emulation for games that support DualSense, DualShock, Nintendo controllers or enable only driving & mouse aiming
 		{
-			XboxGamepadEmulation = !XboxGamepadEmulation;
-			if (XboxGamepadEmulation == false) {
+			XboxGamepadEmuMode++;
+			if (XboxGamepadEmuMode > 2) XboxGamepadEmuMode = 0;
+			if (XboxGamepadEmuMode == XboxGamepadDisabled) {
 				vigem_target_x360_unregister_notification(x360);
 				vigem_target_remove(client, x360);
-				//vigem_target_free(x360);
-			} else {
+			} else if (XboxGamepadEmuMode == XboxGamepadEnabled || XboxGamepadEmuMode == XboxGamepadOnlyDriving) {
 				ret = vigem_target_add(client, x360);
 				ret = vigem_target_x360_register_notification(client, x360, &notification, nullptr);
 			}
-			DefMainText(0, XboxGamepadEmulation, AimMode);
+
+			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
 			SkipPollCount = SkipPollTimeOut;
 		}
 
-		if (XboxGamepadEmulation)
-			XUSB_REPORT_INIT(&report);
+		if ((GetAsyncKeyState('A') & 0x8000) != 0 && ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && SkipPollCount == 0)
+		{
+			AimMode = !AimMode;
+			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
+			SkipPollCount = SkipPollTimeOut;
+		}
+
+		XUSB_REPORT_INIT(&report);
 
 		InputState = JslGetSimpleState(deviceID[0]);
 		MotionState = JslGetMotionState(deviceID[0]);
@@ -403,61 +417,60 @@ int main(int argc, char **argv)
 
 			TouchState = JslGetTouchState(deviceID[0]);
 
-			if (TouchState.t0Down && TouchState.t0Y <= 0.1 && TouchState.t0X >= 0.325 && TouchState.t0X <= 0.675) { // Brightness change
+			if (LockChangeBrightness == false && TouchState.t0Down && TouchState.t0Y <= 0.1 && TouchState.t0X >= 0.325 && TouchState.t0X <= 0.675) { // Brightness change
 				GamepadOutState.LEDBrightness = 255 - std::clamp((int)((TouchState.t0X - 0.335) * 255 * 3.2), 0, 255);
 				//printf("%5.2f %d\n", (TouchState.t0X - 0.335) * 255 * 3.2, GamepadOutState.LEDBrightness);
 				GamepadSetState(GamepadOutState);
 			}
 
 			if (InputState.buttons & JSMASK_TOUCHPAD_CLICK) {
-				if (TouchState.t0Y > 0.1) {
-					if (TouchState.t0X > 0 && TouchState.t0X <= 1 / 3.0 && GamepadMode != 4) { // [O--] - Driving mode & switching between joy aim and mouse aim
-						
-						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.7) {
-							GamepadMode = 1;
-							AnglesOffset = MotionAngles;
-							GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
-						} else if (SkipPollCount == 0) { // Switch between mouse and mouse-joystick
-							SkipPollCount = SkipPollTimeOut;
-							AimMode = !AimMode;
-							DefMainText(0, XboxGamepadEmulation, AimMode);
-							LEDsTemp[0] = GamepadOutState.LEDBlue; LEDsTemp[1] = GamepadOutState.LEDRed; LEDsTemp[2] = GamepadOutState.LEDGreen;
-							if (AimMode == 1) { // Mouse aim
-								GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 255;
-							} else { // Mouse-joystick aim
-								GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 255;
-							}
-							BackOutStateCounter = 40;
-						}
+				if (TouchState.t0Y <= 0.1 && SkipPollCount == 0) { // Brightness area
+					BrightnessAreaPressed++;
+					if (BrightnessAreaPressed > 1) {
+						if (LockedChangeBrightness) {
+							if (GamepadOutState.LEDBrightness == 255) GamepadOutState.LEDBrightness = DefaultLEDBrightness; else GamepadOutState.LEDBrightness = 255;
+						} else
+							LockChangeBrightness = !LockChangeBrightness;
+						BrightnessAreaPressed = 0;
+					}
+					SkipPollCount = SkipPollTimeOut;
+				
+				} else if (TouchState.t0Y > 0.1) { // Main area
+					if (TouchState.t0X > 0 && TouchState.t0X <= 1 / 3.0 && GamepadMode != TouchpadSticksMode) { // [O--] - Driving mode
+						GamepadMode = MotionDrivingMode;
+						AnglesOffset = MotionAngles;
+						GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
 					
 					} else if (TouchState.t0X > 1 / 3.0 && TouchState.t0X <= 1 / 3.0 * 2.0) { // [-O-] // Default & touch sticks modes
 						
 						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.7) { // Default mode
-							GamepadMode = 0;
+							GamepadMode = GamepadDefaultMode;
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0;
 							// Show battery level
-							LEDsTemp[0] = GamepadOutState.LEDBlue; LEDsTemp[1] = GamepadOutState.LEDRed; LEDsTemp[2] = GamepadOutState.LEDGreen;
 							GetBatteryInfo(); BackOutStateCounter = 40; GamepadOutState.PlayersCount = CurGamepad.BatteryLevel; GamepadSetState(GamepadOutState); // JslSetPlayerNumber(deviceID[0], 5);						
 						} else {  // Touch sticks mode
-							GamepadMode = 4;
+							GamepadMode = TouchpadSticksMode;
 							JslSetRumble(0, 255, 255);
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
 						}
 
-					} else if (TouchState.t0X > (1 / 3.0) * 2.0 && TouchState.t0X <= 1 && GamepadMode != 4) { // [--O] Aiming mode
+					} else if (TouchState.t0X > (1 / 3.0) * 2.0 && TouchState.t0X <= 1 && GamepadMode != TouchpadSticksMode) { // [--O] Aiming mode
 						AnglesOffset = MotionAngles;
 						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.5) { // Motion AIM always
-							GamepadMode = 3;
+							GamepadMode = MotionAimingMode;
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
 						}
 						else { // Motion AIM with L2 trigger
-							GamepadMode = 2;
+							GamepadMode = MotionAimingModeOnlyPressed;
 							GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
 						}
 					}
+					BrightnessAreaPressed = 0; // Reset lock brightness if clicked in another area
+					if (LockChangeBrightness == false) LockChangeBrightness = true;
 				}
 				GamepadSetState(GamepadOutState);
 				//printf("current mode = %d\r\n", GamepadMode);
+				if (XboxGamepadEmuMode == XboxGamepadOnlyDriving && GamepadMode != MotionDrivingMode) XboxGamepadReset = true; // Reset last state
 			}
 
 		}
@@ -514,12 +527,12 @@ int main(int argc, char **argv)
 			SkipPollCount = SkipPollTimeOut;
 		}
 
-		if (GamepadMode == 1) // Motion racing  [O--]
+		if (GamepadMode == MotionDrivingMode) // Motion racing  [O--]
 			report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Roll), RadToDeg(AnglesOffset.Roll)) * -1, MotionWheelAngle);
-		else if (GamepadMode == 2 || GamepadMode == 3) { // Motion aiming  [--õ]
+		else if (GamepadMode == MotionAimingMode || GamepadMode == MotionAimingModeOnlyPressed) { // Motion aiming  [--õ]
 			float DeltaX = OffsetYPR(MotionAngles.Yaw, AnglesOffset.Yaw) * -1;
 			float DeltaY = OffsetYPR(MotionAngles.Pitch, AnglesOffset.Pitch)  * -1;
-			if (GamepadMode == 3 || (GamepadMode == 2 && InputState.lTrigger > 0) )
+			if (GamepadMode == MotionAimingMode || (GamepadMode == MotionAimingModeOnlyPressed && InputState.lTrigger > 0) )
 				if (AimMode)
 					MouseMove(RadToDeg(DeltaX) * MotionSensX, RadToDeg(DeltaY) * MotionSensY);
 				else {
@@ -528,7 +541,7 @@ int main(int argc, char **argv)
 				}
 
 			AnglesOffset = MotionAngles; // Not the best way but it works
-		} else if (GamepadMode == 4) { // [-_-] Touchpad sticks
+		} else if (GamepadMode == TouchpadSticksMode) { // [-_-] Touchpad sticks
 
 			if (TouchState.t0Down) {
 				if (FirstTouch.Touched == false) {
@@ -580,17 +593,13 @@ int main(int argc, char **argv)
 		
 		}
 
-		if (XboxGamepadEmulation)
+		if (XboxGamepadEmuMode == XboxGamepadEnabled || (XboxGamepadEmuMode == XboxGamepadOnlyDriving && GamepadMode == MotionDrivingMode) || XboxGamepadReset) {
+			if (XboxGamepadReset) { XboxGamepadReset = false; XUSB_REPORT_INIT(&report); }
 			ret = vigem_target_x360_update(client, x360, report);
+		}
 
-		if (BackOutStateCounter > 0) { // Battery display, aiming mode display
-			if (BackOutStateCounter == 1) { 
-				GamepadOutState.LEDBlue = LEDsTemp[0]; GamepadOutState.LEDRed = LEDsTemp[1]; GamepadOutState.LEDGreen = LEDsTemp[2];
-				GamepadOutState.PlayersCount = 0;
-				GamepadSetState(GamepadOutState);
-			} 
-			BackOutStateCounter--; 
-		} 
+		// Battery level display
+		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.PlayersCount = 0; GamepadSetState(GamepadOutState); } BackOutStateCounter--; } 
 		
 		if (SkipPollCount > 0) SkipPollCount--;
 		Sleep(SleepTimeOut);

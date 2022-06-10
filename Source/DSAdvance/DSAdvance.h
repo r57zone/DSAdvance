@@ -25,6 +25,16 @@
 #define XINPUT_GAMEPAD_X                0x4000
 #define XINPUT_GAMEPAD_Y				0x8000
 
+#define XboxGamepadDisabled				0
+#define XboxGamepadEnabled				1
+#define XboxGamepadOnlyDriving			2
+
+#define GamepadDefaultMode				0
+#define MotionDrivingMode				1
+#define MotionAimingMode				2
+#define MotionAimingModeOnlyPressed		3
+#define TouchpadSticksMode				4
+
 #define	SkipPollTimeOut					15
 
 struct Gamepad {
@@ -54,7 +64,8 @@ struct EulerAngles {
 
 struct TouchpadTouch {
 	bool Touched;
-	float InitAxisX, InitAxisY, AxisX, AxisY;
+	float InitAxisX, InitAxisY;
+	float AxisX, AxisY;
 	float LastAxisX = 0, LastAxisY = 0;
 };
 
