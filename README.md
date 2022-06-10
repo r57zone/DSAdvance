@@ -19,6 +19,9 @@ In order to exit the stick emulation mode on the touchpad, need to switch to the
 By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 25%, 2 - 50%, 3 - 75%, 4 - 100%).
 
 
+To change the brightness, double-tap the brightness area. If the brightness change is blocked, then the backlight will be turned off by double clicking.
+
+
 The `PS` button simulates pressing `Win+G`, and the microphone button `Win+Alt+PrtScr`.
 
 ## Setup
