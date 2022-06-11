@@ -33,14 +33,12 @@ The `PS` button simulates pressing `Win+G`, and the microphone button `Win+Alt+P
 6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
 
 ## Possible problems
-• **Permanently changing keyboard and gamepad icons**
-
-If this bothers you, then change the aiming mode to "mouse-joystick", in the program, or use aiming, using the left trigger.
-
+• **Permanently changing keyboard and gamepad icons**<br>
+If this bothers you, then change the aiming mode to "mouse-joystick", in the program, or use aiming by left trigger.
 
 
-• **Driving don't work in DualSense games**
 
+• **Driving don't work in DualSense games**<br>
 Launch DSAdvance first, and only then the game itself, the game can give priority to the emulated Xbox controller and driving will work. You can also enable "Only driving & aiming" emulation mode so that the controller will only turn on in driving mode.
 
 ## Download
