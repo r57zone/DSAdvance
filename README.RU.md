@@ -8,7 +8,7 @@
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
 
 # Режимы работы
-Поддерживается несколько режимов работы, переключаются они нажатиями по тачпаду для DualSene и DualShock 4, а для Pro контроллеров, и JoyCon-ов на кнопки `+`, и `-`. Яркость регулируется без нажатия. 
+Поддерживается несколько режимов работы, переключаются они нажатиями по тачпаду для DualSene и DualShock 4, а для Pro контроллеров, и JoyCon-ов на кнопки `+`, и `-`.
 
 ![](https://user-images.githubusercontent.com/9499881/173076125-b3762211-74ab-4377-a6a2-a7b6c9b1a142.png)
 
