@@ -266,27 +266,32 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 	return LeftAxisX;
 }
 
-void DefMainText(int ControllerCount, int EmuMode, int AimMode) {
+void DefMainText(int ControllerCount, int EmuMode, int AimMode, bool ChangeModesWithoutPress) {
 	system("cls");
 	if (ControllerCount < 1)
 		printf("\n Connect DualSense, DualShock 4, Pro controller or Joycons and reset.");
-	printf("\n Press \"CTRL\" + \"R\" to reset controllers.");
+	printf("\n Press \"CTRL\" + \"R\" to reset controllers.\n");
+
 	if (EmuMode == XboxGamepadEnabled)
-		printf("\n Emulation: Xbox gamepad, press \"ALT\" + \"Q\" to switch.");
+		printf(" Emulation: Xbox gamepad");
 	else if (EmuMode == XboxGamepadOnlyDriving)
-		printf("\n Emulation: Xbox gamepad (only driving & mouse aiming), press \"ALT\" + \"Q\" to turn off.");
+		printf(" Emulation: Xbox gamepad (only driving & mouse aiming)");
 	else
-		printf("\n Emulation: -, press \"ALT\" + \"Q\" to turn on.");
-	if (AimMode == 1)
-		printf("\n AIM mode = mouse, press \"ALT\" + \"A\" to switch.\n");
-	else
-		printf("\n AIM mode = mouse-joystick, press \"ALT\" + \"A\" to switch.\n");
+		printf(" Emulation: -");
+	printf(", press \"ALT\" + \"Q\" to switch.\n");
+
+	if (AimMode == 1) printf(" AIM mode = mouse"); else printf(" AIM mode = mouse-joystick");
+	printf(", press \"ALT\" + \"A\" to switch.\n");
+
+	if (ChangeModesWithoutPress) printf(" Change modes without pressing the touchpad"); else printf(" Change modes by pressing the touchpad");
+	printf(", press \"ALT\" + \"W\" to switch.\n");
+
 	printf(" Press \"ALT\" + \"Escape\" to exit.\n");
 }
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.6");
+	SetConsoleTitle("DSAdvance 0.6.1");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -295,6 +300,7 @@ int main(int argc, char **argv)
 	bool InvertRightStickX = IniFile.ReadBoolean("Gamepad", "InvertRightStickX", false);
 	bool InvertRightStickY = IniFile.ReadBoolean("Gamepad", "InvertRightStickY", false);
 	int SleepTimeOut = IniFile.ReadInteger("Gamepad", "SleepTimeOut", 1);
+	bool ResetOnDefaultMode = IniFile.ReadBoolean("Gamepad", "ResetOnDefaultMode", false);
 
 	float DeadZoneLeftStickX = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickX", 0);
 	float DeadZoneLeftStickY = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickY", 0);
@@ -310,6 +316,7 @@ int main(int argc, char **argv)
 	bool LockedChangeBrightness = IniFile.ReadBoolean("Gamepad", "LockChangeBrightness", false);
 	bool LockChangeBrightness = true;
 	int BrightnessAreaPressed = 0;
+	bool ChangeModesWithoutPress = IniFile.ReadBoolean("Gamepad", "ChangeModesWithoutPress", false);
 
 	bool AimMode = IniFile.ReadBoolean("Motion", "AimMode", false);
 	float MotionWheelAngle = IniFile.ReadFloat("Motion", "WheelAngle", 75);
@@ -337,7 +344,7 @@ int main(int argc, char **argv)
 	int deviceID[4];
 	JslGetConnectedDeviceHandles(deviceID, controllersCount);
 
-	DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
+	DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress);
 
 	JOY_SHOCK_STATE InputState;
 	MOTION_STATE MotionState;
@@ -357,10 +364,10 @@ int main(int argc, char **argv)
 	while (! ( GetAsyncKeyState(VK_LMENU) & 0x8000 && GetAsyncKeyState(VK_ESCAPE) & 0x8000 ) )
 	{
 		// Dead zones
-		if ((GetAsyncKeyState(VK_F9) & 0x8000) != 0 && ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && SkipPollCount == 0)
+		if (((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && (GetAsyncKeyState(VK_F9) & 0x8000) != 0  && SkipPollCount == 0)
 		{
 			DeadZoneMode = !DeadZoneMode;
-			if (DeadZoneMode == false) DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
+			if (DeadZoneMode == false) DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress);
 			SkipPollCount = SkipPollTimeOut;
 		}
 
@@ -371,7 +378,7 @@ int main(int argc, char **argv)
 			printf("Y=%6.2f\n", abs(InputState.stickRY));
 		}
 
-		if ( ( (GetAsyncKeyState('R') & 0x8000) != 0 && ((GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0) && SkipPollCount == 0 ) || BTReset)
+		if ( ((GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 && (GetAsyncKeyState('R') & 0x8000) != 0 && SkipPollCount == 0 ) || BTReset)
 		{
 			controllersCount = JslConnectDevices();
 			JslGetConnectedDeviceHandles(deviceID, controllersCount);
@@ -381,10 +388,10 @@ int main(int argc, char **argv)
 			GamepadSetState(GamepadOutState);
 			SkipPollCount = SkipPollTimeOut;
 			BTReset = false;
-			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
+			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress);
 		}
 
-		if ((GetAsyncKeyState('Q') & 0x8000) != 0 && ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && SkipPollCount == 0) // Disable Xbox controller emulation for games that support DualSense, DualShock, Nintendo controllers or enable only driving & mouse aiming
+		if ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('Q') & 0x8000) != 0 && SkipPollCount == 0) // Disable Xbox controller emulation for games that support DualSense, DualShock, Nintendo controllers or enable only driving & mouse aiming
 		{
 			XboxGamepadEmuMode++;
 			if (XboxGamepadEmuMode > 2) XboxGamepadEmuMode = 0;
@@ -396,14 +403,21 @@ int main(int argc, char **argv)
 				ret = vigem_target_x360_register_notification(client, x360, &notification, nullptr);
 			}
 
-			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
+			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress);
 			SkipPollCount = SkipPollTimeOut;
 		}
 
-		if ((GetAsyncKeyState('A') & 0x8000) != 0 && ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && SkipPollCount == 0)
+		if ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('A') & 0x8000) != 0 && SkipPollCount == 0)
 		{
 			AimMode = !AimMode;
-			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode);
+			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress);
+			SkipPollCount = SkipPollTimeOut;
+		}
+
+		if ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('W') & 0x8000) != 0 && SkipPollCount == 0)
+		{
+			ChangeModesWithoutPress = !ChangeModesWithoutPress;
+			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress);
 			SkipPollCount = SkipPollTimeOut;
 		}
 
@@ -423,7 +437,7 @@ int main(int argc, char **argv)
 				GamepadSetState(GamepadOutState);
 			}
 
-			if (InputState.buttons & JSMASK_TOUCHPAD_CLICK) {
+			if ((InputState.buttons & JSMASK_TOUCHPAD_CLICK) || (TouchState.t0Down && ChangeModesWithoutPress)) {
 				if (TouchState.t0Y <= 0.1 && SkipPollCount == 0) { // Brightness area
 					BrightnessAreaPressed++;
 					if (BrightnessAreaPressed > 1) {
@@ -447,7 +461,8 @@ int main(int argc, char **argv)
 							GamepadMode = GamepadDefaultMode;
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0;
 							// Show battery level
-							GetBatteryInfo(); BackOutStateCounter = 40; GamepadOutState.PlayersCount = CurGamepad.BatteryLevel; GamepadSetState(GamepadOutState); // JslSetPlayerNumber(deviceID[0], 5);						
+							GetBatteryInfo(); BackOutStateCounter = 40; GamepadOutState.PlayersCount = CurGamepad.BatteryLevel; GamepadSetState(GamepadOutState); // JslSetPlayerNumber(deviceID[0], 5);
+							if (ResetOnDefaultMode) BTReset = true;
 						} else {  // Touch sticks mode
 							GamepadMode = TouchpadSticksMode;
 							JslSetRumble(0, 255, 255);
@@ -529,7 +544,7 @@ int main(int argc, char **argv)
 
 		if (GamepadMode == MotionDrivingMode) // Motion racing  [O--]
 			report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Roll), RadToDeg(AnglesOffset.Roll)) * -1, MotionWheelAngle);
-		else if (GamepadMode == MotionAimingMode || GamepadMode == MotionAimingModeOnlyPressed) { // Motion aiming  [--õ]
+		else if (GamepadMode == MotionAimingMode || GamepadMode == MotionAimingModeOnlyPressed) { // Motion aiming  [--X}]
 			float DeltaX = OffsetYPR(MotionAngles.Yaw, AnglesOffset.Yaw) * -1;
 			float DeltaY = OffsetYPR(MotionAngles.Pitch, AnglesOffset.Pitch)  * -1;
 			if (GamepadMode == MotionAimingMode || (GamepadMode == MotionAimingModeOnlyPressed && InputState.lTrigger > 0) )
