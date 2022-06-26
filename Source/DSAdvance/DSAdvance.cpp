@@ -275,7 +275,7 @@ void DefMainText(int ControllerCount, int EmuMode, int AimMode, bool ChangeModes
 	if (EmuMode == XboxGamepadEnabled)
 		printf(" Emulation: Xbox gamepad");
 	else if (EmuMode == XboxGamepadOnlyDriving)
-		printf(" Emulation: Xbox gamepad (only driving & mouse aiming)");
+		printf(" Emulation: Xbox gamepad (only driving) & mouse aiming");
 	else
 		printf(" Emulation: -");
 	printf(", press \"ALT\" + \"Q\" to switch.\n");
@@ -291,7 +291,7 @@ void DefMainText(int ControllerCount, int EmuMode, int AimMode, bool ChangeModes
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.6.1");
+	SetConsoleTitle("DSAdvance 0.6.2");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -320,10 +320,10 @@ int main(int argc, char **argv)
 
 	bool AimMode = IniFile.ReadBoolean("Motion", "AimMode", false);
 	float MotionWheelAngle = IniFile.ReadFloat("Motion", "WheelAngle", 75);
-	float MotionSensX = IniFile.ReadFloat("Motion", "MouseSensX", 3);
-	float MotionSensY = IniFile.ReadFloat("Motion", "MouseSensY", 3);
-	float JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 3) * 10.0f;
-	float JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 3) * 10.0f;
+	float MotionSensX = IniFile.ReadFloat("Motion", "MouseSensX", 3) / 10.0f;;
+	float MotionSensY = IniFile.ReadFloat("Motion", "MouseSensY", 3) / 10.0f;;
+	float JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 3);
+	float JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 3);
 
 	GamepadSearch();
 	GamepadOutState.PlayersCount = 0;
@@ -339,7 +339,7 @@ int main(int argc, char **argv)
 	int XboxGamepadEmuMode = XboxGamepadEnabled;
 	bool XboxGamepadReset = false;
 
-	bool BTReset = true; // Problems with BlueTooth, on first connection. Reconnecting fixes the problem.
+	bool GamepadReset = true; // Problems with BlueTooth, on first connection. Reset fixes this problem.
 	int controllersCount = JslConnectDevices();
 	int deviceID[4];
 	JslGetConnectedDeviceHandles(deviceID, controllersCount);
@@ -378,7 +378,7 @@ int main(int argc, char **argv)
 			printf("Y=%6.2f\n", abs(InputState.stickRY));
 		}
 
-		if ( ((GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 && (GetAsyncKeyState('R') & 0x8000) != 0 && SkipPollCount == 0 ) || BTReset)
+		if ( ((GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 && (GetAsyncKeyState('R') & 0x8000) != 0 && SkipPollCount == 0 ) || GamepadReset)
 		{
 			controllersCount = JslConnectDevices();
 			JslGetConnectedDeviceHandles(deviceID, controllersCount);
@@ -387,7 +387,7 @@ int main(int argc, char **argv)
 			GamepadSearch();
 			GamepadSetState(GamepadOutState);
 			SkipPollCount = SkipPollTimeOut;
-			BTReset = false;
+			GamepadReset = false;
 			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress);
 		}
 
@@ -399,6 +399,7 @@ int main(int argc, char **argv)
 				vigem_target_x360_unregister_notification(x360);
 				vigem_target_remove(client, x360);
 			} else if (XboxGamepadEmuMode == XboxGamepadEnabled || XboxGamepadEmuMode == XboxGamepadOnlyDriving) {
+				if (XboxGamepadEmuMode == XboxGamepadOnlyDriving) AimMode = 1;
 				ret = vigem_target_add(client, x360);
 				ret = vigem_target_x360_register_notification(client, x360, &notification, nullptr);
 			}
@@ -462,7 +463,7 @@ int main(int argc, char **argv)
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0;
 							// Show battery level
 							GetBatteryInfo(); BackOutStateCounter = 40; GamepadOutState.PlayersCount = CurGamepad.BatteryLevel; GamepadSetState(GamepadOutState); // JslSetPlayerNumber(deviceID[0], 5);
-							if (ResetOnDefaultMode) BTReset = true;
+							if (ResetOnDefaultMode && SkipPollCount == 0) { SkipPollCount = SkipPollTimeOut; GamepadReset = true; }
 						} else {  // Touch sticks mode
 							GamepadMode = TouchpadSticksMode;
 							JslSetRumble(0, 255, 255);
@@ -474,8 +475,7 @@ int main(int argc, char **argv)
 						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.5) { // Motion AIM always
 							GamepadMode = MotionAimingMode;
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
-						}
-						else { // Motion AIM with L2 trigger
+						} else { // Motion AIM with L2 trigger
 							GamepadMode = MotionAimingModeOnlyPressed;
 							GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
 						}
@@ -545,8 +545,8 @@ int main(int argc, char **argv)
 		if (GamepadMode == MotionDrivingMode) // Motion racing  [O--]
 			report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Roll), RadToDeg(AnglesOffset.Roll)) * -1, MotionWheelAngle);
 		else if (GamepadMode == MotionAimingMode || GamepadMode == MotionAimingModeOnlyPressed) { // Motion aiming  [--X}]
-			float DeltaX = OffsetYPR(MotionAngles.Yaw, AnglesOffset.Yaw) * -1;
-			float DeltaY = OffsetYPR(MotionAngles.Pitch, AnglesOffset.Pitch)  * -1;
+			float DeltaX = OffsetYPR(RadToDeg(MotionAngles.Yaw), RadToDeg(AnglesOffset.Yaw)) * -1;
+			float DeltaY = OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch))  * -1;
 			if (GamepadMode == MotionAimingMode || (GamepadMode == MotionAimingModeOnlyPressed && InputState.lTrigger > 0) )
 				if (AimMode)
 					MouseMove(RadToDeg(DeltaX) * MotionSensX, RadToDeg(DeltaY) * MotionSensY);
