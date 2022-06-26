@@ -38,13 +38,8 @@ If this bothers you, then change the aiming mode to "mouse-joystick", in the pro
 
 
 
-• **Driving don't work in DualSense games**<br>
+• **Driving don't work in games with DualSense support**<br>
 Launch DSAdvance first, and only then the game itself, the game can give priority to the emulated Xbox controller and driving will work. You can also enable "Only driving & aiming" emulation mode so that the controller will only turn on in driving mode.
-
-
-
-• **Cursor abruptly moves position**<br>
-Reset the controller to `CTRL+R` or click on the "Default" touchpad area.
 
 ## Download
 >Version for Windows 10.
