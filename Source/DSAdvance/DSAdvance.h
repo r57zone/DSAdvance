@@ -9,6 +9,12 @@
 #define SONY_DS4_BT 0x081F
 #define SONY_DS5 0x0CE6
 
+#define DS_STATUS_BATTERY_CAPACITY		0xF
+#define DS_STATUS_CHARGING				0xF0
+#define DS_STATUS_CHARGING_SHIFT		4
+#define DS_BATTERY_MAX					8
+#define DS4_USB_BATTERY_MAX				11
+
 #define XINPUT_GAMEPAD_DPAD_UP          0x0001
 #define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
 #define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
@@ -43,6 +49,7 @@ struct Gamepad {
 	bool USBConnection;
 	unsigned char BatteryMode;
 	unsigned char BatteryLevel;
+	unsigned char LEDBatteryLevel;
 	wchar_t *serial_number;
 };
 

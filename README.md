@@ -16,13 +16,13 @@ Several working modes are supported, they are switched by pressing the touchpad 
 In order to exit the stick emulation mode on the touchpad, need to switch to the default mode.
 
 
-By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 25%, 2 - 50%, 3 - 75%, 4 - 100%).
+By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%).
 
 
-To change the brightness, double-tap the brightness area. If the brightness change is blocked, then the backlight will be turned off by double clicking.
+By default, the `PS` button opens the "Xbox Game Bar" (by pressing `Win+G`). By changing the `PSMultiKey` parameter to `1`, several actions are assigned to this button: `PS + □` - decrease the volume, `PS + ○` - increase the volume, `PS + △` - open the "Xbox Game Bar", `PS + X` - microphone button (screenshot / pressing selected keyboard button).
 
 
-The `PS` button simulates pressing `Win+G`, and the microphone button `Win+Alt+PrtScr`.
+By default, the microphone button takes a screenshot of `Win+Alt+PrtScr` (for DualShock 4 enable `PSMultiKey` and press `PS + X`). By changing the `MicCustomKey` parameter to the [desired button code](https://github.com/r57zone/Half-Life-Alyx-novr/blob/master/BINDINGS.md#codes), it will be pressed.
 
 ## Setup
 1. Install [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
