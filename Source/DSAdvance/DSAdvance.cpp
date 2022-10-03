@@ -134,8 +134,6 @@ void GamepadSearch() {
 }
 
 void GetBatteryInfo() {
-	uint8_t battery_data, battery_capacity, charging_status, value;
-	int battery_status;
 	if (CurGamepad.HidHandle != NULL) {
 		if (CurGamepad.ControllerType == SONY_DUALSENSE) {
 			if (CurGamepad.USBConnection) {
