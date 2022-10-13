@@ -49,7 +49,7 @@ Launch DSAdvance first, and only then the game itself, the game can give priorit
 
 **[Download](https://github.com/r57zone/DSAdvance/releases)**
 
-## Thanks
+## Credits
 * Sony for the most advanced gamepads and investing in innovation, as well as Nintendo for promoting similar innovations in games.
 * [ViGEm](https://github.com/ViGEm) for the ability to emulate different gamepads.
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
