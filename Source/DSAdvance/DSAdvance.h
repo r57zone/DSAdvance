@@ -76,6 +76,15 @@ struct TouchpadTouch {
 	float LastAxisX = 0, LastAxisY = 0;
 };
 
+//struct _AppStatus {
+//	int ControllerCount;
+//	int EmuMode = true;
+//	int AimMode = false;
+//	bool ChangeModesWithoutPress = false;
+//	bool ShowBatteryStatus = false;
+//	bool ExternalPedals = false;
+//};
+
 // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp
 uint32_t crc_table[256] = {
 		0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,

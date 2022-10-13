@@ -2,7 +2,7 @@
 [![RU](https://user-images.githubusercontent.com/9499881/27683795-5b0fbac6-5cd8-11e7-929c-057833e01fb1.png)](https://github.com/r57zone/DSAdvance/blob/master/README.RU.md)
 
 # DSAdvance
-Продвинутая эмуляция Xbox геймпада для Sony DualSense, DualShock 4, Nintendo Pro контроллера или Joycon-ов. Поддерживается прицеливание и вождение наклонами геймпада, а также эмуляция стиков на тачпаде. Работает на базе драйвера [ViGEm](https://github.com/ViGEm).
+Продвинутая эмуляция Xbox геймпада для Sony DualSense, DualShock 4, Nintendo Pro контроллера или Joycon-ов. Поддерживается прицеливание и вождение наклонами геймпада, эмуляция стиков на тачпаде, а также [внешние педали](https://github.com/r57zone/XboxExternalPedals). Работает на базе драйвера [ViGEm](https://github.com/ViGEm).
 
 [![](https://user-images.githubusercontent.com/9499881/164945071-5b9f86dd-c396-45a5-817b-fc7068450f02.gif)](https://youtu.be/gkyqO_HuPnk)
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
@@ -25,6 +25,9 @@
 
 
 По умолчанию кнопка микрофона делает скринщот `Win+Alt+PrtScr` (для DualShock 4 включаем `PSMultiKey` и нажимаем `PS + X`). Изменив параметр `MicCustomKey` на [нужный код кнопки](https://github.com/r57zone/Half-Life-Alyx-novr/blob/master/BINDINGS.md#codes), будет производится её нажатие.
+
+
+Для подключения внешних педалей измените номер COM-порта, изменив параметр `COMPort`, в разделе `ExternalPedals`.
 
 ## Настройка
 1. Установить [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).

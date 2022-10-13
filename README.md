@@ -3,7 +3,7 @@
 &#8211; Other languages / Другие языки
 
 # DSAdvance
-Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, as well as emulation of sticks on the touchpad. Works based on the driver [ViGEm](https://github.com/ViGEm).
+Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, stick emulation on the touchpad, and [external pedals](https://github.com/r57zone/XboxExternalPedals). Works based on the driver [ViGEm](https://github.com/ViGEm).
 
 [![](https://user-images.githubusercontent.com/9499881/164945071-5b9f86dd-c396-45a5-817b-fc7068450f02.gif)](https://youtu.be/gkyqO_HuPnk)
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
@@ -23,6 +23,9 @@ By default, the `PS` button opens the "Xbox Game Bar" (by pressing `Win+G`). By 
 
 
 By default, the microphone button takes a screenshot of `Win+Alt+PrtScr` (for DualShock 4 enable `PSMultiKey` and press `PS + X`). By changing the `MicCustomKey` parameter to the [desired button code](https://github.com/r57zone/Half-Life-Alyx-novr/blob/master/BINDINGS.md#codes), it will be pressed.
+
+
+To connect external pedals, change the COM port number by changing the `COMPort` parameter in the `ExternalPedals` section.
 
 ## Setup
 1. Install [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
