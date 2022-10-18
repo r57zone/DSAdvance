@@ -36,6 +36,11 @@ To connect external pedals, change the COM port number by changing the `COMPort`
 6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
 
 ## Possible problems
+• **The game sees 2 controllers at the same time (DualSense / DualShock 4 / Nintendo Pro controller or JoyCons and Xbox)**<br>
+If the game supports a modern gamepad well, you can turn off the Xbox gamepad emulation on the `ALT` + `Q` keys, if there are problems with the game, then you can hide this gamepad using the [HidHide](https://github.com/ViGEm/HidHide) program .
+
+
+
 • **Permanently changing keyboard and gamepad icons**<br>
 If this bothers you, then change the aiming mode to "mouse-joystick", in the program, or use aiming by left trigger.
 
