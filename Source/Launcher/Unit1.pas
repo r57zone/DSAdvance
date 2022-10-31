@@ -22,6 +22,9 @@ type
     ShowHideAppBtn: TMenuItem;
     CheckAppClosedTimer: TTimer;
     XPManifest1: TXPManifest;
+    N5: TMenuItem;
+    N6: TMenuItem;
+    ProfilesBtn: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure CloseBtnClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -31,6 +34,7 @@ type
     procedure GamepadTestBtnClick(Sender: TObject);
     procedure ShowHideAppBtnClick(Sender: TObject);
     procedure CheckAppClosedTimerTimer(Sender: TObject);
+    procedure ProfilesBtnClick(Sender: TObject);
   private
     procedure DefaultHandler(var Message); override;
   protected
@@ -126,6 +130,7 @@ begin
     IDS_HIDE:='Hide';
     SetupBtn.Caption:='Setup';
     ConfigBtn.Caption:='Options';
+    ProfilesBtn.Caption:='Profiles';
     RunInBgBtn.Caption:='Run in background';
     GamepadTestBtn.Caption:='Gamepad test';
     CloseBtn.Caption:='Exit';
@@ -233,6 +238,11 @@ begin
     RunStopBtn.Click;
     CheckAppClosedTimer.Enabled:=false;
   end;
+end;
+
+procedure TMain.ProfilesBtnClick(Sender: TObject);
+begin
+  ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'Profiles\'), nil, nil, SW_SHOWNORMAL);
 end;
 
 end.

@@ -36,6 +36,13 @@ object Main: TMain
         Caption = #1055#1072#1088#1072#1084#1077#1090#1088#1099
         OnClick = ConfigBtnClick
       end
+      object N5: TMenuItem
+        Caption = '-'
+      end
+      object ProfilesBtn: TMenuItem
+        Caption = #1055#1088#1086#1092#1080#1083#1080
+        OnClick = ProfilesBtnClick
+      end
       object N1: TMenuItem
         Caption = '-'
       end
@@ -49,6 +56,9 @@ object Main: TMain
       object RunInBgBtn: TMenuItem
         Caption = #1047#1072#1087#1091#1089#1082#1072#1090#1100' '#1074' '#1092#1086#1085#1077
         OnClick = RunInBgBtnClick
+      end
+      object N6: TMenuItem
+        Caption = #1055#1088#1086#1092#1080#1083#1080' '#1076#1083#1103
       end
     end
     object N2: TMenuItem

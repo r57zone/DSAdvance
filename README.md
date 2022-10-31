@@ -3,7 +3,7 @@
 &#8211; Other languages / Другие языки
 
 # DSAdvance
-Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, stick emulation on the touchpad, and [external pedals](https://github.com/r57zone/XboxExternalPedals). Works based on the driver [ViGEm](https://github.com/ViGEm).
+Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, stick emulation on the touchpad, keyboard and mouse emulation, and [external pedals](https://github.com/r57zone/XboxExternalPedals). Works based on the driver [ViGEm](https://github.com/ViGEm).
 
 [![](https://user-images.githubusercontent.com/9499881/164945071-5b9f86dd-c396-45a5-817b-fc7068450f02.gif)](https://youtu.be/gkyqO_HuPnk)
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
@@ -16,13 +16,16 @@ Several working modes are supported, they are switched by pressing the touchpad 
 In order to exit the stick emulation mode on the touchpad, need to switch to the default mode.
 
 
-By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%).
+By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%). Also in the program for DualSense and DualShock 4 the current charge is displayed.
 
 
 By default, the `PS` button opens the "Xbox Game Bar" (by pressing `Win+G`). By changing the `PSMultiKey` parameter to `1`, several actions are assigned to this button: `PS + □` - decrease the volume, `PS + ○` - increase the volume, `PS + △` - open the "Xbox Game Bar", `PS + X` - microphone button (screenshot / pressing selected keyboard button).
 
 
-By default, the microphone button takes a screenshot of `Win+Alt+PrtScr` (for DualShock 4 enable `PSMultiKey` and press `PS + X`). By changing the `MicCustomKey` parameter to the [desired button code](https://github.com/r57zone/Half-Life-Alyx-novr/blob/master/BINDINGS.md#codes), it will be pressed.
+By default, the microphone button takes a screenshot of `Win+Alt+PrtScr` (for DualShock 4 enable `PSMultiKey` and press `PS + X`). By changing the `MicCustomKey` parameter to the [desired button value](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md), it will be pressed.
+
+
+To emulate the keyboard and mouse for older games, switch the mode to `ALT + Q` or `PS + DPAD Left / Right` and select the desired profile or [create the desired profile](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). The default profile allows you to work in Windows.
 
 
 To connect external pedals, change the COM port number by changing the `COMPort` parameter in the `ExternalPedals` section.
@@ -49,6 +52,11 @@ If this bothers you, then change the aiming mode to "mouse-joystick", in the pro
 • **Driving don't work in games with DualSense support**<br>
 Launch DSAdvance first, and only then the game itself, the game can give priority to the emulated Xbox controller and driving will work. You can also enable "Only driving & aiming" emulation mode so that the controller will only turn on in driving mode.
 
+
+
+• **Keyboard emulation does not work in some games**<br>
+In some games, such as Max Payne or Crysis 2, this does not work, the reasons are still unknown.
+
 ## Download
 >Version for Windows 10.
 
@@ -60,6 +68,7 @@ Launch DSAdvance first, and only then the game itself, the game can give priorit
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also some code from this library is used.
 * For [Reddit users](https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/) for a detailed description of the USB output packet.
+* DS4Windows[1](https://github.com/Jays2Kings/DS4Windows)[2](https://github.com/Ryochan7/DS4Windows) for the battery level.
 
 ## Feedback
 `r57zone[at]gmail.com`

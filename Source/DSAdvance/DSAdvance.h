@@ -31,9 +31,11 @@
 #define XINPUT_GAMEPAD_X                0x4000
 #define XINPUT_GAMEPAD_Y				0x8000
 
-#define XboxGamepadDisabled				0
-#define XboxGamepadEnabled				1
-#define XboxGamepadOnlyDriving			2
+#define XboxGamepadDisabled				2
+#define XboxGamepadEnabled				0
+#define XboxGamepadOnlyDriving			1
+#define KeyboardAndMouse				3
+#define XboxGamepadMaxModes				3
 
 #define GamepadDefaultMode				0
 #define MotionDrivingMode				1
@@ -42,6 +44,32 @@
 #define TouchpadSticksMode				4
 
 #define	SkipPollTimeOut					15
+
+#define WASDStickMode					0
+#define ArrowsStickMode					1
+#define MouseLookStickMode				2
+#define MouseWheelStickMode				3
+#define NumpadsStickMode				4
+
+#define VK_VOLUME_DOWN					174
+#define VK_VOLUME_UP					175
+#define VK_HIDE_APPS					501
+#define VK_DISPLAY_KEYBOARD				502
+#define VK_GAMEBAR						503
+#define VK_GAMEBAR_SCREENSHOT			504
+#define VK_MOUSE_LEFT_CLICK				505
+#define VK_MOUSE_MIDDLE_CLICK			506
+#define VK_MOUSE_RIGHT_CLICK			507
+#define VK_MOUSE_WHEEL_UP				509
+#define VK_MOUSE_WHEEL_DOWN				510
+
+bool ExternalPedalsConnected = false;
+HANDLE hSerial;
+std::thread *pArduinoReadThread = NULL;
+float PedalsValues[2];
+
+std::vector <std::string> KMProfiles;
+int ProfileIndex = 0;
 
 struct Gamepad {
 	hid_device *HidHandle;
@@ -52,6 +80,7 @@ struct Gamepad {
 	unsigned char LEDBatteryLevel;
 	wchar_t *serial_number;
 };
+Gamepad CurGamepad;
 
 struct InputOutState {
 	unsigned char LEDRed;
@@ -62,6 +91,7 @@ struct InputOutState {
 	unsigned char SmallMotor;
 	unsigned char PlayersCount;
 };
+InputOutState GamepadOutState;
 
 struct EulerAngles {
 	double Yaw;
@@ -75,6 +105,159 @@ struct TouchpadTouch {
 	float AxisX, AxisY;
 	float LastAxisX = 0, LastAxisY = 0;
 };
+
+struct Button {
+	bool PressedOnce = false;
+	bool UnpressedOnce;
+	int KeyCode = 0;
+};
+
+struct _ButtonsState{
+	Button LeftBumper;
+	Button RightBumper;
+	Button LeftTrigger;
+	Button RightTrigger;
+	Button Back;
+	Button Start;
+	Button Y;
+	Button X;
+	Button A;
+	Button B;
+	Button DPADUp;
+	Button DPADDown;
+	Button DPADLeft;
+	Button DPADRight;
+	Button LeftStick;
+	Button RightStick;
+	Button PS;
+	Button Mic;
+
+	// Multi keys
+	Button VolumeUP;
+	Button VolumeDown;
+
+	// Keyboard keys
+	Button Up;
+	Button Down;
+	Button Left;
+	Button Right;
+};
+_ButtonsState ButtonsStates;
+
+//void ButtonsSkipPoll() {
+//	if (ButtonsStates.LeftBumper.SkipPollCount > 0) ButtonsStates.LeftBumper.SkipPollCount--;
+//	if (ButtonsStates.RightBumper.SkipPollCount > 0) ButtonsStates.RightBumper.SkipPollCount--;
+//	if (ButtonsStates.LeftTrigger.SkipPollCount > 0) ButtonsStates.LeftTrigger.SkipPollCount--;
+//	if (ButtonsStates.RightTrigger.SkipPollCount > 0) ButtonsStates.RightTrigger.SkipPollCount--;
+//	if (ButtonsStates.Back.SkipPollCount > 0) ButtonsStates.Back.SkipPollCount--;
+//	if (ButtonsStates.Start.SkipPollCount > 0) ButtonsStates.Start.SkipPollCount--;
+//	if (ButtonsStates.DPADUp.SkipPollCount > 0) ButtonsStates.DPADUp.SkipPollCount--;
+//	if (ButtonsStates.DPADDown.SkipPollCount > 0) ButtonsStates.DPADDown.SkipPollCount--;
+//	if (ButtonsStates.DPADLeft.SkipPollCount > 0) ButtonsStates.DPADLeft.SkipPollCount--;
+//	if (ButtonsStates.DPADRight.SkipPollCount > 0) ButtonsStates.DPADRight.SkipPollCount--;
+//	if (ButtonsStates.Y.SkipPollCount > 0) ButtonsStates.Y.SkipPollCount--;
+//	if (ButtonsStates.X.SkipPollCount > 0) ButtonsStates.X.SkipPollCount--;
+//	if (ButtonsStates.A.SkipPollCount > 0) ButtonsStates.A.SkipPollCount--;
+//	if (ButtonsStates.B.SkipPollCount > 0) ButtonsStates.B.SkipPollCount--;
+//	if (ButtonsStates.LeftStick.SkipPollCount > 0) ButtonsStates.LeftStick.SkipPollCount--;
+//	if (ButtonsStates.RightStick.SkipPollCount > 0) ButtonsStates.RightStick.SkipPollCount--;
+//	if (ButtonsStates.PS.SkipPollCount > 0) ButtonsStates.PS.SkipPollCount--;
+//	if (ButtonsStates.Mic.SkipPollCount > 0) ButtonsStates.Mic.SkipPollCount--;
+//}
+
+void MousePress(int MouseBtn, bool ButtonPressed, Button* ButtonState) {
+	if (ButtonPressed) {
+		ButtonState->UnpressedOnce = true;
+		if (ButtonState->PressedOnce == false) {
+			if (MouseBtn == VK_MOUSE_LEFT_CLICK)
+				mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+			else if (MouseBtn == VK_MOUSE_RIGHT_CLICK)
+				mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
+			else if (MouseBtn == VK_MOUSE_MIDDLE_CLICK)
+				mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
+			else if (MouseBtn == VK_MOUSE_WHEEL_UP)
+				mouse_event(MOUSEEVENTF_WHEEL, 0, 0, -120, 0);
+			else if (MouseBtn == VK_MOUSE_WHEEL_DOWN)
+				mouse_event(MOUSEEVENTF_WHEEL, 0, 0, 120, 0);
+			ButtonState->PressedOnce = true;
+			//printf("pressed\n");
+		}
+	}
+	else if (ButtonPressed == false && ButtonState->UnpressedOnce) {
+		//printf("unpressed\n");
+		if (MouseBtn == VK_MOUSE_LEFT_CLICK)
+			mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+		else if (MouseBtn == VK_MOUSE_RIGHT_CLICK)
+			mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
+		else if (MouseBtn == VK_MOUSE_MIDDLE_CLICK)
+			mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0);
+		ButtonState->UnpressedOnce = false;
+		ButtonState->PressedOnce = false;
+	}
+}
+
+void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
+	if (KeyCode == 0) exit;
+	else if (KeyCode == VK_MOUSE_LEFT_CLICK || KeyCode == VK_MOUSE_MIDDLE_CLICK || KeyCode == VK_MOUSE_RIGHT_CLICK || 
+		KeyCode == VK_MOUSE_WHEEL_UP || KeyCode == VK_MOUSE_WHEEL_DOWN) // Move to mouse press
+		MousePress(KeyCode, ButtonPressed, ButtonState);
+	else if (ButtonPressed) {
+		ButtonState->UnpressedOnce = true;
+		if (ButtonState->PressedOnce == false) {
+
+			if (KeyCode < 500)
+				keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+			else
+				if (KeyCode == VK_HIDE_APPS) {
+					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				
+				} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
+					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(VK_CONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event('O', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				
+				} else if (KeyCode == VK_GAMEBAR) {
+					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				
+				} else if (KeyCode == VK_GAMEBAR_SCREENSHOT) {
+					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				}
+			
+			ButtonState->PressedOnce = true;
+			//printf("pressed\n");
+		}
+	} else if (ButtonPressed == false && ButtonState->UnpressedOnce) {
+		//printf("unpressed\n");
+		if (KeyCode < 500)
+			keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+		else
+			if (KeyCode == VK_HIDE_APPS) {
+				keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			
+			} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
+				keybd_event('O', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_CONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			
+			} else if (KeyCode == VK_GAMEBAR) {
+				keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			
+			} else if (KeyCode == VK_GAMEBAR_SCREENSHOT) {
+				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			}
+
+		ButtonState->UnpressedOnce = false;
+		ButtonState->PressedOnce = false;
+	}
+}
 
 //struct _AppStatus {
 //	int ControllerCount;
@@ -162,4 +345,141 @@ uint32_t crc_32(unsigned char* buf, int length) {
 		index++;
 	}
 	return result ^ 0xFFFFFFFF;
+}
+
+int KeyNameToKeyCode(std::string KeyName) {
+	std::transform(KeyName.begin(), KeyName.end(), KeyName.begin(), ::toupper);
+
+	if (KeyName == "NONE") return 0;
+
+	else if (KeyName == "MOUSE-LEFT-CLICK") return VK_MOUSE_LEFT_CLICK;
+	else if (KeyName == "MOUSE-RIGHT-CLICK") return VK_MOUSE_RIGHT_CLICK;
+	else if (KeyName == "MOUSE-MIDDLE-CLICK") return VK_MOUSE_MIDDLE_CLICK;
+	//else if (KeyName == "MOUSE-SIDE1-CLICK") return VK_XBUTTON1;
+	//else if (KeyName == "MOUSE-SIDE2-CLICK") return VK_XBUTTON2;
+	else if (KeyName == "MOUSE-WHEEL-UP") return VK_MOUSE_WHEEL_UP;
+	else if (KeyName == "MOUSE-WHEEL-DOWN") return VK_MOUSE_WHEEL_DOWN;
+
+	else if (KeyName == "ESCAPE") return VK_ESCAPE;
+	else if (KeyName == "F1") return VK_F1;
+	else if (KeyName == "F2") return VK_F2;
+	else if (KeyName == "F3") return VK_F3;
+	else if (KeyName == "F4") return VK_F4;
+	else if (KeyName == "F5") return VK_F5;
+	else if (KeyName == "F6") return VK_F6;
+	else if (KeyName == "F7") return VK_F7;
+	else if (KeyName == "F8") return VK_F8;
+	else if (KeyName == "F9") return VK_F9;
+	else if (KeyName == "F10") return VK_F10;
+	else if (KeyName == "F11") return VK_F11;
+	else if (KeyName == "F12") return VK_F12;
+
+	else if (KeyName == "~") return 192;
+	else if (KeyName == "1") return '1';
+	else if (KeyName == "2") return '2';
+	else if (KeyName == "3") return '3';
+	else if (KeyName == "4") return '4';
+	else if (KeyName == "5") return '5';
+	else if (KeyName == "6") return '6';
+	else if (KeyName == "7") return '7';
+	else if (KeyName == "8") return '8';
+	else if (KeyName == "9") return '9';
+	else if (KeyName == "0") return '0';
+	else if (KeyName == "-") return 189;
+	else if (KeyName == "=") return 187;
+
+	else if (KeyName == "TAB") return VK_TAB;
+	else if (KeyName == "CAPS-LOCK") return VK_CAPITAL;
+	else if (KeyName == "SHIFT") return VK_SHIFT;
+	else if (KeyName == "CTRL") return VK_CONTROL;
+	else if (KeyName == "WIN") return VK_LWIN;
+	else if (KeyName == "ALT") return VK_MENU;
+	else if (KeyName == "SPACE") return VK_SPACE;
+	else if (KeyName == "ENTER") return VK_RETURN;
+	else if (KeyName == "BACKSPACE") return VK_BACK;
+
+	else if (KeyName == "Q") return 'Q';
+	else if (KeyName == "W") return 'W';
+	else if (KeyName == "E") return 'E';
+	else if (KeyName == "R") return 'R';
+	else if (KeyName == "T") return 'T';
+	else if (KeyName == "Y") return 'Y';
+	else if (KeyName == "U") return 'U';
+	else if (KeyName == "I") return 'I';
+	else if (KeyName == "O") return 'O';
+	else if (KeyName == "P") return 'P';
+	else if (KeyName == "[") return '[';
+	else if (KeyName == "]") return ']';
+	else if (KeyName == "A") return 'A';
+	else if (KeyName == "S") return 'S';
+	else if (KeyName == "D") return 'D';
+	else if (KeyName == "F") return 'F';
+	else if (KeyName == "G") return 'G';
+	else if (KeyName == "H") return 'H';
+	else if (KeyName == "J") return 'J';
+	else if (KeyName == "K") return 'K';
+	else if (KeyName == "L") return 'L';
+	else if (KeyName == ";") return 186;
+	else if (KeyName == "'") return 222;
+	else if (KeyName == "\\") return 220;
+	else if (KeyName == "Z") return 'Z';
+	else if (KeyName == "X") return 'X';
+	else if (KeyName == "C") return 'C';
+	else if (KeyName == "V") return 'V';
+	else if (KeyName == "B") return 'B';
+	else if (KeyName == "N") return 'N';
+	else if (KeyName == "M") return 'M';
+	else if (KeyName == "<") return 188;
+	else if (KeyName == ">") return 190;
+	else if (KeyName == "?") return 191;
+
+	else if (KeyName == "PRINTSCREEN") return VK_SNAPSHOT;
+	else if (KeyName == "SCROLL-LOCK") return VK_SCROLL;
+	else if (KeyName == "PAUSE") return VK_PAUSE;
+	else if (KeyName == "INSERT") return VK_INSERT;
+	else if (KeyName == "HOME") return VK_HOME;
+	else if (KeyName == "PAGE-UP") return VK_NEXT;
+	else if (KeyName == "DELETE") return VK_DELETE;
+	else if (KeyName == "END") return VK_END;
+	else if (KeyName == "PAGE-DOWN") return VK_PRIOR;
+
+	else if (KeyName == "UP") return VK_UP;
+	else if (KeyName == "DOWN") return VK_DOWN;
+	else if (KeyName == "LEFT") return VK_LEFT;
+	else if (KeyName == "RIGHT") return VK_RIGHT;
+
+	else if (KeyName == "NUM-LOCK") return VK_NUMLOCK;
+	else if (KeyName == "NUMPAD0") return VK_NUMPAD0;
+	else if (KeyName == "NUMPAD1") return VK_NUMPAD1;
+	else if (KeyName == "NUMPAD2") return VK_NUMPAD2;
+	else if (KeyName == "NUMPAD3") return VK_NUMPAD3;
+	else if (KeyName == "NUMPAD4") return VK_NUMPAD4;
+	else if (KeyName == "NUMPAD5") return VK_NUMPAD5;
+	else if (KeyName == "NUMPAD6") return VK_NUMPAD6;
+	else if (KeyName == "NUMPAD7") return VK_NUMPAD7;
+	else if (KeyName == "NUMPAD8") return VK_NUMPAD8;
+	else if (KeyName == "NUMPAD9") return VK_NUMPAD9;
+
+	else if (KeyName == "NUMPAD-DIVIDE") return VK_DIVIDE;
+	else if (KeyName == "NUMPAD-MULTIPLY") return VK_MULTIPLY;
+	else if (KeyName == "NUMPAD-MINUS") return VK_SUBTRACT;
+	else if (KeyName == "NUMPAD-PLUS") return VK_ADD;
+	else if (KeyName == "NUMPAD-DEL") return VK_DECIMAL;
+
+	// Additional
+	else if (KeyName == "VOLUME-UP") return VK_VOLUME_UP;
+	else if (KeyName == "VOLUME-DOWN") return VK_VOLUME_DOWN;
+	else if (KeyName == "HIDE-APPS") return VK_HIDE_APPS;
+	else if (KeyName == "DISPLAY-KEYBOARD") return VK_DISPLAY_KEYBOARD;
+	else if (KeyName == "GAMEBAR") return VK_GAMEBAR;
+	else if (KeyName == "GAMEBAR-SCREENSHOT") return VK_GAMEBAR_SCREENSHOT;
+
+	// Special
+	else if (KeyName == "WASD") return WASDStickMode;
+	else if (KeyName == "ARROWS") return ArrowsStickMode;
+	else if (KeyName == "NUMPAD-ARROWS") return NumpadsStickMode;
+	else if (KeyName == "MOUSE-LOOK") return MouseLookStickMode;
+	else if (KeyName == "MOUSE-WHEEL") return MouseWheelStickMode;
+
+	else return 0;
 }

@@ -11,14 +11,9 @@
 #include "hidapi.h"
 #include "DSAdvance.h"
 #include <thread>
+#include <atlstr.h> 
 
-Gamepad CurGamepad;
-InputOutState GamepadOutState;
-
-bool ExternalPedalsConnected = false;
-HANDLE hSerial;
-std::thread *pArduinoReadThread = NULL;
-float PedalsValues[2];
+#pragma comment(lib, "winmm.lib")
 
 void ArduinoRead()
 {
@@ -75,7 +70,7 @@ void GamepadSetState(InputOutState OutState)
 				hid_write(CurGamepad.HidHandle, outputReport, 48);
 
 			} else { // BT
-				unsigned char outputReport[79];
+				unsigned char outputReport[79]; // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds5_rumble_light_bt)
 				memset(outputReport, 0, 79);
 
 				outputReport[0] = 0xa2;
@@ -101,24 +96,50 @@ void GamepadSetState(InputOutState OutState)
 				hid_write(CurGamepad.HidHandle, &outputReport[1], 78);
 			}
 
-		}
-		else if (CurGamepad.ControllerType == SONY_DUALSHOCK4 && CurGamepad.USBConnection) { // JoyShockLibrary rumble working for USB DS4 ??? 
-			unsigned char outputReport[31];
-			memset(outputReport, 0, 31);
+		} else if (CurGamepad.ControllerType == SONY_DUALSHOCK4) { // JoyShockLibrary rumble working for USB DS4 ??? 
+			if (CurGamepad.USBConnection) {
+				unsigned char outputReport[31];
+				memset(outputReport, 0, 31);
 
-			outputReport[0] = 0x05;
-			outputReport[1] = 0xff;
-			outputReport[4] = OutState.SmallMotor;
-			outputReport[5] = OutState.LargeMotor;
-			outputReport[6] = std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255);
-			outputReport[7] = std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255);
-			outputReport[8] = std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255);
+				outputReport[0] = 0x05;
+				outputReport[1] = 0xff;
+				outputReport[4] = OutState.SmallMotor;
+				outputReport[5] = OutState.LargeMotor;
+				outputReport[6] = std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255);
+				outputReport[7] = std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255);
+				outputReport[8] = std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255);
 
-			hid_write(CurGamepad.HidHandle, outputReport, 31);
+				hid_write(CurGamepad.HidHandle, outputReport, 31);
+			} else { // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds4_rumble_light_bt)
+				unsigned char outputReport[79];
+				memset(outputReport, 0, 79);
 
+				outputReport[0] = 0xa2;
+				outputReport[1] = 0x11;
+				outputReport[2] = 0xc0;
+				outputReport[3] = 0x20;
+				outputReport[4] = 0x07;
+				outputReport[5] = 0x00;
+				outputReport[6] = 0x00;
+
+				outputReport[7] = OutState.SmallMotor;
+				outputReport[8] = OutState.LargeMotor;
+
+				outputReport[9] = std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255);
+				outputReport[10] = std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255);
+				outputReport[11] = std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255);
+
+				outputReport[12] = 0xff;
+				outputReport[13] = 0x00;
+
+				uint32_t crc = crc_32(outputReport, 75);
+				memcpy(&outputReport[75], &crc, 4);
+
+				hid_write(CurGamepad.HidHandle, &outputReport[1], 78);
+			}
 		} else {
-			if (JslGetControllerType(0) == JS_TYPE_DS || JslGetControllerType(0) == JS_TYPE_DS4)
-				JslSetLightColour(0, (std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255) << 16) + (std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255) << 8) + std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255)); // https://github.com/CyberPlaton/_Nautilus_/blob/master/Engine/PSGamepad.cpp
+			//if (JslGetControllerType(0) == JS_TYPE_DS || JslGetControllerType(0) == JS_TYPE_DS4)
+				//JslSetLightColour(0, (std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255) << 16) + (std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255) << 8) + std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255)); // https://github.com/CyberPlaton/_Nautilus_/blob/master/Engine/PSGamepad.cpp
 			JslSetRumble(0, OutState.SmallMotor, OutState.LargeMotor); // Not working with DualSense USB connection
 		}
 	} else // Unknown controllers - Pro controller, Joy-cons
@@ -129,7 +150,7 @@ void GamepadSearch() {
 	struct hid_device_info *cur_dev;
 	cur_dev = hid_enumerate(SONY_VENDOR, 0x0);
 	while (cur_dev) {
-		if (cur_dev->product_id == SONY_DS5 || cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB)
+		if (cur_dev->product_id == SONY_DS5 || cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB || cur_dev->product_id == SONY_DS4_BT)
 		{
 			CurGamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
 			hid_set_nonblocking(CurGamepad.HidHandle, 1);
@@ -144,11 +165,14 @@ void GamepadSearch() {
 				hid_read_timeout(CurGamepad.HidHandle, buf, 64, 100);
 				if (buf[0] == 0x31)
 					CurGamepad.USBConnection = false;
-			}
-			else if (cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB)
-			{
+			
+			} else if (cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB) {
 				CurGamepad.ControllerType = SONY_DUALSHOCK4;
 				CurGamepad.USBConnection = true;
+			
+			} else if (cur_dev->product_id == SONY_DS4_BT) {
+				CurGamepad.ControllerType = SONY_DUALSHOCK4;
+				CurGamepad.USBConnection = false;
 			}
 			break;
 		}
@@ -161,29 +185,30 @@ void GamepadSearch() {
 void GetBatteryInfo() {
 	if (CurGamepad.HidHandle != NULL) {
 		if (CurGamepad.ControllerType == SONY_DUALSENSE) {
+			unsigned char buf[64];
+			memset(buf, 0, 64);
+			hid_read(CurGamepad.HidHandle, buf, 64);
 			if (CurGamepad.USBConnection) {
-				unsigned char buf[64];
-				memset(buf, 0, 64);
-				hid_read(CurGamepad.HidHandle, buf, 64);
 				CurGamepad.LEDBatteryLevel = (buf[53] & 0x0f) / 2 + 1; // "+1" for the LED to be responsible for 25%. Each unit of battery data corresponds to 10%, 0 = 0 - 9 % , 1 = 10 - 19 % , .. and 10 = 100 %
 				//??? in charge mode, need to show animation within a few seconds 
 				CurGamepad.BatteryMode = ((buf[52] & 0x0f) & DS_STATUS_CHARGING) >> DS_STATUS_CHARGING_SHIFT; // 0x0 - discharging, 0x1 - full, 0x2 - charging, 0xa & 0xb - not-charging, 0xf - unknown
 				CurGamepad.BatteryLevel = (buf[53] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX;
 			} else { // BT
-				unsigned char buf[64];
-				memset(buf, 0, 64);
-				hid_read(CurGamepad.HidHandle, buf, 64);
 				CurGamepad.LEDBatteryLevel = (buf[54] & 0x0f) / 2 + 1;
 				CurGamepad.BatteryMode = ((buf[53] & 0x0f) & DS_STATUS_CHARGING) >> DS_STATUS_CHARGING_SHIFT;
 				CurGamepad.BatteryLevel = (buf[54] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX;
 			}
 			if (CurGamepad.LEDBatteryLevel > 4) // min(data * 10 + 5, 100);
 				CurGamepad.LEDBatteryLevel = 4;
-		} //else if (CurGamepad.ControllerType == SONY_DS4_USB || CurGamepad.ControllerType == SONY_DS4_V2_USB) {
-		//	// max battery level is DS4_USB_BATTERY_MAX
-		//} else if (CurGamepad.ControllerType == SONY_DS4_BT) {
-		//	// max battery level is DS_BATTERY_MAX
-		//}
+		} else if (CurGamepad.ControllerType == SONY_DUALSHOCK4) {
+			unsigned char buf[64];
+			memset(buf, 0, 64);
+			hid_read(CurGamepad.HidHandle, buf, 64);
+			if (CurGamepad.USBConnection)
+				CurGamepad.BatteryLevel = (buf[30] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS4_USB_BATTERY_MAX;
+			else
+				CurGamepad.BatteryLevel = (buf[31] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX; // offset 1?
+		}
 	}	
 }
 
@@ -248,8 +273,7 @@ float DeadZoneAxis(float StickAxis, float DeadZoneValue) // Possibly wrong
 		StickAxis -= DeadZoneValue;
 		if (StickAxis < 0)
 			StickAxis = 0;
-	}
-	else if (StickAxis < 0) {
+	} else if (StickAxis < 0) {
 		StickAxis += DeadZoneValue;
 		if (StickAxis > 0)
 			StickAxis = 0;
@@ -297,13 +321,72 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 	return LeftAxisX;
 }
 
-void DefMainText(int ControllerCount, int EmuMode, int AimMode, bool ChangeModesWithoutPress, bool ShowBatteryStatus, bool ExternalPedals) {
+int KMLeftStickMode = 0;
+int KMRightStickMode = 0;
+float KMJoySensX = 0;
+float KMJoySensY = 0;
+void KMStickMode(float StickX, float StickY, int Mode) {
+	if (Mode == WASDStickMode) {
+		KeyPress('W', StickY > 0.2, &ButtonsStates.Up);
+		KeyPress('S', StickY < -0.2, &ButtonsStates.Down);
+		KeyPress('A', StickX < -0.2, &ButtonsStates.Left);
+		KeyPress('D', StickX > 0.2, &ButtonsStates.Right);
+	} else if (Mode == ArrowsStickMode) {
+		KeyPress(VK_UP, StickY > 0.2, &ButtonsStates.Up);
+		KeyPress(VK_DOWN, StickY < -0.2, &ButtonsStates.Down);
+		KeyPress(VK_RIGHT, StickX > 0.2, &ButtonsStates.Right);
+		KeyPress(VK_LEFT, StickX < -0.2, &ButtonsStates.Left);
+	} else if (Mode == MouseLookStickMode)
+		MouseMove(StickX * KMJoySensX, -StickY * KMJoySensY);
+	else if (Mode == MouseWheelStickMode)
+		mouse_event(MOUSEEVENTF_WHEEL, 0, 0, StickY * 50, 0);
+	else if (Mode == NumpadsStickMode) {
+		KeyPress(VK_NUMPAD8, StickY > 0.2, &ButtonsStates.Up);
+		KeyPress(VK_NUMPAD2, StickY < -0.2, &ButtonsStates.Down);
+		KeyPress(VK_NUMPAD4, StickX < -0.2, &ButtonsStates.Left);
+		KeyPress(VK_NUMPAD6, StickX > 0.2, &ButtonsStates.Right);
+	}
+}
+
+void LoadKMProfile(std::string ProfileFile) {
+	CIniReader IniFile("Profiles\\" + ProfileFile);
+
+	ButtonsStates.LeftTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "LEFT-TRIGGER", "RIGHT-MOUSE-CLICK"));
+	ButtonsStates.RightTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "RIGHT-TRIGGER", "LEFT-MOUSE-CLICK"));
+
+	ButtonsStates.LeftBumper.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "L1-LB", "F"));
+	ButtonsStates.RightBumper.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "R1-RB", "G"));
+
+	ButtonsStates.Back.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "BACK", "ESCAPE"));
+	ButtonsStates.Start.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "START", "ENTER"));
+
+	ButtonsStates.DPADUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-UP", "1"));
+	ButtonsStates.DPADDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-DOWN", "4"));
+	ButtonsStates.DPADLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-LEFT", "2"));
+	ButtonsStates.DPADRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-RIGHT", "3"));
+
+	ButtonsStates.Y.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "TRIANGLE-Y", "E"));
+	ButtonsStates.X.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "SQUARE-X", "R"));
+	ButtonsStates.A.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "CROSS-A", "SPACE"));
+	ButtonsStates.B.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "CIRCLE-B", "CTRL"));
+
+	ButtonsStates.LeftStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "LEFT-STICK-CLICK", "NONE"));
+	ButtonsStates.RightStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "RIGHT-STICK-CLICK", "NONE"));
+
+	KMLeftStickMode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "LEFT-STICK", "WASD"));
+	KMRightStickMode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "RIGHT-STICK", "MOUSE-LOOK"));
+
+	KMJoySensX = IniFile.ReadFloat("MOUSE", "SensitivityX", 100) * 0.22;
+	KMJoySensY = IniFile.ReadFloat("MOUSE", "SensitivityY", 100) * 0.22;
+}
+
+void MainText(int ControllerCount, int EmuMode, int AimMode, bool ChangeModesWithoutPress, bool ShowBatteryStatus, bool ExternalPedals) {
 	system("cls");
 	if (ControllerCount < 1)
 		printf("\n Connect DualSense, DualShock 4, Pro controller or Joycons and reset.");
 	printf("\n Press \"CTRL\" + \"R\" to reset controllers.\n");
 	
-	if (ControllerCount > 0 && ShowBatteryStatus && CurGamepad.ControllerType == SONY_DUALSENSE) {
+	if (ControllerCount > 0 && ShowBatteryStatus && (CurGamepad.ControllerType == SONY_DUALSENSE || CurGamepad.ControllerType == SONY_DUALSHOCK4)) {
 		printf(" Gamepad mode:");
 		if (CurGamepad.USBConnection) printf(" wired"); else printf(" wireless (not recomended for gyro aiming)");
 		printf(", battery charge: %d\%%.", CurGamepad.BatteryLevel);
@@ -313,12 +396,14 @@ void DefMainText(int ControllerCount, int EmuMode, int AimMode, bool ChangeModes
 	}
 
 	if (EmuMode == XboxGamepadEnabled)
-		printf(" Emulation: Xbox gamepad");
+		printf(" Emulation: Xbox gamepad.\n");
 	else if (EmuMode == XboxGamepadOnlyDriving)
-		printf(" Emulation: Xbox gamepad (only driving) & mouse aiming");
-	else
-		printf(" Emulation: -");
-	printf(", press \"ALT\" + \"Q\" to switch.\n");
+		printf(" Emulation: Xbox gamepad (only driving) & mouse aiming.\n");
+	else if (EmuMode == XboxGamepadDisabled)
+		printf(" Emulation: Only mouse (for mouse aiming).\n");
+	else if (EmuMode == KeyboardAndMouse)
+		printf_s(" Emulation: Keyboard and mouse (%s). Change profiles with \"Up\" and \"Down\" keys.\n", KMProfiles[ProfileIndex].c_str());
+	printf(" Press \"ALT\" + \"Q\" or \"PS\" + \"DPAD Left / Right\" to switch emulation.\n");
 
 	if (ExternalPedals)
 		printf(" External pedals connected.\n");
@@ -334,7 +419,7 @@ void DefMainText(int ControllerCount, int EmuMode, int AimMode, bool ChangeModes
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.7");
+	SetConsoleTitle("DSAdvance 0.8");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -369,7 +454,7 @@ int main(int argc, char **argv)
 	float JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 3);
 
 	bool PSMultiKey = !IniFile.ReadBoolean("Gamepad", "PSMultiKey", false);
-	int MicCustomKey = IniFile.ReadInteger("Gamepad", "MicCustomKey", 0);
+	int MicCustomKey = KeyNameToKeyCode(IniFile.ReadString("Gamepad", "MicCustomKey", "NONE"));
 
 	int ExternalPedalsCOMPort = IniFile.ReadInteger("ExternalPedals", "COMPort", 0);
 	if (ExternalPedalsCOMPort != 0) {
@@ -400,6 +485,24 @@ int main(int argc, char **argv)
 		}
 	}
 
+	TCHAR ChangeEmuModeWav[MAX_PATH] = { 0 };
+	GetSystemWindowsDirectory(ChangeEmuModeWav, sizeof(ChangeEmuModeWav));
+	_tcscat_s(ChangeEmuModeWav, sizeof(ChangeEmuModeWav), _T("\\Media\\Windows Pop-up Blocked.wav"));
+
+	// Search profiles
+	WIN32_FIND_DATA ffd;
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+	hFind = FindFirstFile("Profiles\\*.ini", &ffd);
+	KMProfiles.push_back("Desktop.ini");
+	KMProfiles.push_back("FPS.ini");
+	if (hFind != INVALID_HANDLE_VALUE) {
+		do {
+			if (strcmp(ffd.cFileName, "Desktop.ini") && strcmp(ffd.cFileName, "FPS.ini")) // Already added to the top of the list
+				KMProfiles.push_back(ffd.cFileName);
+		} while (FindNextFile(hFind, &ffd) != 0);
+		FindClose(hFind);
+	}
+
 	GamepadSearch();
 	GamepadOutState.PlayersCount = 0;
 	GamepadOutState.LEDBlue = 255;
@@ -419,7 +522,7 @@ int main(int argc, char **argv)
 	int deviceID[4];
 	JslGetConnectedDeviceHandles(deviceID, controllersCount);
 
-	DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
+	MainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
 
 	JOY_SHOCK_STATE InputState;
 	MOTION_STATE MotionState;
@@ -439,10 +542,10 @@ int main(int argc, char **argv)
 	while (! ( GetAsyncKeyState(VK_LMENU) & 0x8000 && GetAsyncKeyState(VK_ESCAPE) & 0x8000 ) )
 	{
 		// Dead zones
-		if (((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && (GetAsyncKeyState(VK_F9) & 0x8000) != 0  && SkipPollCount == 0)
+		if (((GetAsyncKeyState(VK_MENU) & 0x8000) != 0) && (GetAsyncKeyState(VK_F9) & 0x8000) != 0 && SkipPollCount == 0)
 		{
 			DeadZoneMode = !DeadZoneMode;
-			if (DeadZoneMode == false) DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
+			if (DeadZoneMode == false) MainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
 			SkipPollCount = SkipPollTimeOut;
 		}
 
@@ -463,14 +566,18 @@ int main(int argc, char **argv)
 			GamepadSetState(GamepadOutState);
 			BTReset = false;
 			SkipPollCount = SkipPollTimeOut;
-			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
+			MainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
 		}
 
-		if ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('Q') & 0x8000) != 0 && SkipPollCount == 0) // Disable Xbox controller emulation for games that support DualSense, DualShock, Nintendo controllers or enable only driving & mouse aiming
+		if ((((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('Q') & 0x8000) != 0) || ((InputState.buttons & JSMASK_LEFT || InputState.buttons & JSMASK_RIGHT) && InputState.buttons & JSMASK_PS)) && SkipPollCount == 0) // Disable Xbox controller emulation for games that support DualSense, DualShock, Nintendo controllers or enable only driving & mouse aiming
 		{
-			XboxGamepadEmuMode++;
-			if (XboxGamepadEmuMode > 2) XboxGamepadEmuMode = 0;
-			if (XboxGamepadEmuMode == XboxGamepadDisabled) {
+			int LastGamepadEmuMode = XboxGamepadEmuMode;
+			if (InputState.buttons & JSMASK_LEFT) {
+				if (XboxGamepadEmuMode == 0) XboxGamepadEmuMode = XboxGamepadMaxModes; else XboxGamepadEmuMode--;
+			} else
+				XboxGamepadEmuMode++;
+			if (XboxGamepadEmuMode > XboxGamepadMaxModes) XboxGamepadEmuMode = 0;
+			if (XboxGamepadEmuMode == XboxGamepadDisabled || XboxGamepadEmuMode == KeyboardAndMouse) {
 				vigem_target_x360_unregister_notification(x360);
 				vigem_target_remove(client, x360);
 			} else if (XboxGamepadEmuMode == XboxGamepadEnabled || XboxGamepadEmuMode == XboxGamepadOnlyDriving) {
@@ -478,24 +585,44 @@ int main(int argc, char **argv)
 				ret = vigem_target_add(client, x360);
 				ret = vigem_target_x360_register_notification(client, x360, &notification, nullptr);
 			}
+			
+			SkipPollCount = 30; //SkipPollTimeOut; -- 15 is seems not enough to enable or disable Xbox virtual gamepad
 
-			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
-			SkipPollCount = SkipPollTimeOut;
+			if (XboxGamepadEmuMode == KeyboardAndMouse)
+				LoadKMProfile(KMProfiles[ProfileIndex]);
+
+			if ( ( (LastGamepadEmuMode == XboxGamepadEnabled && XboxGamepadEmuMode == XboxGamepadOnlyDriving) || (LastGamepadEmuMode == XboxGamepadOnlyDriving && XboxGamepadEmuMode == XboxGamepadEnabled) ) ||
+				 ( (LastGamepadEmuMode == XboxGamepadDisabled && XboxGamepadEmuMode == KeyboardAndMouse) || (LastGamepadEmuMode == KeyboardAndMouse && XboxGamepadEmuMode == XboxGamepadDisabled) ) )
+				PlaySound(ChangeEmuModeWav, NULL, SND_ASYNC);
+
+			MainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
 		}
 
 		if ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('A') & 0x8000) != 0 && SkipPollCount == 0)
 		{
 			AimMode = !AimMode;
-			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
+			MainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
 			SkipPollCount = SkipPollTimeOut;
 		}
 
 		if ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('W') & 0x8000) != 0 && SkipPollCount == 0)
 		{
 			ChangeModesWithoutPress = !ChangeModesWithoutPress;
-			DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
+			MainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
 			SkipPollCount = SkipPollTimeOut;
 		}
+
+		if (XboxGamepadEmuMode == KeyboardAndMouse && SkipPollCount == 0)
+			if ( (InputState.buttons & JSMASK_PS && (InputState.buttons & JSMASK_UP || InputState.buttons & JSMASK_DOWN)) ||
+				( ((GetAsyncKeyState(VK_UP) & 0x8000) != 0 || (GetAsyncKeyState(VK_DOWN) & 0x8000) != 0) && GetConsoleWindow() == GetForegroundWindow() ) )
+			{
+				if ((GetAsyncKeyState(VK_UP) & 0x8000) != 0 || InputState.buttons & JSMASK_UP) if (ProfileIndex > 0) ProfileIndex--; else ProfileIndex = KMProfiles.size() - 1;
+				if ((GetAsyncKeyState(VK_DOWN) & 0x8000 || InputState.buttons & JSMASK_DOWN) != 0) if (ProfileIndex < KMProfiles.size() - 1) ProfileIndex++; else ProfileIndex = 0;
+				MainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected);
+				SkipPollCount = SkipPollTimeOut;
+				LoadKMProfile(KMProfiles[ProfileIndex]);
+				PlaySound(ChangeEmuModeWav, NULL, SND_ASYNC);
+			}
 
 		XUSB_REPORT_INIT(&report);
 
@@ -538,11 +665,11 @@ int main(int argc, char **argv)
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0;
 							// Show battery level
 							GetBatteryInfo(); BackOutStateCounter = 40; GamepadOutState.PlayersCount = CurGamepad.LEDBatteryLevel; GamepadSetState(GamepadOutState); // JslSetPlayerNumber(deviceID[0], 5);
-							DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, true, ExternalPedalsConnected);
+							MainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, true, ExternalPedalsConnected);
 							if (ResetOnDefaultMode && SkipPollCount == 0) { SkipPollCount = SkipPollTimeOut; BTReset = true; }
 						} else {  // Touch sticks mode
 							GamepadMode = TouchpadSticksMode;
-							JslSetRumble(0, 255, 255);
+							//JslSetRumble(0, 255, 255);
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
 						}
 
@@ -582,7 +709,6 @@ int main(int argc, char **argv)
 				report.bRightTrigger = PedalsValues[1] * 255;
 		}
 
-
 		if (JslGetControllerType(deviceID[0]) == JS_TYPE_DS || JslGetControllerType(deviceID[0]) == JS_TYPE_DS4) { 
 			report.wButtons |= InputState.buttons & JSMASK_SHARE ? XINPUT_GAMEPAD_BACK : 0;
 			report.wButtons |= InputState.buttons & JSMASK_OPTIONS ? XINPUT_GAMEPAD_START : 0;
@@ -596,8 +722,8 @@ int main(int argc, char **argv)
 		report.wButtons |= InputState.buttons & JSMASK_RCLICK ? XINPUT_GAMEPAD_RIGHT_THUMB : 0;
 		report.wButtons |= InputState.buttons & JSMASK_UP ? XINPUT_GAMEPAD_DPAD_UP : 0;
 		report.wButtons |= InputState.buttons & JSMASK_DOWN ? XINPUT_GAMEPAD_DPAD_DOWN : 0;
-		report.wButtons |= InputState.buttons & JSMASK_LEFT ? XINPUT_GAMEPAD_DPAD_LEFT : 0;
-		report.wButtons |= InputState.buttons & JSMASK_RIGHT ? XINPUT_GAMEPAD_DPAD_RIGHT : 0;
+		report.wButtons |= InputState.buttons & JSMASK_LEFT && !(InputState.buttons & JSMASK_PS) ? XINPUT_GAMEPAD_DPAD_LEFT : 0;
+		report.wButtons |= InputState.buttons & JSMASK_RIGHT && !(InputState.buttons & JSMASK_PS) ? XINPUT_GAMEPAD_DPAD_RIGHT : 0;
 		report.wButtons |= InputState.buttons & JSMASK_N && !(InputState.buttons & JSMASK_PS) ? XINPUT_GAMEPAD_Y : 0;
 		report.wButtons |= InputState.buttons & JSMASK_W && !(InputState.buttons & JSMASK_PS) ? XINPUT_GAMEPAD_X : 0;
 		report.wButtons |= InputState.buttons & JSMASK_S && !(InputState.buttons & JSMASK_PS) ? XINPUT_GAMEPAD_A : 0;
@@ -609,39 +735,14 @@ int main(int argc, char **argv)
 			if (InputState.buttons & JSMASK_PLUS && SkipPollCount == 0) { if (GamepadMode == 0 || GamepadMode == 1) GamepadMode = LastAIMProCtrlMode; else if (GamepadMode == 2) { GamepadMode = 3; LastAIMProCtrlMode = 3; } else { GamepadMode = 2; LastAIMProCtrlMode = 2; } SkipPollCount = SkipPollTimeOut; }
 		} 
 
-		if (InputState.buttons & JSMASK_PS && SkipPollCount == 0) {
-			if (InputState.buttons & JSMASK_N || PSMultiKey) { 
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				SkipPollCount = SkipPollTimeOut;
-			} else if (InputState.buttons & JSMASK_W) {
-				keybd_event(174, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(174, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				SkipPollCount = 12;
-			} else if (InputState.buttons & JSMASK_E) {
-				keybd_event(175, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(175, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				SkipPollCount = 12;
-			} else if (InputState.buttons & JSMASK_S) // DualShock 4
-				InputState.buttons |= JSMASK_MIC;
-		}
-			
-		if ((InputState.buttons & JSMASK_MIC) && SkipPollCount == 0) {
-			if (MicCustomKey == 0) {
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			} else {
-				keybd_event(MicCustomKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(MicCustomKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			}
-			SkipPollCount = SkipPollTimeOut;
-		}
+		// DualShock 4 screenshot
+		InputState.buttons |= PSMultiKey && InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_S ? JSMASK_MIC : 0;
+
+		// GameBar & multi keys
+		KeyPress(VK_GAMEBAR, InputState.buttons & JSMASK_PS && (InputState.buttons & JSMASK_N || PSMultiKey), &ButtonsStates.PS);
+		KeyPress(VK_VOLUME_DOWN, PSMultiKey == false && InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_W, &ButtonsStates.VolumeDown);
+		KeyPress(VK_VOLUME_UP, PSMultiKey == false && InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_E, &ButtonsStates.VolumeUP);
+		KeyPress(VK_GAMEBAR_SCREENSHOT, InputState.buttons & JSMASK_MIC, &ButtonsStates.Mic);
 
 		if (GamepadMode == MotionDrivingMode) // Motion racing  [O--]
 			report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Roll), RadToDeg(AnglesOffset.Roll)) * -1, MotionWheelAngle);
@@ -709,6 +810,34 @@ int main(int argc, char **argv)
 		
 		}
 
+		// Keyboard and mouse mode
+		if (XboxGamepadEmuMode == KeyboardAndMouse && !(InputState.buttons & JSMASK_PS)) {
+			KeyPress(ButtonsStates.LeftTrigger.KeyCode, InputState.lTrigger > 0.2, &ButtonsStates.LeftTrigger);
+			KeyPress(ButtonsStates.RightTrigger.KeyCode, InputState.rTrigger > 0.2, &ButtonsStates.RightTrigger);
+
+			KeyPress(ButtonsStates.LeftBumper.KeyCode, InputState.buttons & JSMASK_L, &ButtonsStates.LeftBumper);
+			KeyPress(ButtonsStates.RightBumper.KeyCode, InputState.buttons & JSMASK_R, &ButtonsStates.RightBumper);
+
+			KeyPress(ButtonsStates.Back.KeyCode, InputState.buttons & JSMASK_SHARE || InputState.buttons & JSMASK_CAPTURE, &ButtonsStates.Back);
+			KeyPress(ButtonsStates.Start.KeyCode, InputState.buttons & JSMASK_OPTIONS || InputState.buttons & JSMASK_HOME, &ButtonsStates.Start);
+
+			KeyPress(ButtonsStates.DPADUp.KeyCode, InputState.buttons & JSMASK_UP, &ButtonsStates.DPADUp);
+			KeyPress(ButtonsStates.DPADDown.KeyCode, InputState.buttons & JSMASK_DOWN, &ButtonsStates.DPADDown);
+			KeyPress(ButtonsStates.DPADLeft.KeyCode, InputState.buttons & JSMASK_LEFT, &ButtonsStates.DPADLeft);
+			KeyPress(ButtonsStates.DPADRight.KeyCode, InputState.buttons & JSMASK_RIGHT, &ButtonsStates.DPADRight);
+
+			KeyPress(ButtonsStates.Y.KeyCode, InputState.buttons & JSMASK_N, &ButtonsStates.Y);
+			KeyPress(ButtonsStates.A.KeyCode, InputState.buttons & JSMASK_S, &ButtonsStates.A);
+			KeyPress(ButtonsStates.X.KeyCode, InputState.buttons & JSMASK_W, &ButtonsStates.X);
+			KeyPress(ButtonsStates.B.KeyCode, InputState.buttons & JSMASK_E, &ButtonsStates.B);
+
+			KeyPress(ButtonsStates.LeftStick.KeyCode, InputState.buttons & JSMASK_LCLICK, &ButtonsStates.LeftStick);
+			KeyPress(ButtonsStates.RightStick.KeyCode, InputState.buttons & JSMASK_RCLICK, &ButtonsStates.RightStick);
+
+			KMStickMode(DeadZoneAxis(InputState.stickLX, DeadZoneLeftStickX), DeadZoneAxis(InputState.stickLY, DeadZoneLeftStickY), KMLeftStickMode);
+			KMStickMode(DeadZoneAxis(InputState.stickRX, DeadZoneRightStickX), DeadZoneAxis(InputState.stickRY, DeadZoneRightStickY), KMRightStickMode);
+		}
+
 		if (LastConnectionType != CurGamepad.USBConnection) BTReset = true; LastConnectionType = CurGamepad.USBConnection; // Reset if the connection has been changed. Fixes BT bug.
 
 		if (XboxGamepadEmuMode == XboxGamepadEnabled || (XboxGamepadEmuMode == XboxGamepadOnlyDriving && GamepadMode == MotionDrivingMode) || XboxGamepadReset) {
@@ -717,9 +846,10 @@ int main(int argc, char **argv)
 		}
 
 		// Battery level display
-		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.PlayersCount = 0; GamepadSetState(GamepadOutState); DefMainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected); } BackOutStateCounter--; }
+		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.PlayersCount = 0; GamepadSetState(GamepadOutState); MainText(controllersCount, XboxGamepadEmuMode, AimMode, ChangeModesWithoutPress, false, ExternalPedalsConnected); } BackOutStateCounter--; }
 		
 		if (SkipPollCount > 0) SkipPollCount--;
+		//ButtonsSkipPoll();
 		Sleep(SleepTimeOut);
 	}
 
