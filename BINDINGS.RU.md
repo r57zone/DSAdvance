@@ -10,9 +10,14 @@
 Движение мыши | `MOUSE-LOOK`
 Прокрутка колесика мыши | `MOUSE-WHEEL`
 
-## Клавиатура
+## Клавиатура и мышь
 Название клавиши | Значение
 ------------ | -------------
+MOUSE LEFT CLICK | `MOUSE-LEFT-CLICK`
+MOUSE RIGHT CLICK | `MOUSE-RIGHT-CLICK`
+MOUSE MIDDLE CLICK | `MOUSE-MIDDLE-CLICK`
+MOUSE WHEEL UP | `MOUSE-WHEEL-UP`
+MOUSE WHEEL DOWN | `MOUSE-WHEEL-DOWN`
 ESCAPE | `ESCAPE`
 F1 | `F1`
 F2 | `F2`

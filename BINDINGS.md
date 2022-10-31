@@ -10,9 +10,14 @@ Pressing NUMPADs arrows | NUMPAD-ARROWS
 Mouse movement | MOUSE-LOOK
 Mouse wheel scrolling | MOUSE-WHEEL
 
-## Keyboard
+## Keyboard and mouse
 Key name | Value
 ------------ | -------------
+MOUSE LEFT CLICK | `MOUSE-LEFT-CLICK`
+MOUSE RIGHT CLICK | `MOUSE-RIGHT-CLICK`
+MOUSE MIDDLE CLICK | `MOUSE-MIDDLE-CLICK`
+MOUSE WHEEL UP | `MOUSE-WHEEL-UP`
+MOUSE WHEEL DOWN | `MOUSE-WHEEL-DOWN`
 ESCAPE | `ESCAPE`
 F1 | `F1`
 F2 | `F2`
