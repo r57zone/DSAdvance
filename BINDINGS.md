@@ -45,8 +45,10 @@ BACKSPACE | `BACKSPACE`
 7 | `7`
 8 | `8`
 9 | `9`
+Key name | Value
+------------ | -------------
 0 | `0`
-- | `-`
+\- | `-`
 = + | `=`
 a A | `A`
 b B | `B`
@@ -77,6 +79,8 @@ z Z | `Z`
 [ | `[`
 ] | `]`
 ; : | `;`
+Key name | Value
+------------ | -------------
 ‘ « | `'`
 \ | `\`
 PRINTSCREEN | `PRINTSCREEN`
