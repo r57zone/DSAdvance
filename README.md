@@ -9,7 +9,7 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
 
 # Working modes
-Several working modes are supported, they are switched by pressing the touchpad for DualSene & DualShock 4 and for Pro controllers & Joy-Cons to the `+`, and `-` buttons.
+Several working modes are supported, they are switched by pressing the touchpad for DualSene & DualShock 4 and for Pro controllers & Joy-Cons to the `Capture`, and `Home` buttons.
 
 ![](https://user-images.githubusercontent.com/9499881/173076115-3f520a03-41ff-4da9-a7a5-a3de405c779f.png)
 
@@ -68,7 +68,7 @@ In some games, such as Max Payne or Crysis 2, this does not work, the reasons ar
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also some code from this library is used.
 * For [Reddit users](https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/) for a detailed description of the USB output packet.
-* DS4Windows[1](https://github.com/Jays2Kings/DS4Windows)[2](https://github.com/Ryochan7/DS4Windows) for the battery level.
+* DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) for the battery level.
 
 ## Feedback
 `r57zone[at]gmail.com`

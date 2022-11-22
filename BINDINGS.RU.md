@@ -84,6 +84,9 @@ z Z | `Z`
 ; : | `:`
 ‘ « | `APOSTROPHE`
 \ | `\`
+< | `<`
+\> | `>`
+? | `?`
 PRINTSCREEN | `PRINTSCREEN`
 SCROLL-LOCK | `SCROLL-LOCK`
 ПАУЗА | `PAUSE`
@@ -115,11 +118,15 @@ NUMPAD + | `NUMPAD-PLUS`
 NUMPAD DEL | `NUMPAD-DEL`
 
 ## Дополнительные кнопки
-Название клавиши | Значение
+Описание | Значение
 ------------ | -------------
-VOLUME UP | `VOLUME-UP`
-VOLUME DOWN | `VOLUME-DOWN`
-HIDE APPS | `HIDE-APPS`
-DISPLAY KEYBOARD | `DISPLAY-KEYBOARD`
-GAMEBAR | `GAMEBAR`
-GAMEBAR SCREENSHOT | `GAMEBAR-SCREENSHOT`
+`VOLUME-UP` | Увеличить громкость
+`VOLUME-DOWN` | Уменьшить громкость
+`VOLUME-MUTE` | Включить / выключить звук
+`HIDE-APPS` | Свернуть все приложения
+`SWITCH-APP` | Показать все окна
+`DISPLAY-KEYBOARD` | Вывести / спрятать экранную клавиатуру
+`GAMEBAR` | Игровая панель
+`GAMEBAR-SCREENSHOT` | Скриншот игровой панели
+`FULLSCREEN` | Переключиться в полноэкранный режим `ALT + ENTER`
+`FULLSCREEN-PLUS` | Переключиться в полноэкранный режим `ALT + ENTER` + `F` для сервисов YouTube и Twitch.

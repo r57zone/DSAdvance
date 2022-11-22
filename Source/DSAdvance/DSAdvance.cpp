@@ -1,4 +1,4 @@
-// DS Advance
+// DSAdvance by r57zone
 // https://github.com/r57zone/DSAdvance
 
 #include <windows.h>
@@ -148,6 +148,8 @@ void GamepadSetState(InputOutState OutState)
 
 void GamepadSearch() {
 	struct hid_device_info *cur_dev;
+
+	// Sony controllers
 	cur_dev = hid_enumerate(SONY_VENDOR, 0x0);
 	while (cur_dev) {
 		if (cur_dev->product_id == SONY_DS5 || cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB || cur_dev->product_id == SONY_DS4_BT)
@@ -178,6 +180,21 @@ void GamepadSearch() {
 		}
 		cur_dev = cur_dev->next;
 	}
+
+	// Sony compatible controllers
+	cur_dev = hid_enumerate(BROOK_DS4_VENDOR, 0x0);
+	while (cur_dev) {
+		if (cur_dev->product_id == BROOK_DS4_USB)
+		{
+			CurGamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
+			hid_set_nonblocking(CurGamepad.HidHandle, 1);
+			CurGamepad.USBConnection = true;
+			CurGamepad.ControllerType = SONY_DUALSHOCK4;
+			break;
+		}
+		cur_dev = cur_dev->next;
+	}
+
 	if (cur_dev)
 		hid_free_enumeration(cur_dev);
 }
@@ -419,7 +436,7 @@ void MainText(int ControllerCount, int EmuMode, int AimMode, bool ChangeModesWit
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.8");
+	SetConsoleTitle("DSAdvance 0.8.1");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -713,8 +730,8 @@ int main(int argc, char **argv)
 			report.wButtons |= InputState.buttons & JSMASK_SHARE ? XINPUT_GAMEPAD_BACK : 0;
 			report.wButtons |= InputState.buttons & JSMASK_OPTIONS ? XINPUT_GAMEPAD_START : 0;
 		} else if (JslGetControllerType(deviceID[0]) == JS_TYPE_PRO_CONTROLLER || JslGetControllerType(deviceID[0]) == JS_TYPE_JOYCON_LEFT || JslGetControllerType(deviceID[0]) == JS_TYPE_JOYCON_RIGHT) {
-			report.wButtons |= InputState.buttons & JSMASK_CAPTURE ? XINPUT_GAMEPAD_BACK : 0;
-			report.wButtons |= InputState.buttons & JSMASK_HOME ? XINPUT_GAMEPAD_START : 0;
+			report.wButtons |= InputState.buttons & JSMASK_MINUS ? XINPUT_GAMEPAD_BACK : 0;
+			report.wButtons |= InputState.buttons & JSMASK_PLUS ? XINPUT_GAMEPAD_START : 0;
 		}
 		report.wButtons |= InputState.buttons & JSMASK_L ? XINPUT_GAMEPAD_LEFT_SHOULDER : 0;
 		report.wButtons |= InputState.buttons & JSMASK_R ? XINPUT_GAMEPAD_RIGHT_SHOULDER : 0;
@@ -729,10 +746,10 @@ int main(int argc, char **argv)
 		report.wButtons |= InputState.buttons & JSMASK_S && !(InputState.buttons & JSMASK_PS) ? XINPUT_GAMEPAD_A : 0;
 		report.wButtons |= InputState.buttons & JSMASK_E && !(InputState.buttons & JSMASK_PS) ? XINPUT_GAMEPAD_B : 0;
 
-		// Nintendo controllers + - change working mode
+		// Nintendo controllers buttons: Capture & Home - changing working mode
 		if (JslGetControllerType(deviceID[0]) == JS_TYPE_PRO_CONTROLLER || JslGetControllerType(deviceID[0]) == JS_TYPE_JOYCON_LEFT || JslGetControllerType(deviceID[0]) == JS_TYPE_JOYCON_RIGHT) {
-			if (InputState.buttons & JSMASK_MINUS && SkipPollCount == 0) { if (GamepadMode == 1) GamepadMode = 0; else { GamepadMode = 1; AnglesOffset = MotionAngles; } SkipPollCount = SkipPollTimeOut; }
-			if (InputState.buttons & JSMASK_PLUS && SkipPollCount == 0) { if (GamepadMode == 0 || GamepadMode == 1) GamepadMode = LastAIMProCtrlMode; else if (GamepadMode == 2) { GamepadMode = 3; LastAIMProCtrlMode = 3; } else { GamepadMode = 2; LastAIMProCtrlMode = 2; } SkipPollCount = SkipPollTimeOut; }
+			if (InputState.buttons & JSMASK_CAPTURE && SkipPollCount == 0) { if (GamepadMode == 1) GamepadMode = 0; else { GamepadMode = 1; AnglesOffset = MotionAngles; } SkipPollCount = SkipPollTimeOut; }
+			if (InputState.buttons & JSMASK_HOME && SkipPollCount == 0) { if (GamepadMode == 0 || GamepadMode == 1) GamepadMode = LastAIMProCtrlMode; else if (GamepadMode == 2) { GamepadMode = 3; LastAIMProCtrlMode = 3; } else { GamepadMode = 2; LastAIMProCtrlMode = 2; } SkipPollCount = SkipPollTimeOut; }
 		} 
 
 		// DualShock 4 screenshot

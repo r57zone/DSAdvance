@@ -84,6 +84,9 @@ z Z | `Z`
 ; : | `:`
 ‘ « | `APOSTROPHE`
 \ | `\`
+< | `<`
+\> | `>`
+? | `?`
 PRINTSCREEN | `PRINTSCREEN`
 SCROLL-LOCK | `SCROLL-LOCK`
 PAUSE | `PAUSE`
@@ -114,12 +117,16 @@ NUMPAD - | `NUMPAD-MINUS`
 NUMPAD + | `NUMPAD-PLUS`
 NUMPAD DEL | `NUMPAD-DEL`
 
-## Additional buttons
-Key name | Value
+## Additional action buttons
+Value | Description
 ------------ | -------------
-VOLUME UP | `VOLUME-UP`
-VOLUME DOWN | `VOLUME-DOWN`
-HIDE APPS | `HIDE-APPS`
-DISPLAY KEYBOARD | `DISPLAY-KEYBOARD`
-GAMEBAR | `GAMEBAR`
-GAMEBAR SCREENSHOT | `GAMEBAR-SCREENSHOT`
+`VOLUME-UP` | Volume up
+`VOLUME-DOWN` | Volume down
+`VOLUME-MUTE` | Enable / disable sound
+`HIDE-APPS` | Minimize all applications
+`SWITCH-APP` | Show all windows
+`DISPLAY-KEYBOARD` | Show / hide the on-screen keyboard
+`GAMEBAR` | Show / hide the Game Bar
+`GAMEBAR-SCREENSHOT` | Game bar screenshot
+`FULLSCREEN` | Switch to full screen mode `ALT + ENTER`
+`FULLSCREEN-PLUS` | Switch to full screen mode `ALT + ENTER` + `F` for YouTube and Twitch services.

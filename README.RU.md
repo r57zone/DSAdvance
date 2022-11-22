@@ -8,7 +8,7 @@
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
 
 # Режимы работы
-Поддерживается несколько режимов работы, переключаются они нажатиями по тачпаду для DualSene и DualShock 4, а для Pro контроллеров, и JoyCon-ов на кнопки `+`, и `-`.
+Поддерживается несколько режимов работы, переключаются они нажатиями по тачпаду для DualSene и DualShock 4, а для Pro контроллеров, и JoyCon-ов на кнопки `Capture`, и `Home`.
 
 ![](https://user-images.githubusercontent.com/9499881/173076125-b3762211-74ab-4377-a6a2-a7b6c9b1a142.png)
 
@@ -72,7 +72,7 @@
 * [HIDAPI library](https://github.com/signal11/hidapi), с [исправлениями](https://github.com/libusb/hidapi), за библиотеку для работы с USB устройства. В проекте используется этот [форк](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) за классную библиотеку геймпадов, позволяющую легко получить вращение контроллера. Также используется некоторый код из этой библиотеки.
 * [Пользователям Reddit](https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/) за детальное описание выходного USB пакета.
-* DS4Windows[1](https://github.com/Jays2Kings/DS4Windows)[2](https://github.com/Ryochan7/DS4Windows) за уровень заряда батареи.
+* DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) за уровень заряда батареи.
 
 ## Обратная связь
 `r57zone[собака]gmail.com`

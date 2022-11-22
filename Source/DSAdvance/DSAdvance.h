@@ -3,11 +3,20 @@
 #define SONY_DUALSHOCK4					27
 #define SONY_DUALSENSE					28
 
-#define SONY_VENDOR 0x054C
-#define SONY_DS4_USB 0x05C4
-#define SONY_DS4_V2_USB 0x09CC
-#define SONY_DS4_BT 0x081F
-#define SONY_DS5 0x0CE6
+#define SONY_VENDOR						0x054C
+#define SONY_DS4_USB					0x05C4
+#define SONY_DS4_V2_USB					0x09CC
+#define SONY_DS4_BT						0x081F
+#define SONY_DS5						0x0CE6
+
+// DS4 compatible controllers
+#define BROOK_DS4_VENDOR				0x0C12
+#define BROOK_DS4_USB					0x0E20
+
+#define NINTENDO_VENDOR					0x57E
+#define NINTENDO_SWITCH_PRO				0x2009
+#define NINTENDO_JOYCON_L				0x2006
+#define NINTENDO_JOYCON_R				0x2007
 
 #define DS_STATUS_BATTERY_CAPACITY		0xF
 #define DS_STATUS_CHARGING				0xF0
@@ -53,15 +62,22 @@
 
 #define VK_VOLUME_DOWN					174
 #define VK_VOLUME_UP					175
-#define VK_HIDE_APPS					501
-#define VK_DISPLAY_KEYBOARD				502
-#define VK_GAMEBAR						503
-#define VK_GAMEBAR_SCREENSHOT			504
-#define VK_MOUSE_LEFT_CLICK				505
-#define VK_MOUSE_MIDDLE_CLICK			506
-#define VK_MOUSE_RIGHT_CLICK			507
-#define VK_MOUSE_WHEEL_UP				509
-#define VK_MOUSE_WHEEL_DOWN				510
+#define VK_VOLUME_MUTE					173
+
+#define VK_MOUSE_LEFT_CLICK				501
+#define VK_MOUSE_MIDDLE_CLICK			502
+#define VK_MOUSE_RIGHT_CLICK			503
+#define VK_MOUSE_WHEEL_UP				504
+#define VK_MOUSE_WHEEL_DOWN				505
+
+#define VK_HIDE_APPS					506
+#define VK_SWITCH_APP					507
+#define VK_DISPLAY_KEYBOARD				508
+#define VK_GAMEBAR						509
+#define VK_GAMEBAR_SCREENSHOT			510
+#define VK_FULLSCREEN					511
+#define VK_FULLSCREEN_PLUS				512
+
 
 bool ExternalPedalsConnected = false;
 HANDLE hSerial;
@@ -211,7 +227,11 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 				if (KeyCode == VK_HIDE_APPS) {
 					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				
+
+				} else if (KeyCode == VK_SWITCH_APP) {
+					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
 				} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
 					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event(VK_CONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
@@ -225,6 +245,10 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+				} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
+					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 				}
 			
 			ButtonState->PressedOnce = true;
@@ -237,6 +261,10 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 		else
 			if (KeyCode == VK_HIDE_APPS) {
 				keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+			} else if (KeyCode == VK_SWITCH_APP) {
+				keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			
 			} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
@@ -252,6 +280,11 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+			} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
+				keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				if (KeyCode == VK_FULLSCREEN_PLUS) { keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); } // YouTube / Twitch fullscreen on F
 			}
 
 		ButtonState->UnpressedOnce = false;
@@ -374,7 +407,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 	else if (KeyName == "F11") return VK_F11;
 	else if (KeyName == "F12") return VK_F12;
 
-	else if (KeyName == "~") return 192;
+	else if (KeyName == "~") return 192; // VK_OEM_3
 	else if (KeyName == "1") return '1';
 	else if (KeyName == "2") return '2';
 	else if (KeyName == "3") return '3';
@@ -408,8 +441,8 @@ int KeyNameToKeyCode(std::string KeyName) {
 	else if (KeyName == "I") return 'I';
 	else if (KeyName == "O") return 'O';
 	else if (KeyName == "P") return 'P';
-	else if (KeyName == "[") return 219;
-	else if (KeyName == "]") return 221;
+	else if (KeyName == "[") return 219; // VK_OEM_4
+	else if (KeyName == "]") return 221; // VK_OEM_6
 	else if (KeyName == "A") return 'A';
 	else if (KeyName == "S") return 'S';
 	else if (KeyName == "D") return 'D';
@@ -420,8 +453,8 @@ int KeyNameToKeyCode(std::string KeyName) {
 	else if (KeyName == "K") return 'K';
 	else if (KeyName == "L") return 'L';
 	else if (KeyName == ":") return 186;
-	else if (KeyName == "APOSTROPHE") return 222;
-	else if (KeyName == "\\") return 220;
+	else if (KeyName == "APOSTROPHE") return 222; // VK_OEM_7
+	else if (KeyName == "\\") return 220; // VK_OEM_6
 	else if (KeyName == "Z") return 'Z';
 	else if (KeyName == "X") return 'X';
 	else if (KeyName == "C") return 'C';
@@ -431,7 +464,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 	else if (KeyName == "M") return 'M';
 	else if (KeyName == "<") return 188;
 	else if (KeyName == ">") return 190;
-	else if (KeyName == "?") return 191;
+	else if (KeyName == "?") return 191; // VK_OEM_2
 
 	else if (KeyName == "PRINTSCREEN") return VK_SNAPSHOT;
 	else if (KeyName == "SCROLL-LOCK") return VK_SCROLL;
@@ -469,10 +502,14 @@ int KeyNameToKeyCode(std::string KeyName) {
 	// Additional
 	else if (KeyName == "VOLUME-UP") return VK_VOLUME_UP;
 	else if (KeyName == "VOLUME-DOWN") return VK_VOLUME_DOWN;
+	else if (KeyName == "VOLUME-MUTE") return VK_VOLUME_MUTE;
 	else if (KeyName == "HIDE-APPS") return VK_HIDE_APPS;
+	else if (KeyName == "SWITCH-APP") return VK_SWITCH_APP;
 	else if (KeyName == "DISPLAY-KEYBOARD") return VK_DISPLAY_KEYBOARD;
 	else if (KeyName == "GAMEBAR") return VK_GAMEBAR;
 	else if (KeyName == "GAMEBAR-SCREENSHOT") return VK_GAMEBAR_SCREENSHOT;
+	else if (KeyName == "FULLSCREEN") return VK_FULLSCREEN;
+	else if (KeyName == "FULLSCREEN-PLUS") return VK_FULLSCREEN_PLUS;
 
 	// Special
 	else if (KeyName == "WASD") return WASDStickMode;
@@ -480,6 +517,21 @@ int KeyNameToKeyCode(std::string KeyName) {
 	else if (KeyName == "NUMPAD-ARROWS") return NumpadsStickMode;
 	else if (KeyName == "MOUSE-LOOK") return MouseLookStickMode;
 	else if (KeyName == "MOUSE-WHEEL") return MouseWheelStickMode;
+	
+	// Media
+	//else if (KeyName == "MEDIA-NEXT-TRACK") return VK_MEDIA_NEXT_TRACK;
+	//else if (KeyName == "MEDIA-PREV-TRACK") return VK_MEDIA_PREV_TRACK;
+	//else if (KeyName == "MEDIA-STOP") return VK_MEDIA_STOP;
+	//else if (KeyName == "MEDIA-PLAY-PAUSE") return VK_MEDIA_PLAY_PAUSE;
+
+	// Browser
+	//else if (KeyName == "BROWSER-BACK") return VK_BROWSER_BACK;
+	//else if (KeyName == "BROWSER-FORWARD") return VK_BROWSER_FORWARD;
+	//else if (KeyName == "BROWSER-REFRESH") return VK_BROWSER_REFRESH;
+	//else if (KeyName == "BROWSER-STOP") return VK_BROWSER_STOP;
+	//else if (KeyName == "BROWSER-SEARCH") return VK_BROWSER_SEARCH;
+	//else if (KeyName == "BROWSER-FAVORITES") return VK_BROWSER_FAVORITES;
+	//else if (KeyName == "BROWSER-HOME") return VK_BROWSER_HOME;
 
 	else return 0;
 }
