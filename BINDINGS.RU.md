@@ -1,4 +1,5 @@
-﻿# Создание профиля
+﻿
+# Создание профиля
 Отройте папку `DSAdvance\Profiles` и скопируйте файл `FPS.ini`, переименуйте его и вставьте необходимые клавишы для нажатия.
 
 ## Режимы стиков
@@ -129,4 +130,5 @@ NUMPAD DEL | `NUMPAD-DEL`
 `GAMEBAR` | Игровая панель
 `GAMEBAR-SCREENSHOT` | Скриншот игровой панели
 `FULLSCREEN` | Переключиться в полноэкранный режим `ALT + ENTER`
-`FULLSCREEN-PLUS` | Переключиться в полноэкранный режим `ALT + ENTER` + `F` для сервисов YouTube и Twitch.
+`FULLSCREEN-PLUS` | Переключиться в полноэкранный режим `ALT + ENTER` + `F` для сервисов YouTube и Twitch
+`CHANGE-LANGUAGE` | Переключиться на другой язык

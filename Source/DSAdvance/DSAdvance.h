@@ -72,11 +72,13 @@
 
 #define VK_HIDE_APPS					506
 #define VK_SWITCH_APP					507
+#define VK_SWITCH_APP					507
 #define VK_DISPLAY_KEYBOARD				508
 #define VK_GAMEBAR						509
 #define VK_GAMEBAR_SCREENSHOT			510
 #define VK_FULLSCREEN					511
 #define VK_FULLSCREEN_PLUS				512
+#define VK_CHANGE_LANGUAGE				513
 
 
 bool ExternalPedalsConnected = false;
@@ -249,6 +251,11 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 				} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
 					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+				} else if (KeyCode == VK_CHANGE_LANGUAGE) {
+					keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
 				}
 			
 			ButtonState->PressedOnce = true;
@@ -285,6 +292,10 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 				keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				if (KeyCode == VK_FULLSCREEN_PLUS) { keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); } // YouTube / Twitch fullscreen on F
+			
+			} else if (KeyCode == VK_CHANGE_LANGUAGE) {
+				keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			}
 
 		ButtonState->UnpressedOnce = false;
@@ -510,6 +521,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 	else if (KeyName == "GAMEBAR-SCREENSHOT") return VK_GAMEBAR_SCREENSHOT;
 	else if (KeyName == "FULLSCREEN") return VK_FULLSCREEN;
 	else if (KeyName == "FULLSCREEN-PLUS") return VK_FULLSCREEN_PLUS;
+	else if (KeyName == "CHANGE-LANGUAGE") return VK_CHANGE_LANGUAGE;
 
 	// Special
 	else if (KeyName == "WASD") return WASDStickMode;

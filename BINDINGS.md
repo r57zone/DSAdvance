@@ -129,4 +129,5 @@ Value | Description
 `GAMEBAR` | Show / hide the Game Bar
 `GAMEBAR-SCREENSHOT` | Game bar screenshot
 `FULLSCREEN` | Switch to full screen mode `ALT + ENTER`
-`FULLSCREEN-PLUS` | Switch to full screen mode `ALT + ENTER` + `F` for YouTube and Twitch services.
+`FULLSCREEN-PLUS` | Switch to full screen mode `ALT + ENTER` + `F` for YouTube and Twitch services
+`CHANGE-LANGUAGE` | Switch to another language
