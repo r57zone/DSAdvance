@@ -430,7 +430,7 @@ void MainTextUpdate() {
 	printf(", press \"ALT\" + \"A\" or \"PS\" + \"R1\" to switch.\n");
 
 	if (AppStatus.ChangeModesWithoutPress) printf(" Change modes without pressing the touchpad"); else printf(" Change modes by pressing the touchpad");
-	printf(", press \"ALT\" + \"W\" to switch.\n");
+	printf(", press \"ALT\" + \"W\" or  \"PS\" + \"Share\" to switch.\n");
 	printf(" Press \"ALT\" + \"B\" or \"PS\" + \"L1\" to turn the backlight on or off.\n");
 
 	printf(" Press \"ALT\" + \"Escape\" to exit.\n");
@@ -626,7 +626,7 @@ int main(int argc, char **argv)
 			SkipPollCount = SkipPollTimeOut;
 		}
 
-		if ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('W') & 0x8000) != 0 && SkipPollCount == 0)
+		if ( ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('W') & 0x8000) != 0) || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_SHARE) && SkipPollCount == 0)
 		{
 			AppStatus.ChangeModesWithoutPress = !AppStatus.ChangeModesWithoutPress;
 			MainTextUpdate();
@@ -744,8 +744,10 @@ int main(int argc, char **argv)
 		}
 
 		if (JslGetControllerType(deviceID[0]) == JS_TYPE_DS || JslGetControllerType(deviceID[0]) == JS_TYPE_DS4) { 
-			report.wButtons |= InputState.buttons & JSMASK_SHARE ? XINPUT_GAMEPAD_BACK : 0;
-			report.wButtons |= InputState.buttons & JSMASK_OPTIONS ? XINPUT_GAMEPAD_START : 0;
+			if (!(InputState.buttons & JSMASK_PS)) {
+				report.wButtons |= InputState.buttons & JSMASK_SHARE ? XINPUT_GAMEPAD_BACK : 0;
+				report.wButtons |= InputState.buttons & JSMASK_OPTIONS ? XINPUT_GAMEPAD_START : 0;
+			}
 		} else if (JslGetControllerType(deviceID[0]) == JS_TYPE_PRO_CONTROLLER || JslGetControllerType(deviceID[0]) == JS_TYPE_JOYCON_LEFT || JslGetControllerType(deviceID[0]) == JS_TYPE_JOYCON_RIGHT) {
 			report.wButtons |= InputState.buttons & JSMASK_MINUS ? XINPUT_GAMEPAD_BACK : 0;
 			report.wButtons |= InputState.buttons & JSMASK_PLUS ? XINPUT_GAMEPAD_START : 0;
