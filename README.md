@@ -13,19 +13,19 @@ Several working modes are supported, they are switched by pressing the touchpad 
 
 ![](https://user-images.githubusercontent.com/9499881/173076115-3f520a03-41ff-4da9-a7a5-a3de405c779f.png)
 
-In order to exit the stick emulation mode on the touchpad, need to switch to the default mode.
+To exit the stick emulation mode on the touchpad, need to switch to the default mode.
 
 
 By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%). Also in the program for DualSense and DualShock 4 the current charge is displayed.
 
 
-By default, the `PS` button opens the "Xbox Game Bar" (by pressing `Win + G`). By changing the `PSMultiKey` parameter to `1`, several actions are assigned to this button: `PS + □` - decrease the volume, `PS + ○` - increase the volume, `PS + △` - open the "Xbox Game Bar", `PS + X` - microphone button (screenshot / pressing selected keyboard button).
+The `PS` button opens the "Xbox Game Bar", `PS + □` - decrease the volume, `PS + ○` - increase the volume, `PS + △` - increases and then decreases aiming sensitivity (reset to `PS + R3`), `PS + X` - microphone button (screenshot / pressing configured keyboard button).
 
 
-By default, the microphone button takes a screenshot of `Win + Alt + PrtScr` (for DualShock 4 enable `PSMultiKey` and press `PS + X`). By changing the `MicCustomKey` parameter to the [desired button value](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md), it will be pressed.
+By default, the microphone button takes a screenshot of `Win + Alt + PrtScr` (for DualShock 4 press `PS + X`). By changing the `MicCustomKey` parameter to the [desired button value](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md), it will be pressed.
 
 
-To emulate the keyboard and mouse for older games, switch the mode to `ALT + Q` or `PS + ←` and `PS + →` and select the desired profile or [create the desired profile](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles are switched to the `↑` and `↓` keys if the window is active or on a gamepad using `PS + ↑` and `PS + ↓`. The default profile allows you to work in Windows.
+To emulate the keyboard and mouse for older games, switch the mode to `ALT + Q` or `PS + ←` and `PS + →` and select the desired profile or [create the desired profile](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles are switched to the `ALT + ↑` and `ALT + ↓` keys if the window is active or on a gamepad using `PS + ↑` and `PS + ↓`. The default profile allows to work in Windows.
 
 
 To connect external pedals, change the COM port number by changing the `COMPort` parameter in the `ExternalPedals` section.

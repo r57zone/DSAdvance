@@ -40,11 +40,14 @@
 #define XINPUT_GAMEPAD_X                0x4000
 #define XINPUT_GAMEPAD_Y				0x8000
 
-#define XboxGamepadDisabled				2
-#define XboxGamepadEnabled				0
-#define XboxGamepadOnlyDriving			1
-#define KeyboardAndMouse				3
-#define XboxGamepadMaxModes				3
+#define EmuGamepadDisabled				2
+#define EmuGamepadEnabled				0
+#define EmuGamepadOnlyDriving			1
+#define EmuKeyboardAndMouse				3
+#define EmuGamepadMaxModes				3
+
+#define AimMouseMode					true
+#define AimJoystickMode					false
 
 #define GamepadDefaultMode				0
 #define MotionDrivingMode				1
@@ -53,6 +56,8 @@
 #define TouchpadSticksMode				4
 
 #define	SkipPollTimeOut					15
+#define ResetControllersTimeOut			2000 // JoyShockLibrary bug with increase in CPU usage when the controller is turned off & auto connection gamepad
+#define	PSReleasedTimeOut				30
 
 #define WASDStickMode					0
 #define ArrowsStickMode					1
@@ -303,14 +308,15 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 	}
 }
 
-//struct _AppStatus {
-//	int ControllerCount;
-//	int EmuMode = true;
-//	int AimMode = false;
-//	bool ChangeModesWithoutPress = false;
-//	bool ShowBatteryStatus = false;
-//	bool ExternalPedals = false;
-//};
+struct _AppStatus {
+	int ControllerCount;
+	int GamepadEmulationMode;
+	bool AimMode = false;
+	bool ChangeModesWithoutPress = false;
+	bool ShowBatteryStatus = false;
+	bool ExternalPedalsConnected = false;
+};
+_AppStatus AppStatus;
 
 // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp
 uint32_t crc_table[256] = {
