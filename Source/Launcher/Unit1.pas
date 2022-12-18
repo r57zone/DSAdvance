@@ -25,6 +25,7 @@ type
     N5: TMenuItem;
     N6: TMenuItem;
     ProfilesBtn: TMenuItem;
+    HidHideBtn: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure CloseBtnClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -35,6 +36,7 @@ type
     procedure ShowHideAppBtnClick(Sender: TObject);
     procedure CheckAppClosedTimerTimer(Sender: TObject);
     procedure ProfilesBtnClick(Sender: TObject);
+    procedure HidHideBtnClick(Sender: TObject);
   private
     procedure DefaultHandler(var Message); override;
   protected
@@ -51,6 +53,7 @@ var
   IconStarted: TIcon;
   DSAdvanceTitle: string;
   AppHiden: boolean;
+  HidHidePath: string;
 
   IDS_RUN, IDS_STOP, IDS_SHOW, IDS_HIDE, IDS_LAST_UPDATE: string;
 
@@ -106,6 +109,11 @@ begin
   Ini:=TIniFile.Create(ExtractFilePath(ParamStr(0)) + 'Config.ini');
   if Ini.ReadBool('Launcher', 'RunInBackground', false) then RunInBgBtn.Click;
   DSAdvanceTitle:=Ini.ReadString('Launcher', 'DSAdvanceTitle', 'DSAdvance');
+  HidHidePath:=Ini.ReadString('Launcher', 'HidHidePath', '');
+  if not FileExists(HidHidePath) then begin
+    HidHidePath:='';
+    HidHideBtn.Visible:=false;
+  end;
   Ini.Free;
   Application.Title:=Caption;
   WM_TASKBARCREATED:=RegisterWindowMessage('TaskbarCreated');
@@ -243,6 +251,12 @@ end;
 procedure TMain.ProfilesBtnClick(Sender: TObject);
 begin
   ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'Profiles\'), nil, nil, SW_SHOWNORMAL);
+end;
+
+procedure TMain.HidHideBtnClick(Sender: TObject);
+begin
+  if HidHidePath = '' then Exit;
+  ShellExecute(Handle, 'open', PChar(HidHidePath), nil, nil, SW_SHOWNORMAL);
 end;
 
 end.

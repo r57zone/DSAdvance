@@ -46,6 +46,10 @@ object Main: TMain
       object N1: TMenuItem
         Caption = '-'
       end
+      object HidHideBtn: TMenuItem
+        Caption = 'HidHide'
+        OnClick = HidHideBtnClick
+      end
       object GamepadTestBtn: TMenuItem
         Caption = #1055#1088#1086#1074#1077#1088#1082#1072' '#1075#1077#1081#1084#1087#1072#1076#1072
         OnClick = GamepadTestBtnClick
