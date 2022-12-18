@@ -677,10 +677,11 @@ int main(int argc, char **argv)
 				if (TouchState.t0Y <= 0.1 && SkipPollCount == 0) { // Brightness area
 					BrightnessAreaPressed++;
 					if (BrightnessAreaPressed > 1) {
-						if (LockedChangeBrightness)
+						if (LockedChangeBrightness) {
 							if (GamepadOutState.LEDBrightness == 255) GamepadOutState.LEDBrightness = DefaultLEDBrightness; else GamepadOutState.LEDBrightness = 255;
-						else
+						} else
 							LockChangeBrightness = !LockChangeBrightness;
+
 						BrightnessAreaPressed = 0;
 					}
 					SkipPollCount = SkipPollTimeOut;
