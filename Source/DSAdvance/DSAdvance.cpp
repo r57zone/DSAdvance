@@ -438,7 +438,7 @@ void MainTextUpdate() {
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.8.2");
+	SetConsoleTitle("DSAdvance 0.8.3");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -446,6 +446,7 @@ int main(int argc, char **argv)
 	bool InvertLeftStickY = IniFile.ReadBoolean("Gamepad", "InvertLeftStickY", false);
 	bool InvertRightStickX = IniFile.ReadBoolean("Gamepad", "InvertRightStickX", false);
 	bool InvertRightStickY = IniFile.ReadBoolean("Gamepad", "InvertRightStickY", false);
+	bool AutoReconnect = IniFile.ReadBoolean("Gamepad", "AutoReconnect", false);
 	int SleepTimeOut = IniFile.ReadInteger("Gamepad", "SleepTimeOut", 1);
 
 	float DeadZoneLeftStickX = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickX", 0);
@@ -905,7 +906,7 @@ int main(int argc, char **argv)
 		// Battery level display
 		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.PlayersCount = 0; GamepadSetState(GamepadOutState); AppStatus.ShowBatteryStatus = false; MainTextUpdate(); } BackOutStateCounter--; }
 		
-		if (ResetCounter >= ResetControllersTimeOut) ResetCounter = 0; else ResetCounter++; // Auto reconnect controllers & fix JoyShockLibrary bug with increase in CPU usage when the controller is turned off
+		if (AutoReconnect) { if (ResetCounter >= ResetControllersTimeOut) ResetCounter = 0; else ResetCounter++; } // Auto reconnect controllers & fix JoyShockLibrary bug with increase in CPU usage when the controller is turned off
 		//printf("%d \n", ResetCounter);
 
 		if (SkipPollCount > 0) SkipPollCount--;
