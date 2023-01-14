@@ -16,7 +16,7 @@ Several working modes are supported, they are switched by pressing the touchpad 
 To exit the stick emulation mode on the touchpad, need to switch to the default mode.
 
 
-By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%). Also in the program for DualSense and DualShock 4 the current charge is displayed.
+By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%), also on DualSense and DualShock 4 the battery status is shown on the lightbar (green - 100..30%, yellow - 29..10%, red - 9..1%), can be disabled in the config, parameter `ShowBatteryStatusOnLightBar`. For DualSense and DualShock 4 the current charge is displayed in the program itself.
 
 
 The `PS` button opens the "Xbox Game Bar", `PS + □` - decrease the volume, `PS + ○` - increase the volume, `PS + △` - increases and then decreases aiming sensitivity (reset to `PS + R3`), `PS + X` - microphone button (screenshot / pressing configured keyboard button).
@@ -63,11 +63,11 @@ In some games, such as Max Payne or Crysis 2, this does not work, the reasons ar
 **[Download](https://github.com/r57zone/DSAdvance/releases)**
 
 ## Credits
-* Sony for the most advanced gamepads and investing in innovation, as well as Nintendo for promoting similar innovations in games.
+* Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.
 * [ViGEm](https://github.com/ViGEm) for the ability to emulate different gamepads.
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also some code from this library is used.
-* For [Reddit users](https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/) for a detailed description of the USB output packet.
+* For [Reddit users](https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/) for a detailed description of the DualSense USB output packet.
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) for the battery level.
 
 ## Feedback

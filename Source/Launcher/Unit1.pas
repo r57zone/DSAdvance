@@ -23,7 +23,6 @@ type
     CheckAppClosedTimer: TTimer;
     XPManifest1: TXPManifest;
     N5: TMenuItem;
-    N6: TMenuItem;
     ProfilesBtn: TMenuItem;
     HidHideBtn: TMenuItem;
     procedure FormCreate(Sender: TObject);
