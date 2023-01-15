@@ -30,6 +30,9 @@ To emulate the keyboard and mouse for older games, switch the mode to `ALT + Q` 
 
 To connect external pedals, change the COM port number by changing the `COMPort` parameter in the `ExternalPedals` section.
 
+
+To turn off the DualSense or DualShock 4, hold down the PS button for 10-15 seconds until the controller turns off.
+
 ## Setup
 1. Install [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
 2. Install Microsoft Visual C++ Redistributable 2017 or newer.

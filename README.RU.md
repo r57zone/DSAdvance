@@ -32,6 +32,9 @@
 
 Для подключения внешних педалей измените номер COM-порта, изменив параметр `COMPort`, в разделе `ExternalPedals`.
 
+
+Для выключения DualSense или DualShock 4 удерживайте кнопку PS в течении 10-15 секунд, пока контроллер не выключиться.
+
 ## Настройка
 1. Установить [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
 2. Установить Microsoft Visual C++ Redistributable 2017 или новее.
