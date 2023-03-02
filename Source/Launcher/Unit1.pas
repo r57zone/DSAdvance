@@ -53,6 +53,8 @@ var
   DSAdvanceTitle: string;
   AppHiden: boolean;
   HidHidePath: string;
+  SleepTimeOut: integer;
+  DSAdvanceApp: HWND;
 
   IDS_RUN, IDS_STOP, IDS_SHOW, IDS_HIDE, IDS_LAST_UPDATE: string;
 
@@ -113,6 +115,7 @@ begin
     HidHidePath:='';
     HidHideBtn.Visible:=false;
   end;
+  SleepTimeOut:=Ini.ReadInteger('Gamepad', 'SleepTimeOut', 1) * 2;
   Ini.Free;
   Application.Title:=Caption;
   WM_TASKBARCREATED:=RegisterWindowMessage('TaskbarCreated');
@@ -198,7 +201,18 @@ begin
     DSAdvanceStarted:=false;
     AppHiden:=false;
     RunStopBtn.Caption:=IDS_RUN;
-    WinExec('taskkill /f /im DSAdvance.exe', SW_HIDE);
+
+    DSAdvanceApp:=FindWindow(nil, PChar(DSAdvanceTitle));
+    if (DSAdvanceApp <> 0) then begin // Не эмулируем нажатие кнопок, поскольку эта комбинация может переключить окно, если приложение закрыто
+      keybd_event(VK_MENU, 0, 0, 0);
+      keybd_event(VK_ESCAPE, 0, 0, 0);
+      Sleep(SleepTimeOut);
+      keybd_event(VK_ESCAPE, 0, KEYEVENTF_KEYUP, 0);
+      keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
+      Sleep(1);
+      WinExec('taskkill /f /im DSAdvance.exe', SW_HIDE); // На всякий случай
+    end;
+
     if RunInBgBtn.Checked then ShowHideAppBtn.Visible:=false;
   end;
   Tray(2);
@@ -215,11 +229,8 @@ begin
 end;
 
 procedure TMain.ShowHideAppBtnClick(Sender: TObject);
-var
-  DSAdvanceApp: HWND;
 begin
   DSAdvanceApp:=FindWindow(nil, PChar(DSAdvanceTitle));
-
   if DSAdvanceApp = 0 then begin
     ShowHideAppBtn.Visible:=false;
     Exit;
@@ -237,8 +248,6 @@ begin
 end;
 
 procedure TMain.CheckAppClosedTimerTimer(Sender: TObject);
-var
-  DSAdvanceApp: HWND;
 begin
   DSAdvanceApp:=FindWindow(nil, PChar(DSAdvanceTitle));
   if (DSAdvanceApp = 0) and (DSAdvanceStarted) then begin
