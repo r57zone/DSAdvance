@@ -227,6 +227,7 @@ void GetBatteryInfo() {
 			else
 				CurGamepad.BatteryLevel = (buf[31] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX; // offset 1?
 		}
+		if (CurGamepad.BatteryLevel > 100) CurGamepad.BatteryLevel = 100; // It looks like something is not right, once it gave out 125%
 	}	
 }
 
@@ -403,7 +404,7 @@ void MainTextUpdate() {
 	system("cls");
 	if (AppStatus.ControllerCount < 1)
 		printf("\n Connect DualSense, DualShock 4, Pro controller or Joycons and reset.");
-	printf("\n Press \"CTRL\" + \"R\" or \"%s\" to reset controllers.\n", ResetKeyName.c_str());
+	printf("\n Press \"CTRL + R\" or \"%s\" to reset controllers.\n", ResetKeyName.c_str());
 	
 	if (AppStatus.ControllerCount > 0 && AppStatus.ShowBatteryStatus && (CurGamepad.ControllerType == SONY_DUALSENSE || CurGamepad.ControllerType == SONY_DUALSHOCK4)) {
 		printf(" Gamepad mode:");
@@ -421,26 +422,26 @@ void MainTextUpdate() {
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled)
 		printf(" Emulation: Only mouse (for mouse aiming).\n");
 	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
-		printf_s(" Emulation: Keyboard and mouse (%s). Change profiles with \"ALT\" + \"Up | Down\" or \"PS\" + \"DPAD Up | Down\".\n", KMProfiles[ProfileIndex].c_str());
-	printf(" Press \"ALT\" + \"Q\" or \"PS\" + \"DPAD Left | Right\" to switch emulation.\n");
+		printf_s(" Emulation: Keyboard and mouse - %s.\n Change profiles with \"ALT + Up | Down\" or \"PS + DPAD Up | Down\".\n", KMProfiles[ProfileIndex].c_str());
+	printf(" Press \"ALT + Q\" or \"PS + DPAD Left | Right\" to switch emulation.\n");
 
 	if (AppStatus.ExternalPedalsConnected)
 		printf(" External pedals connected.\n");
 
 	if (AppStatus.AimMode == AimMouseMode) printf(" AIM mode = mouse"); else printf(" AIM mode = mouse-joystick");
-	printf(", press \"ALT\" + \"A\" or \"PS\" + \"R1\" to switch.\n");
+	printf(", press \"ALT + A\" or \"PS + R1\" to switch.\n");
 
 	if (AppStatus.ChangeModesWithoutPress) printf(" Change modes without pressing the touchpad"); else printf(" Change modes by pressing the touchpad");
-	printf(", press \"ALT\" + \"W\" or  \"PS\" + \"Share\" to switch.\n");
-	printf(" Press \"ALT\" + \"B\" or \"PS\" + \"L1\" to turn the backlight on or off.\n");
+	printf(", press \"ALT + W\" or  \"PS + Share\" to switch.\n");
+	printf(" Press \"ALT + B\" or \"PS + L1\" to turn the backlight on or off.\n");
 
-	printf(" Press \"ALT\" + \"F9\" to get the sticks dead zones.\n");
-	printf(" Press \"ALT\" + \"Escape\" to exit.\n");
+	printf(" Press \"ALT + F9\" to get the sticks dead zones.\n");
+	printf(" Press \"ALT + Escape\" to exit.\n");
 }
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.8.4");
+	SetConsoleTitle("DSAdvance 0.8.5");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -541,11 +542,13 @@ int main(int argc, char **argv)
 	int PSReleasedCount = 0;
 	bool PSOnlyPressed = false;
 	int BackOutStateCounter = 0;
+	unsigned char LastLEDBrightness = 0; // For battery show
 	int ResetCounter = 0; // Auto reconnect controllers & fix JoyShockLibrary bug with increase in CPU usage when the controller is turned off
 	bool DeadZoneMode = false;
 	int GamepadActionMode = 0; int LastAIMProCtrlMode = 2;
 	EulerAngles MotionAngles, AnglesOffset;
 	AppStatus.GamepadEmulationMode = EmuGamepadEnabled;
+
 	bool XboxGamepadReset = false;
 
 	bool BTReset = true; bool LastConnectionType = true; // Problems with BlueTooth, on first connection. Reset fixes this problem.
@@ -613,15 +616,21 @@ int main(int argc, char **argv)
 				AppStatus.GamepadEmulationMode++;
 			if (AppStatus.GamepadEmulationMode > EmuGamepadMaxModes) AppStatus.GamepadEmulationMode = EmuGamepadEnabled;
 			if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled || AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
-				vigem_target_x360_unregister_notification(x360);
-				vigem_target_remove(client, x360);
+				if (AppStatus.XboxGamepadAttached) {
+					vigem_target_x360_unregister_notification(x360);
+					vigem_target_remove(client, x360);
+					AppStatus.XboxGamepadAttached = false;
+				}
 			} else if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled || AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving) {
 				if (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving) AppStatus.AimMode = AimMouseMode;
-				ret = vigem_target_add(client, x360);
-				ret = vigem_target_x360_register_notification(client, x360, &notification, nullptr);
+				if (AppStatus.XboxGamepadAttached == false) {
+					ret = vigem_target_add(client, x360);
+					ret = vigem_target_x360_register_notification(client, x360, &notification, nullptr);
+					AppStatus.XboxGamepadAttached = true;
+				}
 			}
 			
-			SkipPollCount = 30; // 15 is seems not enough to enable or disable Xbox virtual gamepad
+			SkipPollCount = 35; // 15 is seems not enough to enable or disable Xbox virtual gamepad
 
 			if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
 				LoadKMProfile(KMProfiles[ProfileIndex]);
@@ -710,15 +719,18 @@ int main(int argc, char **argv)
 						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.7) { // Default mode
 							GamepadActionMode = GamepadDefaultMode;
 							// Show battery level
-							GetBatteryInfo(); BackOutStateCounter = 40;
+							GetBatteryInfo(); if (BackOutStateCounter == 0) BackOutStateCounter = 40; // It is executed many times, so it is done this way, it is necessary to save the old brightness value for return
 							if (ShowBatteryStatusOnLightBar) {
+								if (BackOutStateCounter == 40) LastLEDBrightness = GamepadOutState.LEDBrightness; // Save on first click (tick)
 								if (CurGamepad.BatteryLevel >= 30) { GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255; } // Battery fine 30%-100%
 								else if (CurGamepad.BatteryLevel >= 10) { GamepadOutState.LEDBlue = 0; GamepadOutState.LEDGreen = 255; GamepadOutState.LEDRed = 255; } // Battery attention 10..29%
 								else { GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0; } // battery alarm 10%
+								GamepadOutState.LEDBrightness = DefaultLEDBrightness;
 							}
 							GamepadOutState.PlayersCount = CurGamepad.LEDBatteryLevel; // JslSetPlayerNumber(deviceID[0], 5);
 							AppStatus.ShowBatteryStatus = true;
 							MainTextUpdate();
+							//printf(" %d %d\n", LastLEDBrightness, GamepadOutState.LEDBrightness);
 						} else {  // Touch sticks mode
 							GamepadActionMode = TouchpadSticksMode;
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
@@ -917,11 +929,12 @@ int main(int argc, char **argv)
 
 		if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled || (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving && GamepadActionMode == MotionDrivingMode) || XboxGamepadReset) {
 			if (XboxGamepadReset) { XboxGamepadReset = false; XUSB_REPORT_INIT(&report); }
-			ret = vigem_target_x360_update(client, x360, report);
+			if (AppStatus.XboxGamepadAttached)
+				ret = vigem_target_x360_update(client, x360, report);
 		}
 
 		// Battery level display
-		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0; GamepadOutState.PlayersCount = 0; GamepadSetState(GamepadOutState); AppStatus.ShowBatteryStatus = false; MainTextUpdate(); } BackOutStateCounter--; }
+		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0; GamepadOutState.PlayersCount = 0; if (ShowBatteryStatusOnLightBar) GamepadOutState.LEDBrightness = LastLEDBrightness; GamepadSetState(GamepadOutState); AppStatus.ShowBatteryStatus = false; MainTextUpdate(); } BackOutStateCounter--; }
 		
 		if (AutoReconnect) { if (ResetCounter >= ResetControllersTimeOut) ResetCounter = 0; else ResetCounter++; } // Auto reconnect controllers & fix JoyShockLibrary bug with increase in CPU usage when the controller is turned off
 		//printf("%d \n", ResetCounter);
@@ -943,7 +956,12 @@ int main(int argc, char **argv)
 		CloseHandle(hSerial);
 	}
 
-	vigem_target_x360_unregister_notification(x360);
-	vigem_target_remove(client, x360);
-	vigem_target_free(x360);
+	if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled || (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving)) {
+		vigem_target_x360_unregister_notification(x360);
+		vigem_target_remove(client, x360);
+		vigem_target_free(x360);
+	}
+
+	vigem_disconnect(client);
+	vigem_free(client);
 }

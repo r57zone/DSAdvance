@@ -311,6 +311,7 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 struct _AppStatus {
 	int ControllerCount;
 	int GamepadEmulationMode;
+	bool XboxGamepadAttached = true;
 	bool AimMode = false;
 	bool ChangeModesWithoutPress = false;
 	bool ShowBatteryStatus = false;
