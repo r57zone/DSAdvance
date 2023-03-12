@@ -379,10 +379,10 @@ void LoadKMProfile(std::string ProfileFile) {
 	ButtonsStates.Back.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "BACK", "ESCAPE"));
 	ButtonsStates.Start.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "START", "ENTER"));
 
-	ButtonsStates.DPADUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-UP", "1"));
-	ButtonsStates.DPADDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-DOWN", "4"));
-	ButtonsStates.DPADLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-LEFT", "2"));
+	ButtonsStates.DPADUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-UP", "2"));
+	ButtonsStates.DPADLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-LEFT", "1"));
 	ButtonsStates.DPADRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-RIGHT", "3"));
+	ButtonsStates.DPADDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-DOWN", "4"));
 
 	ButtonsStates.Y.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "TRIANGLE-Y", "E"));
 	ButtonsStates.X.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "SQUARE-X", "R"));
@@ -422,7 +422,7 @@ void MainTextUpdate() {
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled)
 		printf(" Emulation: Only mouse (for mouse aiming).\n");
 	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
-		printf_s(" Emulation: Keyboard and mouse - %s.\n Change profiles with \"ALT + Up | Down\" or \"PS + DPAD Up | Down\".\n", KMProfiles[ProfileIndex].c_str());
+		printf_s(" Emulation: Keyboard and mouse (%s).\n Change profiles with \"ALT + Up | Down\" or \"PS + DPAD Up | Down\".\n", KMProfiles[ProfileIndex].c_str());
 	printf(" Press \"ALT + Q\" or \"PS + DPAD Left | Right\" to switch emulation.\n");
 
 	if (AppStatus.ExternalPedalsConnected)
@@ -431,9 +431,29 @@ void MainTextUpdate() {
 	if (AppStatus.AimMode == AimMouseMode) printf(" AIM mode = mouse"); else printf(" AIM mode = mouse-joystick");
 	printf(", press \"ALT + A\" or \"PS + R1\" to switch.\n");
 
+	if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled) {
+		if (AppStatus.LeftStickMode == LeftStickDefaultMode)
+			printf(" Left stick mode: Default");
+		else if (AppStatus.LeftStickMode == LeftStickAutoPressMode)
+			printf(" Left stick mode: Auto pressing by value");
+		else if (AppStatus.LeftStickMode == LeftStickInvertPressMode)
+				printf(" Left stick mode: Invert pressed");
+		printf(", press \"ALT + S\" or \"PS + LS\" to switch.\n");
+	}
+
 	if (AppStatus.ChangeModesWithoutPress) printf(" Change modes without pressing the touchpad"); else printf(" Change modes by pressing the touchpad");
 	printf(", press \"ALT + W\" or  \"PS + Share\" to switch.\n");
 	printf(" Press \"ALT + B\" or \"PS + L1\" to turn the backlight on or off.\n");
+
+	if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
+		printf(" Screenshot mode: Custom key");
+	else if (AppStatus.ScreenshotMode == ScreenShotXboxGameBarMode)
+		printf(" Screenshot mode: Xbox Game Bar");
+	else if (AppStatus.ScreenshotMode == ScreenShotSteamMode)
+		printf(" Screenshot mode: Steam (F12)");
+	else if (AppStatus.ScreenshotMode == ScreenShotMultiMode)
+		printf(" Screenshot mode: Xbox Game Bar & Steam (F12)");
+	printf(", press \"ALT + X\" to switch.\n");
 
 	printf(" Press \"ALT + F9\" to get the sticks dead zones.\n");
 	printf(" Press \"ALT + Escape\" to exit.\n");
@@ -441,7 +461,7 @@ void MainTextUpdate() {
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.8.5");
+	SetConsoleTitle("DSAdvance 0.8.6");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -465,6 +485,8 @@ int main(int argc, char **argv)
 	float TouchRightStickX = IniFile.ReadFloat("Gamepad", "TouchRightStickSensX", 4);
 	float TouchRightStickY = IniFile.ReadFloat("Gamepad", "TouchRightStickSensY", 4);
 
+	float AutoPressModeValue = IniFile.ReadFloat("Gamepad", "AutoPressModeStick", 99) * 0.01f;
+
 	unsigned char DefaultLEDBrightness = std::clamp((int)(255 - IniFile.ReadInteger("Gamepad", "DefaultBrightness", 100) * 2.55), 0, 255);
 	bool LockedChangeBrightness = IniFile.ReadBoolean("Gamepad", "LockChangeBrightness", false);
 	bool LockChangeBrightness = true;
@@ -482,7 +504,11 @@ int main(int argc, char **argv)
 	float JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 3);
 	float CustomMulSens = 1;
 
+	int ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
 	int MicCustomKey = KeyNameToKeyCode(IniFile.ReadString("Gamepad", "MicCustomKey", "NONE"));
+	if (MicCustomKey == 0) AppStatus.ScreenshotMode = ScreenShotXboxGameBarMode; // If not set, then hide this mode
+	else ScreenShotKey = MicCustomKey; 
+	
 
 	int ExternalPedalsCOMPort = IniFile.ReadInteger("ExternalPedals", "COMPort", 0);
 	if (ExternalPedalsCOMPort != 0) {
@@ -630,7 +656,7 @@ int main(int argc, char **argv)
 				}
 			}
 			
-			SkipPollCount = 35; // 15 is seems not enough to enable or disable Xbox virtual gamepad
+			SkipPollCount = 30; // 15 is seems not enough to enable or disable Xbox virtual gamepad
 
 			if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
 				LoadKMProfile(KMProfiles[ProfileIndex]);
@@ -654,6 +680,26 @@ int main(int argc, char **argv)
 		if ( ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('W') & 0x8000) != 0) || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_SHARE) && SkipPollCount == 0)
 		{
 			AppStatus.ChangeModesWithoutPress = !AppStatus.ChangeModesWithoutPress;
+			MainTextUpdate();
+			SkipPollCount = SkipPollTimeOut;
+		}
+
+		// Switch left stick mode
+		if ((((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('S') & 0x8000) != 0) || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_LCLICK)) && SkipPollCount == 0)
+		{
+			AppStatus.LeftStickMode++; if (AppStatus.LeftStickMode > LeftStickMaxModes) AppStatus.LeftStickMode = LeftStickDefaultMode;
+			MainTextUpdate();
+			SkipPollCount = SkipPollTimeOut;
+		}
+
+		// Switch screenshot mode
+		if ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState('X') & 0x8000) != 0 && SkipPollCount == 0)
+		{
+			AppStatus.ScreenshotMode++; if (AppStatus.ScreenshotMode > ScreenShotMaxModes) AppStatus.ScreenshotMode = MicCustomKey == 0 ? ScreenShotXboxGameBarMode : ScreenShotCustomKeyMode;
+			if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode) ScreenShotKey = MicCustomKey;
+			else if (AppStatus.ScreenshotMode == ScreenShotXboxGameBarMode) ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
+			else if (AppStatus.ScreenshotMode == ScreenShotSteamMode) ScreenShotKey = VK_STEAM_SCREENSHOT;
+			else if (AppStatus.ScreenshotMode == ScreenShotMultiMode) ScreenShotKey = VK_MULTI_SCREENSHOT;
 			MainTextUpdate();
 			SkipPollCount = SkipPollTimeOut;
 		}
@@ -762,6 +808,10 @@ int main(int argc, char **argv)
 		report.sThumbRX = InvertRightStickX == false ? DeadZoneAxis(InputState.stickRX, DeadZoneRightStickX) * 32767 : DeadZoneAxis(-InputState.stickRX, DeadZoneRightStickX) * 32767;
 		report.sThumbRY = InvertRightStickY == false ? DeadZoneAxis(InputState.stickRY, DeadZoneRightStickY) * 32767 : DeadZoneAxis(-InputState.stickRY, DeadZoneRightStickY) * 32767;
 
+		// Auto stick pressing when value is exceeded
+		if (AppStatus.LeftStickMode == LeftStickAutoPressMode && (abs(InputState.stickLX) > AutoPressModeValue || abs(InputState.stickLY) > AutoPressModeValue))
+			report.wButtons |= JSMASK_LCLICK;
+
 		report.bLeftTrigger = InputState.lTrigger * 255;
 		report.bRightTrigger = InputState.rTrigger * 255;
 
@@ -784,8 +834,11 @@ int main(int argc, char **argv)
 
 		if (!(InputState.buttons & JSMASK_PS)) { // During special functions, nothing is pressed in the game
 			report.wButtons |= InputState.buttons & JSMASK_L ? XINPUT_GAMEPAD_LEFT_SHOULDER : 0;
-			report.wButtons |= InputState.buttons & JSMASK_R ? XINPUT_GAMEPAD_RIGHT_SHOULDER : 0; 
-			report.wButtons |= InputState.buttons & JSMASK_LCLICK ? XINPUT_GAMEPAD_LEFT_THUMB : 0;
+			report.wButtons |= InputState.buttons & JSMASK_R ? XINPUT_GAMEPAD_RIGHT_SHOULDER : 0;
+			if (AppStatus.LeftStickMode != LeftStickInvertPressMode) // Invert stick mode
+				report.wButtons |= InputState.buttons & JSMASK_LCLICK ? XINPUT_GAMEPAD_LEFT_THUMB : 0;
+			else
+				report.wButtons |= InputState.buttons & JSMASK_LCLICK ? 0 : XINPUT_GAMEPAD_LEFT_THUMB;
 			report.wButtons |= InputState.buttons & JSMASK_RCLICK ? XINPUT_GAMEPAD_RIGHT_THUMB : 0;
 			report.wButtons |= InputState.buttons & JSMASK_UP ? XINPUT_GAMEPAD_DPAD_UP : 0;
 			report.wButtons |= InputState.buttons & JSMASK_DOWN ? XINPUT_GAMEPAD_DPAD_DOWN : 0;
@@ -818,7 +871,7 @@ int main(int argc, char **argv)
 		KeyPress(VK_GAMEBAR, PSOnlyCheckCount == 1 && PSOnlyPressed, &ButtonsStates.PS);
 		KeyPress(VK_VOLUME_DOWN, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_W, &ButtonsStates.VolumeDown);
 		KeyPress(VK_VOLUME_UP, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_E, &ButtonsStates.VolumeUP);
-		KeyPress(MicCustomKey == 0 ? VK_GAMEBAR_SCREENSHOT : MicCustomKey, InputState.buttons & JSMASK_MIC || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_S), &ButtonsStates.Mic); // + DualShock 4
+		KeyPress(ScreenShotKey, InputState.buttons & JSMASK_MIC || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_S), &ButtonsStates.Mic); // + DualShock 4
 
 		// Custom sens
 		if (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_N && SkipPollCount == 0) {

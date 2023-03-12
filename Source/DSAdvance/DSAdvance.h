@@ -55,6 +55,17 @@
 #define MotionAimingModeOnlyPressed		3
 #define TouchpadSticksMode				4
 
+#define LeftStickDefaultMode			0
+#define LeftStickAutoPressMode			1
+#define LeftStickInvertPressMode		2
+#define LeftStickMaxModes				2
+
+#define ScreenShotCustomKeyMode			0
+#define ScreenShotXboxGameBarMode		1
+#define ScreenShotSteamMode				2
+#define ScreenShotMultiMode				3
+#define ScreenShotMaxModes				3
+
 #define	SkipPollTimeOut					15
 #define ResetControllersTimeOut			2000 // JoyShockLibrary bug with increase in CPU usage when the controller is turned off & auto connection gamepad
 #define	PSReleasedTimeOut				30
@@ -81,9 +92,11 @@
 #define VK_DISPLAY_KEYBOARD				508
 #define VK_GAMEBAR						509
 #define VK_GAMEBAR_SCREENSHOT			510
-#define VK_FULLSCREEN					511
-#define VK_FULLSCREEN_PLUS				512
-#define VK_CHANGE_LANGUAGE				513
+#define VK_STEAM_SCREENSHOT				511
+#define VK_MULTI_SCREENSHOT				512
+#define VK_FULLSCREEN					513
+#define VK_FULLSCREEN_PLUS				514
+#define VK_CHANGE_LANGUAGE				515
 
 
 bool ExternalPedalsConnected = false;
@@ -248,10 +261,13 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 				
-				} else if (KeyCode == VK_GAMEBAR_SCREENSHOT) {
+				} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || KeyCode == VK_MULTI_SCREENSHOT) {
 					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+				} else if (KeyCode == VK_STEAM_SCREENSHOT) {
+					keybd_event(VK_F12, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
 				} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
 					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
@@ -288,10 +304,14 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 				keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			
-			} else if (KeyCode == VK_GAMEBAR_SCREENSHOT) {
+			} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || (KeyCode == VK_MULTI_SCREENSHOT)) {
 				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				if (KeyCode == VK_MULTI_SCREENSHOT) { keybd_event(VK_F12, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event(VK_F12, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);  } // Steam
+
+			} else if (KeyCode == VK_STEAM_SCREENSHOT) {
+				keybd_event(VK_F12, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 
 			} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
 				keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
@@ -313,11 +333,12 @@ struct _AppStatus {
 	int GamepadEmulationMode;
 	bool XboxGamepadAttached = true;
 	bool AimMode = false;
+	int LeftStickMode = 0;
 	bool ChangeModesWithoutPress = false;
 	bool ShowBatteryStatus = false;
+	int ScreenshotMode = 0;
 	bool ExternalPedalsConnected = false;
-};
-_AppStatus AppStatus;
+}; _AppStatus AppStatus;
 
 // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp
 uint32_t crc_table[256] = {
