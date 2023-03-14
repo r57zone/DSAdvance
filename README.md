@@ -43,7 +43,7 @@ To turn off the DualSense or DualShock 4, hold down the PS button for 10-15 seco
 
 ## Possible problems
 • **The game sees 2 controllers at the same time (DualSense / DualShock 4 / Nintendo Pro controller or JoyCons and Xbox)**<br>
-If the game supports a modern gamepad well, you can turn off the Xbox gamepad emulation on the `ALT + Q` keys, if there are problems with the game, then you can hide this gamepad using the [HidHide](https://github.com/ViGEm/HidHide) program .
+If the game supports a modern gamepad well, you can turn off the Xbox gamepad emulation on the `ALT + Q` keys, if there are problems with the game, then you can hide this gamepad using the [HidHide](https://github.com/ViGEm/HidHide) program or try wireless.
 
 
 
@@ -58,10 +58,10 @@ Launch DSAdvance first, and only then the game itself, the game can give priorit
 
 
 • **Keyboard emulation does not work in some games**<br>
-In some games, such as Max Payne or Crysis 2, this does not work, the reasons are still unknown.
+In some games, such as Max Payne or Crysis 2, this don't work, the reasons are still unknown.
 
 ## Download
->Version for Windows 10.
+>Version for Windows 10, 11.
 
 **[Download](https://github.com/r57zone/DSAdvance/releases)**
 
