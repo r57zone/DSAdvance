@@ -48,7 +48,7 @@ If the game supports a modern gamepad well, you can turn off the Xbox gamepad em
 
 
 • **Permanently changing keyboard and gamepad icons**<br>
-If this bothers you, then change the aiming mode to "mouse-joystick", in the program, or use aiming by left trigger.
+You can change the aiming mode to "mouse-joystick", in the program, or use aiming by left trigger.
 
 
 
@@ -57,8 +57,8 @@ Launch DSAdvance first, and only then the game itself, the game can give priorit
 
 
 
-• **Keyboard emulation does not work in some games**<br>
-In some games, such as Max Payne or Crysis 2, this don't work, the reasons are still unknown.
+• **Keyboard emulation don't work in some games**<br>
+In some games, for example, Max Payne or Crysis 2, unfortunately, this does not work yet.
 
 ## Download
 >Version for Windows 10, 11.
