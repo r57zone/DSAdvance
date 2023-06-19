@@ -40,10 +40,11 @@ To turn off the DualSense or DualShock 4, hold down the PS button for 10-15 seco
 4. Unzip and launch DSAdvance.
 5. If necessary, change the dead zones of the sticks or other parameters in the configuration file `Config.ini`.
 6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
+7. It is also recommended to install [HidHide](https://github.com/ViGEm/HidHide/releases/), then in the "HidHide Configuration Client" add "DSAdvance.exe" and turn on the parameter `Enable device hiding` (If turned off). It is necessary so that the game did not see our controller, and saw only emulated Xbox 360 gamepad.
 
 ## Possible problems
 • **The game sees 2 controllers at the same time (DualSense / DualShock 4 / Nintendo Pro controller or JoyCons and Xbox)**<br>
-If the game supports a modern gamepad well, you can turn off the Xbox gamepad emulation on the `ALT + Q` keys, if there are problems with the game, then you can hide this gamepad using the [HidHide](https://github.com/ViGEm/HidHide) program or try wireless.
+If the game supports a modern gamepad you can turn off the emulation of the Xbox gamepad on the keys `ALT + Q` or hide this gamepad at all using the program [HidHide](https://github.com/ViGEm/HidHide) or try in wireless mode.
 
 
 
