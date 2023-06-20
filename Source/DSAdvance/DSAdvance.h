@@ -6,8 +6,10 @@
 #define SONY_VENDOR						0x054C
 #define SONY_DS4_USB					0x05C4
 #define SONY_DS4_V2_USB					0x09CC
+#define SONY_DS4_DONGLE					0x0BA0
 #define SONY_DS4_BT						0x081F
 #define SONY_DS5						0x0CE6
+#define SONY_DS5_EDGE					0x0DF2
 
 // DS4 compatible controllers
 #define BROOK_DS4_VENDOR				0x0C12
@@ -67,7 +69,7 @@
 #define ScreenShotMaxModes				3
 
 #define	SkipPollTimeOut					15
-#define ResetControllersTimeOut			2000 // JoyShockLibrary bug with increase in CPU usage when the controller is turned off & auto connection gamepad
+#define ResetControllersTimeOut			2000 // JoyShockLibrary 2.2.0 bug with increase in CPU usage when the controller is turned off & auto connection gamepad
 #define	PSReleasedTimeOut				30
 
 #define WASDStickMode					0

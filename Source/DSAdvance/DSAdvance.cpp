@@ -1,4 +1,5 @@
 ﻿// DSAdvance by r57zone
+// Advanced Xbox controller emulation for DualSense, DualShock 4, Pro Controller, Joy-Cons
 // https://github.com/r57zone/DSAdvance
 
 #include <windows.h>
@@ -11,7 +12,7 @@
 #include "hidapi.h"
 #include "DSAdvance.h"
 #include <thread>
-#include <atlstr.h> 
+#include <atlstr.h>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -152,12 +153,17 @@ void GamepadSearch() {
 	// Sony controllers
 	cur_dev = hid_enumerate(SONY_VENDOR, 0x0);
 	while (cur_dev) {
-		if (cur_dev->product_id == SONY_DS5 || cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB || cur_dev->product_id == SONY_DS4_BT)
+		if (cur_dev->product_id == SONY_DS5 || 
+			cur_dev->product_id == SONY_DS5_EDGE ||
+			cur_dev->product_id == SONY_DS4_USB || 
+			cur_dev->product_id == SONY_DS4_V2_USB || 
+			cur_dev->product_id == SONY_DS4_BT || 
+			cur_dev->product_id == SONY_DS4_DONGLE)
 		{
 			CurGamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
 			hid_set_nonblocking(CurGamepad.HidHandle, 1);
 			
-			if (cur_dev->product_id == SONY_DS5) {
+			if (cur_dev->product_id == SONY_DS5 || cur_dev->product_id == SONY_DS5_EDGE) {
 				CurGamepad.ControllerType = SONY_DUALSENSE;
 				CurGamepad.USBConnection = true;
 
@@ -168,7 +174,7 @@ void GamepadSearch() {
 				if (buf[0] == 0x31)
 					CurGamepad.USBConnection = false;
 			
-			} else if (cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB) {
+			} else if (cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB || cur_dev->product_id == SONY_DS4_DONGLE) {
 				CurGamepad.ControllerType = SONY_DUALSHOCK4;
 				CurGamepad.USBConnection = true;
 			
@@ -456,12 +462,13 @@ void MainTextUpdate() {
 	printf(", press \"ALT + X\" to switch.\n");
 
 	printf(" Press \"ALT + F9\" to get the sticks dead zones.\n");
+	printf(" Press \"ALT + I\" to get the battery status.\n");
 	printf(" Press \"ALT + Escape\" to exit.\n");
 }
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.8.6");
+	SetConsoleTitle("DSAdvance 0.8.7");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -800,6 +807,14 @@ int main(int argc, char **argv)
 				if (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving && GamepadActionMode != MotionDrivingMode) XboxGamepadReset = true; // Reset last state
 			}
 
+		}
+
+		if ((GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && ((GetAsyncKeyState('I') & 0x8000) != 0) && SkipPollCount == 0 && GetConsoleWindow() == GetForegroundWindow())
+		{
+			SkipPollCount = SkipPollTimeOut;
+			GetBatteryInfo(); if (BackOutStateCounter == 0) BackOutStateCounter = 40; // ↑
+			AppStatus.ShowBatteryStatus = true;
+			MainTextUpdate();
 		}
 
 		//printf("%5.2f\t%5.2f\r\n", InputState.stickLX, DeadZoneAxis(InputState.stickLX, DeadZoneLeftStickX));
