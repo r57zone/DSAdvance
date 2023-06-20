@@ -53,7 +53,12 @@ You can change the aiming mode to "mouse-joystick", in the program, or use aimin
 
 
 
-• **Driving don't work in games with DualSense support**<br>
+• **Adaptive triggers or light bar don't work in the game**<br>
+Add the game to the "HidHide" exceptions list and change the "DSAdvance" mode to "Only mouse".
+
+
+
+• **Driving don't work in games with DualSense support (without HidHide)**<br>
 Launch DSAdvance first, and only then the game itself, the game can give priority to the emulated Xbox controller and driving will work. You can also enable "Only driving & aiming" emulation mode so that the controller will only turn on in driving mode.
 
 
