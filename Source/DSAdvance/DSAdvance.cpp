@@ -13,6 +13,7 @@
 #include "DSAdvance.h"
 #include <thread>
 #include <atlstr.h>
+#include <chrono>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -468,7 +469,7 @@ void MainTextUpdate() {
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.8.7");
+	SetConsoleTitle("DSAdvance 0.9");
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
@@ -505,10 +506,10 @@ int main(int argc, char **argv)
 	bool MotionWheelPitch = IniFile.ReadBoolean("Motion", "WheelPitch", false);
 	bool MotionWheelRoll = IniFile.ReadBoolean("Motion", "WheelRoll", true);
 	int WheelInvertPitch = IniFile.ReadBoolean("Motion", "WheelInvertPitch", false) ? -1 : 1;
-	float MotionSensX = IniFile.ReadFloat("Motion", "MouseSensX", 3) / 10.0f;;
-	float MotionSensY = IniFile.ReadFloat("Motion", "MouseSensY", 3) / 10.0f;;
-	float JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 3);
-	float JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 3);
+	float MotionSensX = IniFile.ReadFloat("Motion", "MouseSensX", 100) * 0.135f;
+	float MotionSensY = IniFile.ReadFloat("Motion", "MouseSensY", 90) * 0.135f;
+	float JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 100) * 0.0205;
+	float JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 90) * 0.0205;
 	float CustomMulSens = 1;
 
 	int ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
@@ -516,7 +517,6 @@ int main(int argc, char **argv)
 	if (MicCustomKey == 0) AppStatus.ScreenshotMode = ScreenShotXboxGameBarMode; // If not set, then hide this mode
 	else ScreenShotKey = MicCustomKey; 
 	
-
 	int ExternalPedalsCOMPort = IniFile.ReadInteger("ExternalPedals", "COMPort", 0);
 	if (ExternalPedalsCOMPort != 0) {
 		char sPortName[32];
@@ -605,6 +605,11 @@ int main(int argc, char **argv)
 	XUSB_REPORT report;
 
 	TouchpadTouch FirstTouch, SecondTouch;
+	
+	auto previous_time = std::chrono::high_resolution_clock::now();
+	float x_smoothed = 0;
+	float y_smoothed = 0;
+	EulerAngles PreviousAngles = {0, 0, 0}, DeltaAnges;
 
 	while (! ( GetAsyncKeyState(VK_LMENU) & 0x8000 && GetAsyncKeyState(VK_ESCAPE) & 0x8000 ) )
 	{
@@ -902,17 +907,39 @@ int main(int argc, char **argv)
 			report.sThumbLX = MotionWheelRoll ? ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Roll), RadToDeg(AnglesOffset.Roll)) * -1, MotionWheelAngle) : report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Yaw), RadToDeg(AnglesOffset.Yaw)) * -1, MotionWheelAngle);
 			if (MotionWheelPitch) report.sThumbLY = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch)) * WheelInvertPitch, MotionWheelAngle);
 		} else if (GamepadActionMode == MotionAimingMode || GamepadActionMode == MotionAimingModeOnlyPressed) { // Motion aiming  [--X}]
-			float DeltaX = OffsetYPR(RadToDeg(MotionAngles.Yaw), RadToDeg(AnglesOffset.Yaw)) * -1;
-			float DeltaY = OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch))  * -1;
+			
+			// Low-pass filter
+			const float smoothing_factor = 0.2f; // BT, USB - 0.2 good, default 0.5
+			x_smoothed = RadToDeg(MotionAngles.Yaw - PreviousAngles.Yaw) * smoothing_factor + x_smoothed * (1 - smoothing_factor);
+			y_smoothed = RadToDeg(MotionAngles.Pitch - PreviousAngles.Pitch) * smoothing_factor + y_smoothed * (1 - smoothing_factor);
+
+			float deltaX = x_smoothed;
+			float deltaY = y_smoothed;
+
+			// Cursor movement speed
+			auto current_time = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed_time = current_time - previous_time;
+			float delta_time = elapsed_time.count();
+			previous_time = current_time;
+
+			float max_cursor_speed = 100.0f; // Maximum speed of cursor movement
+			float deltaXY = sqrt(deltaX * deltaX + deltaY * deltaY);
+			if (deltaXY > max_cursor_speed * delta_time) {
+				deltaX *= max_cursor_speed * delta_time / deltaXY;
+				deltaY *= max_cursor_speed * delta_time / deltaXY;
+			}
+
+			PreviousAngles.Yaw = MotionAngles.Yaw;
+			PreviousAngles.Pitch = MotionAngles.Pitch;
+			
 			if (GamepadActionMode == MotionAimingMode || (GamepadActionMode == MotionAimingModeOnlyPressed && InputState.lTrigger > 0) )
 				if (AppStatus.AimMode == AimMouseMode)
-					MouseMove(RadToDeg(DeltaX) * MotionSensX * CustomMulSens, RadToDeg(DeltaY) * MotionSensY  * CustomMulSens);
+					MouseMove(deltaX * -1.0f * MotionSensX * CustomMulSens, deltaY * -1.0f * MotionSensY  * CustomMulSens);
 				else {
-					report.sThumbRX = std::clamp((int)(ClampFloat((DeltaX) * JoySensX * CustomMulSens, -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
-					report.sThumbRY = std::clamp((int)(ClampFloat(-(DeltaY) * JoySensY * CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
+					report.sThumbRX = std::clamp((int)(ClampFloat(-(deltaX) * JoySensX * CustomMulSens, -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
+					report.sThumbRY = std::clamp((int)(ClampFloat(deltaY * JoySensY * CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
 				}
 
-			AnglesOffset = MotionAngles; // Not the best way but it works
 		} else if (GamepadActionMode == TouchpadSticksMode) { // [-_-] Touchpad sticks
 
 			if (TouchState.t0Down) {
