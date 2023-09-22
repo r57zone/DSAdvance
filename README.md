@@ -36,7 +36,7 @@ To turn off the DualSense or DualShock 4, hold down the PS button for 10-15 seco
 ## Setup
 1. Install [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
 2. Install Microsoft Visual C++ Redistributable 2017 or newer.
-3. Connect the Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-Cons (recommended by wire, aiming works better).
+3. Connect the Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-Cons.
 4. Unzip and launch DSAdvance.
 5. If necessary, change the dead zones of the sticks or other parameters in the configuration file `Config.ini`.
 6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
