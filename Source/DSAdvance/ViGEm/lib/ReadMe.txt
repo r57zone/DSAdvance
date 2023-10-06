@@ -1,1 +1,1 @@
-https://github.com/ViGEm/ViGEmClient
+https://github.com/nefarius/ViGEmClient
