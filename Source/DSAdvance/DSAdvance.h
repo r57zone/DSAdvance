@@ -108,6 +108,7 @@ float PedalsValues[2];
 std::vector <std::string> KMProfiles;
 int ProfileIndex = 0;
 
+
 struct Gamepad {
 	int deviceID[4];
 	hid_device *HidHandle;
@@ -118,10 +119,51 @@ struct Gamepad {
 	unsigned char LEDBatteryLevel;
 	wchar_t *serial_number;
 
+	struct _Sticks
+	{
+		float DeadZoneLeftX = 0;
+		float DeadZoneLeftY = 0;
+		float DeadZoneRightX = 0;
+		float DeadZoneRightY = 0;
+
+		bool InvertLeftX = false;
+		bool InvertLeftY = false;
+		bool InvertRightX = false;
+		bool InvertRightY = false;
+	};
+	_Sticks Sticks;
+
+	struct _Triggers
+	{
+		float DeadZoneLeft = 0;
+		float DeadZoneRight = 0;
+	};
+	_Triggers Triggers;
+
+	struct _KMEmu
+	{
+		int LeftStickMode = 0;
+		int RightStickMode = 0;
+		float JoySensX = 0;
+		float JoySensY = 0;
+		float StickValuePressKey = 0;
+		float TriggerValuePressKey = 0;
+	};
+	_KMEmu KMEmu;
+
 	struct _Motion
 	{
 		float DeltaXSmoothed = 0;
 		float DeltaYSmoothed = 0;
+		float SensX = 0;
+		float SensY = 0;
+		float JoySensX = 0;
+		float JoySensY = 0;
+		float WheelAngle = 0;
+		bool WheelPitch = false;
+		bool WheelRoll = false;
+		int WheelInvertPitch = 0;
+		float CustomMulSens = 1.0f;
 	};
 	_Motion Motion;
 };
@@ -200,7 +242,14 @@ struct _ButtonsState{
 	Button DPADUp;
 	Button DPADDown;
 	Button DPADLeft;
+
+	bool DPADAdvancedMode;
 	Button DPADRight;
+	Button DPADUpLeft;
+	Button DPADUpRight;
+	Button DPADDownLeft;
+	Button DPADDownRight;
+
 	Button LeftStick;
 	Button RightStick;
 	Button PS;

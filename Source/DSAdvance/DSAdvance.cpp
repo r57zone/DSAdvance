@@ -352,30 +352,26 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 	return LeftAxisX;
 }
 
-int KMLeftStickMode = 0;
-int KMRightStickMode = 0;
-float KMJoySensX = 0;
-float KMJoySensY = 0;
 void KMStickMode(float StickX, float StickY, int Mode) {
 	if (Mode == WASDStickMode) {
-		KeyPress('W', StickY > 0.2, &ButtonsStates.Up);
-		KeyPress('S', StickY < -0.2, &ButtonsStates.Down);
-		KeyPress('A', StickX < -0.2, &ButtonsStates.Left);
-		KeyPress('D', StickX > 0.2, &ButtonsStates.Right);
+		KeyPress('W', StickY > CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Up);
+		KeyPress('S', StickY < -CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Down);
+		KeyPress('A', StickX < -CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Left);
+		KeyPress('D', StickX > CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Right);
 	} else if (Mode == ArrowsStickMode) {
-		KeyPress(VK_UP, StickY > 0.2, &ButtonsStates.Up);
-		KeyPress(VK_DOWN, StickY < -0.2, &ButtonsStates.Down);
-		KeyPress(VK_RIGHT, StickX > 0.2, &ButtonsStates.Right);
-		KeyPress(VK_LEFT, StickX < -0.2, &ButtonsStates.Left);
+		KeyPress(VK_UP, StickY > CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Up);
+		KeyPress(VK_DOWN, StickY < -CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Down);
+		KeyPress(VK_RIGHT, StickX > CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Right);
+		KeyPress(VK_LEFT, StickX < -CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Left);
 	} else if (Mode == MouseLookStickMode)
-		MouseMove(StickX * KMJoySensX, -StickY * KMJoySensY);
+		MouseMove(StickX * CurGamepad.KMEmu.JoySensX, -StickY * CurGamepad.KMEmu.JoySensY);
 	else if (Mode == MouseWheelStickMode)
 		mouse_event(MOUSEEVENTF_WHEEL, 0, 0, StickY * 50, 0);
 	else if (Mode == NumpadsStickMode) {
-		KeyPress(VK_NUMPAD8, StickY > 0.2, &ButtonsStates.Up);
-		KeyPress(VK_NUMPAD2, StickY < -0.2, &ButtonsStates.Down);
-		KeyPress(VK_NUMPAD4, StickX < -0.2, &ButtonsStates.Left);
-		KeyPress(VK_NUMPAD6, StickX > 0.2, &ButtonsStates.Right);
+		KeyPress(VK_NUMPAD8, StickY > CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Up);
+		KeyPress(VK_NUMPAD2, StickY < -CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Down);
+		KeyPress(VK_NUMPAD4, StickX < -CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Left);
+		KeyPress(VK_NUMPAD6, StickX > CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Right);
 	}
 }
 
@@ -396,6 +392,12 @@ void LoadKMProfile(std::string ProfileFile) {
 	ButtonsStates.DPADRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-RIGHT", "3"));
 	ButtonsStates.DPADDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-DOWN", "4"));
 
+	ButtonsStates.DPADUpLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-UP-LEFT", "NONE"));
+	ButtonsStates.DPADUpRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-UP-RIGHT", "NONE"));
+	ButtonsStates.DPADDownLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-DOWN-LEFT", "NONE"));
+	ButtonsStates.DPADDownRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-DOWN-RIGHT", "NONE"));
+	ButtonsStates.DPADAdvancedMode = !(ButtonsStates.DPADUpLeft.KeyCode == 0 && ButtonsStates.DPADUpRight.KeyCode == 0 && ButtonsStates.DPADDownLeft.KeyCode == 0 && ButtonsStates.DPADDownRight.KeyCode == 0);
+
 	ButtonsStates.Y.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "TRIANGLE-Y", "E"));
 	ButtonsStates.X.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "SQUARE-X", "R"));
 	ButtonsStates.A.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "CROSS-A", "SPACE"));
@@ -404,11 +406,11 @@ void LoadKMProfile(std::string ProfileFile) {
 	ButtonsStates.LeftStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "LEFT-STICK-CLICK", "NONE"));
 	ButtonsStates.RightStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "RIGHT-STICK-CLICK", "NONE"));
 
-	KMLeftStickMode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "LEFT-STICK", "WASD"));
-	KMRightStickMode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "RIGHT-STICK", "MOUSE-LOOK"));
+	CurGamepad.KMEmu.LeftStickMode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "LEFT-STICK", "WASD"));
+	CurGamepad.KMEmu.RightStickMode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "RIGHT-STICK", "MOUSE-LOOK"));
 
-	KMJoySensX = IniFile.ReadFloat("MOUSE", "SensitivityX", 100) * 0.22;
-	KMJoySensY = IniFile.ReadFloat("MOUSE", "SensitivityY", 100) * 0.22;
+	CurGamepad.KMEmu.JoySensX = IniFile.ReadFloat("MOUSE", "SensitivityX", 100) * 0.176;
+	CurGamepad.KMEmu.JoySensY = IniFile.ReadFloat("MOUSE", "SensitivityY", 100) * 0.176;
 }
 
 void MainTextUpdate() {
@@ -499,7 +501,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.9.1");
+	SetConsoleTitle("DSAdvance 0.9.2");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -512,19 +514,21 @@ int main(int argc, char **argv)
 	// Config parameters
 	CIniReader IniFile("Config.ini");
 
-	bool InvertLeftStickX = IniFile.ReadBoolean("Gamepad", "InvertLeftStickX", false);
-	bool InvertLeftStickY = IniFile.ReadBoolean("Gamepad", "InvertLeftStickY", false);
-	bool InvertRightStickX = IniFile.ReadBoolean("Gamepad", "InvertRightStickX", false);
-	bool InvertRightStickY = IniFile.ReadBoolean("Gamepad", "InvertRightStickY", false);
+	CurGamepad.Sticks.InvertLeftX = IniFile.ReadBoolean("Gamepad", "InvertLeftStickX", false);
+	CurGamepad.Sticks.InvertLeftY = IniFile.ReadBoolean("Gamepad", "InvertLeftStickY", false);
+	CurGamepad.Sticks.InvertRightX = IniFile.ReadBoolean("Gamepad", "InvertRightStickX", false);
+	CurGamepad.Sticks.InvertRightY = IniFile.ReadBoolean("Gamepad", "InvertRightStickY", false);
 	AppStatus.HotKeys.ResetKeyName = IniFile.ReadString("Gamepad", "ResetKey", "NONE");
 	int ResetKey = KeyNameToKeyCode(AppStatus.HotKeys.ResetKeyName);
 	bool ShowBatteryStatusOnLightBar = IniFile.ReadBoolean("Gamepad", "ShowBatteryStatusOnLightBar", true);
 	int SleepTimeOut = IniFile.ReadInteger("Gamepad", "SleepTimeOut", 1);
 
-	float DeadZoneLeftStickX = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickX", 0);
-	float DeadZoneLeftStickY = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickY", 0);
-	float DeadZoneRightStickX = IniFile.ReadFloat("Gamepad", "DeadZoneRightStickX", 0);
-	float DeadZoneRightStickY = IniFile.ReadFloat("Gamepad", "DeadZoneRightStickY", 0);
+	CurGamepad.Sticks.DeadZoneLeftX = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickX", 0);
+	CurGamepad.Sticks.DeadZoneLeftY = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickY", 0);
+	CurGamepad.Sticks.DeadZoneRightX = IniFile.ReadFloat("Gamepad", "DeadZoneRightStickX", 0);
+	CurGamepad.Sticks.DeadZoneRightY = IniFile.ReadFloat("Gamepad", "DeadZoneRightStickY", 0);
+	CurGamepad.Triggers.DeadZoneLeft = IniFile.ReadFloat("Gamepad", "DeadZoneLeftTrigger", 0);
+	CurGamepad.Triggers.DeadZoneRight = IniFile.ReadFloat("Gamepad", "DeadZoneRightTrigger", 0);
 
 	float TouchLeftStickX = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensX", 4);
 	float TouchLeftStickY = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensY", 4);
@@ -540,15 +544,17 @@ int main(int argc, char **argv)
 	AppStatus.ChangeModesWithoutPress = IniFile.ReadBoolean("Gamepad", "ChangeModesWithoutPress", false);
 
 	AppStatus.AimMode = IniFile.ReadBoolean("Motion", "AimMode", AimMouseMode);
-	float MotionWheelAngle = IniFile.ReadFloat("Motion", "WheelAngle", 150) / 2.0f;
-	bool MotionWheelPitch = IniFile.ReadBoolean("Motion", "WheelPitch", false);
-	bool MotionWheelRoll = IniFile.ReadBoolean("Motion", "WheelRoll", true);
-	int WheelInvertPitch = IniFile.ReadBoolean("Motion", "WheelInvertPitch", false) ? -1 : 1;
-	float MotionSensX = IniFile.ReadFloat("Motion", "MouseSensX", 100) * 0.135f;
-	float MotionSensY = IniFile.ReadFloat("Motion", "MouseSensY", 90) * 0.135f;
-	float JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 100) * 0.0205;
-	float JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 90) * 0.0205;
-	float CustomMulSens = 1;
+	CurGamepad.Motion.WheelAngle = IniFile.ReadFloat("Motion", "WheelAngle", 150) / 2.0f;
+	CurGamepad.Motion.WheelPitch = IniFile.ReadBoolean("Motion", "WheelPitch", false);
+	CurGamepad.Motion.WheelRoll = IniFile.ReadBoolean("Motion", "WheelRoll", true);
+	CurGamepad.Motion.WheelInvertPitch = IniFile.ReadBoolean("Motion", "WheelInvertPitch", false) ? -1 : 1;
+	CurGamepad.Motion.SensX = IniFile.ReadFloat("Motion", "MouseSensX", 100) * 0.135f;
+	CurGamepad.Motion.SensY = IniFile.ReadFloat("Motion", "MouseSensY", 90) * 0.135f;
+	CurGamepad.Motion.JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 100) * 0.0205;
+	CurGamepad.Motion.JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 90) * 0.0205;
+
+	CurGamepad.KMEmu.StickValuePressKey = IniFile.ReadFloat("KeyboardMouse", "StickValuePressKey", 0.2f);
+	CurGamepad.KMEmu.TriggerValuePressKey = IniFile.ReadFloat("KeyboardMouse", "TriggerValuePressKey", 0.2f);
 
 	int ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
 	int MicCustomKey = KeyNameToKeyCode(IniFile.ReadString("Gamepad", "MicCustomKey", "NONE"));
@@ -643,7 +649,11 @@ int main(int argc, char **argv)
 
 	while (! ( GetAsyncKeyState(VK_LMENU) & 0x8000 && GetAsyncKeyState(VK_ESCAPE) & 0x8000 ) )
 	{
-		if (PeekMessage(&WindowMsgs, NULL, 0, 0, PM_REMOVE)) { TranslateMessage(&WindowMsgs); DispatchMessage(&WindowMsgs); }
+		if (PeekMessage(&WindowMsgs, NULL, 0, 0, PM_REMOVE)) {
+			TranslateMessage(&WindowMsgs);
+			DispatchMessage(&WindowMsgs);
+			if (WindowMsgs.message == WM_QUIT) break;
+		}
 
 		// Reset
 		if ((SkipPollCount == 0 && (IsKeyPressed(VK_CONTROL) && IsKeyPressed('R')) || IsKeyPressed(ResetKey)) || AppStatus.Gamepad.BTReset)
@@ -673,7 +683,9 @@ int main(int argc, char **argv)
 			printf(" Left stick X=%6.2f, ", abs(InputState.stickLX));
 			printf("Y=%6.2f\t", abs(InputState.stickLY));
 			printf("Right stick X=%6.2f ", abs(InputState.stickRX));
-			printf("Y=%6.2f\n", abs(InputState.stickRY));
+			printf("Y=%6.2f\t", abs(InputState.stickRY));
+			printf("Left trigger=%6.2f\t", abs(InputState.lTrigger));
+			printf("Right trigger=%6.2f\n", abs(InputState.rTrigger));
 		}
 
 		// Switch emulation mode
@@ -769,8 +781,8 @@ int main(int argc, char **argv)
 				SkipPollCount = SkipPollTimeOut;
 				if (IsKeyPressed(VK_UP) || InputState.buttons & JSMASK_UP) if (ProfileIndex > 0) ProfileIndex--; else ProfileIndex = KMProfiles.size() - 1;
 				if (IsKeyPressed(VK_DOWN) || InputState.buttons & JSMASK_DOWN) if (ProfileIndex < KMProfiles.size() - 1) ProfileIndex++; else ProfileIndex = 0;
-				MainTextUpdate();
 				LoadKMProfile(KMProfiles[ProfileIndex]);
+				MainTextUpdate();
 				PlaySound(ChangeEmuModeWav, NULL, SND_ASYNC);
 			}
 
@@ -850,27 +862,28 @@ int main(int argc, char **argv)
 		{
 			SkipPollCount = SkipPollTimeOut;
 			GetBatteryInfo(); if (BackOutStateCounter == 0) BackOutStateCounter = 40; // ↑
+			if (BackOutStateCounter == 40) LastLEDBrightness = GamepadOutState.LEDBrightness; // Save on first click (tick)
 			AppStatus.ShowBatteryStatus = true;
 			MainTextUpdate();
 		}
 
-		//printf("%5.2f\t%5.2f\r\n", InputState.stickLX, DeadZoneAxis(InputState.stickLX, DeadZoneLeftStickX));
-		report.sThumbLX = InvertLeftStickX == false ? DeadZoneAxis(InputState.stickLX, DeadZoneLeftStickX) * 32767 : DeadZoneAxis(-InputState.stickLX, DeadZoneLeftStickX) * 32767;
-		report.sThumbLY = InvertLeftStickX == false ? DeadZoneAxis(InputState.stickLY, DeadZoneLeftStickY) * 32767 : DeadZoneAxis(-InputState.stickLY, DeadZoneLeftStickY) * 32767;
-		report.sThumbRX = InvertRightStickX == false ? DeadZoneAxis(InputState.stickRX, DeadZoneRightStickX) * 32767 : DeadZoneAxis(-InputState.stickRX, DeadZoneRightStickX) * 32767;
-		report.sThumbRY = InvertRightStickY == false ? DeadZoneAxis(InputState.stickRY, DeadZoneRightStickY) * 32767 : DeadZoneAxis(-InputState.stickRY, DeadZoneRightStickY) * 32767;
+		//printf("%5.2f\t%5.2f\r\n", InputState.stickLX, DeadZoneAxis(InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX));
+		report.sThumbLX = CurGamepad.Sticks.InvertLeftX == false ? DeadZoneAxis(InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX) * 32767 : DeadZoneAxis(-InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX) * 32767;
+		report.sThumbLY = CurGamepad.Sticks.InvertLeftX == false ? DeadZoneAxis(InputState.stickLY, CurGamepad.Sticks.DeadZoneLeftY) * 32767 : DeadZoneAxis(-InputState.stickLY, CurGamepad.Sticks.DeadZoneLeftY) * 32767;
+		report.sThumbRX = CurGamepad.Sticks.InvertRightX == false ? DeadZoneAxis(InputState.stickRX, CurGamepad.Sticks.DeadZoneRightX) * 32767 : DeadZoneAxis(-InputState.stickRX, CurGamepad.Sticks.DeadZoneRightX) * 32767;
+		report.sThumbRY = CurGamepad.Sticks.InvertRightY == false ? DeadZoneAxis(InputState.stickRY, CurGamepad.Sticks.DeadZoneRightY) * 32767 : DeadZoneAxis(-InputState.stickRY, CurGamepad.Sticks.DeadZoneRightY) * 32767;
 
 		// Auto stick pressing when value is exceeded
 		if (AppStatus.LeftStickMode == LeftStickAutoPressMode && (abs(InputState.stickLX) > AutoPressModeValue || abs(InputState.stickLY) > AutoPressModeValue))
 			report.wButtons |= JSMASK_LCLICK;
 
-		report.bLeftTrigger = InputState.lTrigger * 255;
-		report.bRightTrigger = InputState.rTrigger * 255;
+		report.bLeftTrigger = DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) * 255;
+		report.bRightTrigger = DeadZoneAxis(InputState.rTrigger, CurGamepad.Triggers.DeadZoneRight) * 255;
 
 		if (AppStatus.ExternalPedalsConnected) {
-			if (InputState.lTrigger == 0)
+			if (DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) == 0)
 				report.bLeftTrigger = PedalsValues[0] * 255;
-			if (InputState.rTrigger == 0)
+			if (DeadZoneAxis(InputState.rTrigger, CurGamepad.Triggers.DeadZoneRight) == 0)
 				report.bRightTrigger = PedalsValues[1] * 255;
 		}
 
@@ -927,17 +940,17 @@ int main(int argc, char **argv)
 
 		// Custom sens
 		if (SkipPollCount == 0 && InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_N) {
-			CustomMulSens += 0.2;
-			if (CustomMulSens > 2.4)
-				CustomMulSens = 0.2;
+			CurGamepad.Motion.CustomMulSens += 0.2;
+			if (CurGamepad.Motion.CustomMulSens > 2.4)
+				CurGamepad.Motion.CustomMulSens = 0.2;
  			SkipPollCount = SkipPollTimeOut;
 		}
-		if (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_RCLICK) CustomMulSens = 1; //printf("%5.2f\n", CustomMulSens);
+		if (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_RCLICK) CurGamepad.Motion.CustomMulSens = 1.0f; //printf("%5.2f\n", CustomMulSens);
 
 		// Gamepad modes
 		if (GamepadActionMode == MotionDrivingMode) { // Motion racing  [O--]
-			report.sThumbLX = MotionWheelRoll ? ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Roll), RadToDeg(AnglesOffset.Roll)) * -1, MotionWheelAngle) : report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Yaw), RadToDeg(AnglesOffset.Yaw)) * -1, MotionWheelAngle);
-			if (MotionWheelPitch) report.sThumbLY = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch)) * WheelInvertPitch, MotionWheelAngle);
+			report.sThumbLX = CurGamepad.Motion.WheelRoll ? ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Roll), RadToDeg(AnglesOffset.Roll)) * -1, CurGamepad.Motion.WheelAngle) : report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Yaw), RadToDeg(AnglesOffset.Yaw)) * -1, CurGamepad.Motion.WheelAngle);
+			if (CurGamepad.Motion.WheelPitch) report.sThumbLY = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch)) * CurGamepad.Motion.WheelInvertPitch, CurGamepad.Motion.WheelAngle);
 		} else if (GamepadActionMode == MotionAimingMode || GamepadActionMode == MotionAimingModeOnlyPressed) { // Motion aiming  [--X}]
 			
 			// Low-pass filter
@@ -964,12 +977,12 @@ int main(int argc, char **argv)
 			PreviousAngles.Yaw = MotionAngles.Yaw;
 			PreviousAngles.Pitch = MotionAngles.Pitch;
 			
-			if (GamepadActionMode == MotionAimingMode || (GamepadActionMode == MotionAimingModeOnlyPressed && InputState.lTrigger > 0) )
+			if (GamepadActionMode == MotionAimingMode || (GamepadActionMode == MotionAimingModeOnlyPressed && DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) > 0) )
 				if (AppStatus.AimMode == AimMouseMode)
-					MouseMove(deltaX * -1.0f * MotionSensX * CustomMulSens, deltaY * -1.0f * MotionSensY  * CustomMulSens);
+					MouseMove(deltaX * -1.0f * CurGamepad.Motion.SensX * CurGamepad.Motion.CustomMulSens, deltaY * -1.0f * CurGamepad.Motion.SensY  * CurGamepad.Motion.CustomMulSens);
 				else {
-					report.sThumbRX = std::clamp((int)(ClampFloat(-(deltaX) * JoySensX * CustomMulSens, -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
-					report.sThumbRY = std::clamp((int)(ClampFloat(deltaY * JoySensY * CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
+					report.sThumbRX = std::clamp((int)(ClampFloat(-(deltaX) * CurGamepad.Motion.JoySensX * CurGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
+					report.sThumbRY = std::clamp((int)(ClampFloat(deltaY * CurGamepad.Motion.JoySensY * CurGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
 				}
 
 		} else if (GamepadActionMode == TouchpadSticksMode) { // [-_-] Touchpad sticks
@@ -1026,8 +1039,8 @@ int main(int argc, char **argv)
 
 		// Keyboard and mouse mode
 		if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse && !(InputState.buttons & JSMASK_PS)) {
-			KeyPress(ButtonsStates.LeftTrigger.KeyCode, InputState.lTrigger > 0.2, &ButtonsStates.LeftTrigger);
-			KeyPress(ButtonsStates.RightTrigger.KeyCode, InputState.rTrigger > 0.2, &ButtonsStates.RightTrigger);
+			KeyPress(ButtonsStates.LeftTrigger.KeyCode, InputState.lTrigger > CurGamepad.KMEmu.TriggerValuePressKey, &ButtonsStates.LeftTrigger);
+			KeyPress(ButtonsStates.RightTrigger.KeyCode, InputState.rTrigger > CurGamepad.KMEmu.TriggerValuePressKey, &ButtonsStates.RightTrigger);
 
 			KeyPress(ButtonsStates.LeftBumper.KeyCode, InputState.buttons & JSMASK_L, &ButtonsStates.LeftBumper);
 			KeyPress(ButtonsStates.RightBumper.KeyCode, InputState.buttons & JSMASK_R, &ButtonsStates.RightBumper);
@@ -1035,10 +1048,23 @@ int main(int argc, char **argv)
 			KeyPress(ButtonsStates.Back.KeyCode, InputState.buttons & JSMASK_SHARE || InputState.buttons & JSMASK_CAPTURE, &ButtonsStates.Back);
 			KeyPress(ButtonsStates.Start.KeyCode, InputState.buttons & JSMASK_OPTIONS || InputState.buttons & JSMASK_HOME, &ButtonsStates.Start);
 
-			KeyPress(ButtonsStates.DPADUp.KeyCode, InputState.buttons & JSMASK_UP, &ButtonsStates.DPADUp);
-			KeyPress(ButtonsStates.DPADDown.KeyCode, InputState.buttons & JSMASK_DOWN, &ButtonsStates.DPADDown);
-			KeyPress(ButtonsStates.DPADLeft.KeyCode, InputState.buttons & JSMASK_LEFT, &ButtonsStates.DPADLeft);
-			KeyPress(ButtonsStates.DPADRight.KeyCode, InputState.buttons & JSMASK_RIGHT, &ButtonsStates.DPADRight);
+			if (ButtonsStates.DPADAdvancedMode == false) { // Regular mode  ↑ → ↓ ←
+				KeyPress(ButtonsStates.DPADUp.KeyCode, InputState.buttons & JSMASK_UP, &ButtonsStates.DPADUp);
+				KeyPress(ButtonsStates.DPADDown.KeyCode, InputState.buttons & JSMASK_DOWN, &ButtonsStates.DPADDown);
+				KeyPress(ButtonsStates.DPADLeft.KeyCode, InputState.buttons & JSMASK_LEFT, &ButtonsStates.DPADLeft);
+				KeyPress(ButtonsStates.DPADRight.KeyCode, InputState.buttons & JSMASK_RIGHT, &ButtonsStates.DPADRight);
+			} // Advanced mode ↑ ↗ → ↘ ↓ ↙ ← ↖ for switching in retro games
+			else {
+				KeyPress(ButtonsStates.DPADUp.KeyCode, InputState.buttons & JSMASK_UP && !(InputState.buttons & JSMASK_LEFT) && !(InputState.buttons & JSMASK_RIGHT), &ButtonsStates.DPADUp);
+				KeyPress(ButtonsStates.DPADLeft.KeyCode, InputState.buttons & JSMASK_LEFT && !(InputState.buttons & JSMASK_UP) && !(InputState.buttons & JSMASK_DOWN), &ButtonsStates.DPADLeft);
+				KeyPress(ButtonsStates.DPADRight.KeyCode, InputState.buttons & JSMASK_RIGHT && !(InputState.buttons & JSMASK_UP) && !(InputState.buttons & JSMASK_DOWN), &ButtonsStates.DPADRight);
+				KeyPress(ButtonsStates.DPADDown.KeyCode, InputState.buttons & JSMASK_DOWN && !(InputState.buttons & JSMASK_LEFT) && !(InputState.buttons & JSMASK_RIGHT), &ButtonsStates.DPADDown);
+
+				KeyPress(ButtonsStates.DPADUpLeft.KeyCode, InputState.buttons & JSMASK_UP && InputState.buttons & JSMASK_LEFT, &ButtonsStates.DPADUpLeft);
+				KeyPress(ButtonsStates.DPADUpRight.KeyCode, InputState.buttons & JSMASK_UP && InputState.buttons & JSMASK_RIGHT, &ButtonsStates.DPADUpRight);
+				KeyPress(ButtonsStates.DPADDownLeft.KeyCode, InputState.buttons & JSMASK_DOWN && InputState.buttons & JSMASK_LEFT, &ButtonsStates.DPADDownLeft);
+				KeyPress(ButtonsStates.DPADDownRight.KeyCode, InputState.buttons & JSMASK_DOWN && InputState.buttons & JSMASK_RIGHT, &ButtonsStates.DPADDownRight);
+			}
 
 			KeyPress(ButtonsStates.Y.KeyCode, InputState.buttons & JSMASK_N, &ButtonsStates.Y);
 			KeyPress(ButtonsStates.A.KeyCode, InputState.buttons & JSMASK_S, &ButtonsStates.A);
@@ -1048,8 +1074,8 @@ int main(int argc, char **argv)
 			KeyPress(ButtonsStates.LeftStick.KeyCode, InputState.buttons & JSMASK_LCLICK, &ButtonsStates.LeftStick);
 			KeyPress(ButtonsStates.RightStick.KeyCode, InputState.buttons & JSMASK_RCLICK, &ButtonsStates.RightStick);
 
-			KMStickMode(DeadZoneAxis(InputState.stickLX, DeadZoneLeftStickX), DeadZoneAxis(InputState.stickLY, DeadZoneLeftStickY), KMLeftStickMode);
-			KMStickMode(DeadZoneAxis(InputState.stickRX, DeadZoneRightStickX), DeadZoneAxis(InputState.stickRY, DeadZoneRightStickY), KMRightStickMode);
+			KMStickMode(DeadZoneAxis(InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX), DeadZoneAxis(InputState.stickLY, CurGamepad.Sticks.DeadZoneLeftY), CurGamepad.KMEmu.LeftStickMode);
+			KMStickMode(DeadZoneAxis(InputState.stickRX, CurGamepad.Sticks.DeadZoneRightX), DeadZoneAxis(InputState.stickRY, CurGamepad.Sticks.DeadZoneRightY), CurGamepad.KMEmu.RightStickMode);
 		}
 
 		if (AppStatus.LastConnectionType != CurGamepad.USBConnection) AppStatus.Gamepad.BTReset = true; AppStatus.LastConnectionType = CurGamepad.USBConnection; // Reset if the connection has been changed. Fixes BT bug.
