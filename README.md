@@ -80,5 +80,11 @@ In some games, for example, Max Payne or Crysis 2, unfortunately, this does not 
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) for the battery level.
 * ChatGPT for improved aiming.
 
+## Building
+1. Download the sources and unzip them.
+2. [Download](https://code.visualstudio.com/download) and [install](https://github.com/r57zone/RE4ExtendedControl/assets/9499881/69dafce6-fd57-4768-83eb-c1bb69901f07) Microsoft Visual Studio Code 2017+.
+3. Update the project properties with your tools and SDK.
+4. Choose the `Release` build type (if `Debug` is installed) and `x86`, then compile the project.
+
 ## Feedback
 `r57zone[at]gmail.com`

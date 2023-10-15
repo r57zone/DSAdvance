@@ -83,5 +83,11 @@
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) за уровень заряда батареи.
 * ChatGPT за улучшения прицеливания.
 
+## Сборка
+1. Загрузите исходники и распакуйте.
+2. [Загрузите Microsoft Visual Studio Code 2017+](https://code.visualstudio.com/download) и [установите](https://github.com/r57zone/RE4ExtendedControl/assets/9499881/69dafce6-fd57-4768-83eb-c1bb69901f07).
+3. Измените в свойствах проекта набор инструментов и SDK на ваш.
+4. Выберите тип сборки `Release` (если установлен `Debug`) и `x86`, после чего скомплириуйте проект.
+
 ## Обратная связь
 `r57zone[собака]gmail.com`
