@@ -36,13 +36,14 @@
 Для выключения DualSense или DualShock 4 удерживайте кнопку PS в течении 10-15 секунд, пока контроллер не выключиться.
 
 ## Настройка
-1. Установить [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases).
+1. Установить [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases).
 2. Установить Microsoft Visual C++ Redistributable 2017 или новее.
 3. Подключить геймпад Sony DualSense, DualShock 4, Nintendo Pro контроллер или JoyCon-ы.
 4. Распаковать и запустить DSAdvance.
 5. При необходимости изменить мёртвые зоны стиков или другие параметры, в конфигурационном файле `Config.ini`.
 6. При использовании со Steam играми, в настройках контроллера, отключите "персональные настройки Playstation".
-7. Также рекомендуется установить [HidHide](https://github.com/ViGEm/HidHide/releases/), после чего в "HidHide Configuration Client" нужно добавить "DSAdvance.exe" и включить параметр `Enable device hiding` (если выключен). Необходимо для того, чтобы игра не видела наш контроллер, а видела только эмулируемый Xbox 360 геймпад.
+7. Также рекомендуется установить [HidHide](https://github.com/nefarius/HidHide/releases), после чего в "HidHide Configuration Client" нужно добавить "DSAdvance.exe" и включить параметр `Enable device hiding` (если выключен). Необходимо для того, чтобы игра не видела наш контроллер, а видела только эмулируемый Xbox 360 геймпад.
+8. (Необезательно) Для запуске из области уведомлений (tray), по двойному клику, можно добавить ярлык на `Launcher.exe` в автозагрузку Windows `%AppData%\Microsoft\Windows\Start Menu\Programs\Startup`.
 
 
 ## Возможные проблемы
