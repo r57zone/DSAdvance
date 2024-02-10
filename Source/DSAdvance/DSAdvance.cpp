@@ -501,7 +501,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.9.2");
+	SetConsoleTitle("DSAdvance 0.9.3");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -669,6 +669,9 @@ int main(int argc, char **argv)
 
 		XUSB_REPORT_INIT(&report);
 		InputState = JslGetSimpleState(CurGamepad.deviceID[0]);
+		if (AppStatus.ControllerCount < 1)
+			InputState = { 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+
 		MotionState = JslGetMotionState(CurGamepad.deviceID[0]);
 		MotionAngles = QuaternionToEulerAngle(MotionState.quatW, MotionState.quatZ, MotionState.quatX, MotionState.quatY);
 
@@ -701,15 +704,15 @@ int main(int argc, char **argv)
 			if (AppStatus.GamepadEmulationMode > EmuGamepadMaxModes) AppStatus.GamepadEmulationMode = EmuGamepadEnabled;
 			if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled || AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
 				if (AppStatus.XboxGamepadAttached) {
-					vigem_target_x360_unregister_notification(x360);
-					vigem_target_remove(client, x360);
+					//vigem_target_x360_unregister_notification(x360);
+					//vigem_target_remove(client, x360);
 					AppStatus.XboxGamepadAttached = false;
 				}
 			} else if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled || AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving) {
 				if (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving) AppStatus.AimMode = AimMouseMode;
 				if (AppStatus.XboxGamepadAttached == false) {
-					ret = vigem_target_add(client, x360);
-					ret = vigem_target_x360_register_notification(client, x360, &notification, nullptr);
+					//ret = vigem_target_add(client, x360);
+					//ret = vigem_target_x360_register_notification(client, x360, &notification, nullptr);
 					AppStatus.XboxGamepadAttached = true;
 				}
 			}
@@ -717,8 +720,8 @@ int main(int argc, char **argv)
 			if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
 				LoadKMProfile(KMProfiles[ProfileIndex]);
 
-			if ( ( (LastGamepadEmuMode == EmuGamepadEnabled && AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving) || (LastGamepadEmuMode == EmuGamepadOnlyDriving && AppStatus.GamepadEmulationMode == EmuGamepadEnabled) ) ||
-				 ( (LastGamepadEmuMode == EmuGamepadDisabled && AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) || (LastGamepadEmuMode == EmuKeyboardAndMouse && AppStatus.GamepadEmulationMode == EmuGamepadDisabled) ) )
+			//if ( ( (LastGamepadEmuMode == EmuGamepadEnabled && AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving) || (LastGamepadEmuMode == EmuGamepadOnlyDriving && AppStatus.GamepadEmulationMode == EmuGamepadEnabled) ) ||
+				 //( (LastGamepadEmuMode == EmuGamepadDisabled && AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) || (LastGamepadEmuMode == EmuKeyboardAndMouse && AppStatus.GamepadEmulationMode == EmuGamepadDisabled) ) )
 				PlaySound(ChangeEmuModeWav, NULL, SND_ASYNC);
 
 			MainTextUpdate();
@@ -866,6 +869,7 @@ int main(int argc, char **argv)
 			AppStatus.ShowBatteryStatus = true;
 			MainTextUpdate();
 		}
+
 
 		//printf("%5.2f\t%5.2f\r\n", InputState.stickLX, DeadZoneAxis(InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX));
 		report.sThumbLX = CurGamepad.Sticks.InvertLeftX == false ? DeadZoneAxis(InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX) * 32767 : DeadZoneAxis(-InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX) * 32767;
@@ -1053,8 +1057,8 @@ int main(int argc, char **argv)
 				KeyPress(ButtonsStates.DPADDown.KeyCode, InputState.buttons & JSMASK_DOWN, &ButtonsStates.DPADDown);
 				KeyPress(ButtonsStates.DPADLeft.KeyCode, InputState.buttons & JSMASK_LEFT, &ButtonsStates.DPADLeft);
 				KeyPress(ButtonsStates.DPADRight.KeyCode, InputState.buttons & JSMASK_RIGHT, &ButtonsStates.DPADRight);
-			} // Advanced mode ↑ ↗ → ↘ ↓ ↙ ← ↖ for switching in retro games
-			else {
+			 
+			} else { // Advanced mode ↑ ↗ → ↘ ↓ ↙ ← ↖ for switching in retro games
 				KeyPress(ButtonsStates.DPADUp.KeyCode, InputState.buttons & JSMASK_UP && !(InputState.buttons & JSMASK_LEFT) && !(InputState.buttons & JSMASK_RIGHT), &ButtonsStates.DPADUp);
 				KeyPress(ButtonsStates.DPADLeft.KeyCode, InputState.buttons & JSMASK_LEFT && !(InputState.buttons & JSMASK_UP) && !(InputState.buttons & JSMASK_DOWN), &ButtonsStates.DPADLeft);
 				KeyPress(ButtonsStates.DPADRight.KeyCode, InputState.buttons & JSMASK_RIGHT && !(InputState.buttons & JSMASK_UP) && !(InputState.buttons & JSMASK_DOWN), &ButtonsStates.DPADRight);
@@ -1082,9 +1086,12 @@ int main(int argc, char **argv)
 
 		if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled || (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving && GamepadActionMode == MotionDrivingMode) || AppStatus.XboxGamepadReset) {
 			if (AppStatus.XboxGamepadReset) { AppStatus.XboxGamepadReset = false; XUSB_REPORT_INIT(&report); }
-			if (AppStatus.XboxGamepadAttached)
-				ret = vigem_target_x360_update(client, x360, report);
+			//if (AppStatus.XboxGamepadAttached)
+				//ret = vigem_target_x360_update(client, x360, report);
 		}
+
+		if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) XUSB_REPORT_INIT(&report); // Temporary hack(Vigem always, no removal)
+		ret = vigem_target_x360_update(client, x360, report);
 
 		// Battery level display
 		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0; GamepadOutState.PlayersCount = 0; if (ShowBatteryStatusOnLightBar) GamepadOutState.LEDBrightness = LastLEDBrightness; GamepadSetState(GamepadOutState); AppStatus.ShowBatteryStatus = false; MainTextUpdate(); } BackOutStateCounter--; }
@@ -1106,11 +1113,11 @@ int main(int argc, char **argv)
 		CloseHandle(hSerial);
 	}
 
-	if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled || (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving)) {
-		vigem_target_x360_unregister_notification(x360);
-		vigem_target_remove(client, x360);
-		vigem_target_free(x360);
-	}
+	//if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled || (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving)) {
+	vigem_target_x360_unregister_notification(x360);
+	vigem_target_remove(client, x360);
+	vigem_target_free(x360);
+	//}
 
 	vigem_disconnect(client);
 	vigem_free(client);
