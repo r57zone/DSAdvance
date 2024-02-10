@@ -2,7 +2,7 @@
 [![RU](https://user-images.githubusercontent.com/9499881/27683795-5b0fbac6-5cd8-11e7-929c-057833e01fb1.png)](https://github.com/r57zone/DSAdvance/blob/master/README.RU.md)
 
 # DSAdvance
-Продвинутая эмуляция Xbox геймпада для Sony DualSense, DualShock 4, Nintendo Pro контроллера или Joycon-ов. Поддерживается прицеливание и вождение наклонами геймпада, эмуляция стиков на тачпаде, эмуляция клавиатуры и мыши, а также [внешние педали](https://github.com/r57zone/XboxExternalPedals). Работает на базе драйвера [ViGEm](https://github.com/ViGEm).
+Продвинутая эмуляция Xbox геймпада для Sony DualSense, DualShock 4, Nintendo Pro контроллера или Joycon-ов. Поддерживается прицеливание и вождение наклонами геймпада, эмуляция стиков на тачпаде, эмуляция клавиатуры и мыши, а также [внешние педали](https://github.com/r57zone/XboxExternalPedals). Работает на базе драйвера [ViGEm](https://github.com/nefarius/ViGEmBus).
 
 [![](https://user-images.githubusercontent.com/9499881/164945071-5b9f86dd-c396-45a5-817b-fc7068450f02.gif)](https://youtu.be/gkyqO_HuPnk)
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
