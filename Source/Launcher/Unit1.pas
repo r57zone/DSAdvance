@@ -56,7 +56,7 @@ var
   SleepTimeOut: integer;
   DSAdvanceApp: HWND;
 
-  IDS_RUN, IDS_STOP, IDS_SHOW, IDS_HIDE, IDS_LAST_UPDATE: string;
+  IDS_RUN, IDS_STOP, IDS_SHOW, IDS_HIDE, IDS_HIDHIDE_NOT_FOUND, IDS_LAST_UPDATE: string;
 
 implementation
 
@@ -111,10 +111,8 @@ begin
   if Ini.ReadBool('Launcher', 'RunInBackground', false) then RunInBgBtn.Click;
   DSAdvanceTitle:=Ini.ReadString('Launcher', 'DSAdvanceTitle', 'DSAdvance');
   HidHidePath:=Ini.ReadString('Launcher', 'HidHidePath', '');
-  if not FileExists(HidHidePath) then begin
+  if not FileExists(HidHidePath) then
     HidHidePath:='';
-    HidHideBtn.Visible:=false;
-  end;
   SleepTimeOut:=Ini.ReadInteger('Gamepad', 'SleepTimeOut', 1) * 2;
   Ini.Free;
   Application.Title:=Caption;
@@ -132,12 +130,14 @@ begin
     IDS_STOP:='Остановить';
     IDS_SHOW:='Показать';
     IDS_HIDE:='Скрыть';
+    IDS_HIDHIDE_NOT_FOUND:='Утилита HidHide не найдена. Измените путь в конфигурационном файле.';
   end else begin
     IDS_RUN:='Run';
     IDS_STOP:='Stop';
     RunStopBtn.Caption:=IDS_RUN;
     IDS_SHOW:='Show';
     IDS_HIDE:='Hide';
+    IDS_HIDHIDE_NOT_FOUND:='The HidHide utility was not found. Change the path in the configuration file.';
     SetupBtn.Caption:='Setup';
     ConfigBtn.Caption:='Options';
     ProfilesBtn.Caption:='Profiles';
@@ -263,7 +263,10 @@ end;
 
 procedure TMain.HidHideBtnClick(Sender: TObject);
 begin
-  if HidHidePath = '' then Exit;
+  if HidHidePath = '' then begin
+    Application.MessageBox(PChar(IDS_HIDHIDE_NOT_FOUND), PChar(Caption), MB_ICONWARNING);
+    Exit;
+  end;
   ShellExecute(Handle, 'open', PChar(HidHidePath), nil, nil, SW_SHOWNORMAL);
 end;
 
