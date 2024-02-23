@@ -501,7 +501,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.9.3");
+	SetConsoleTitle("DSAdvance 0.9.4");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -1090,7 +1090,10 @@ int main(int argc, char **argv)
 				//ret = vigem_target_x360_update(client, x360, report);
 		}
 
-		if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) XUSB_REPORT_INIT(&report); // Temporary hack(Vigem always, no removal)
+		if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) { // Temporary hack(Vigem always, no removal)
+			XUSB_REPORT_INIT(&report);
+			report.sThumbLX = 1; // Maybe the crash is due to power saving? temporary test
+		} 
 		ret = vigem_target_x360_update(client, x360, report);
 
 		// Battery level display
