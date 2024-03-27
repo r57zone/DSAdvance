@@ -27,7 +27,7 @@ object Main: TMain
       Visible = False
       OnClick = ShowHideAppBtnClick
     end
-    object N3: TMenuItem
+    object N1: TMenuItem
       Caption = '-'
     end
     object SetupBtn: TMenuItem
@@ -36,14 +36,14 @@ object Main: TMain
         Caption = #1055#1072#1088#1072#1084#1077#1090#1088#1099
         OnClick = ConfigBtnClick
       end
-      object N5: TMenuItem
+      object N4: TMenuItem
         Caption = '-'
       end
       object ProfilesBtn: TMenuItem
         Caption = #1055#1088#1086#1092#1080#1083#1080
         OnClick = ProfilesBtnClick
       end
-      object N1: TMenuItem
+      object N5: TMenuItem
         Caption = '-'
       end
       object HidHideBtn: TMenuItem
@@ -54,7 +54,7 @@ object Main: TMain
         Caption = #1055#1088#1086#1074#1077#1088#1082#1072' '#1075#1077#1081#1084#1087#1072#1076#1072
         OnClick = GamepadTestBtnClick
       end
-      object N4: TMenuItem
+      object N6: TMenuItem
         Caption = '-'
       end
       object RunInBgBtn: TMenuItem
@@ -64,6 +64,34 @@ object Main: TMain
     end
     object N2: TMenuItem
       Caption = '-'
+    end
+    object UtilitiesBtn: TMenuItem
+      Caption = #1059#1090#1080#1083#1080#1090#1099
+      Visible = False
+      object Utility1Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 1'
+        Visible = False
+        OnClick = Utility1BtnClick
+      end
+      object Utility2Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 2'
+        Visible = False
+        OnClick = Utility2BtnClick
+      end
+      object Utility3Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 3'
+        Visible = False
+        OnClick = Utility3BtnClick
+      end
+      object Utility4Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 4'
+        Visible = False
+        OnClick = Utility4BtnClick
+      end
+    end
+    object N3: TMenuItem
+      Caption = '-'
+      Visible = False
     end
     object CloseBtn: TMenuItem
       Caption = #1042#1099#1093#1086#1076

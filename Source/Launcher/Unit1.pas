@@ -11,20 +11,26 @@ type
     TrayPopupMenu: TPopupMenu;
     CloseBtn: TMenuItem;
     N2: TMenuItem;
-    N3: TMenuItem;
+    N1: TMenuItem;
     RunStopBtn: TMenuItem;
     RunInBgBtn: TMenuItem;
     SetupBtn: TMenuItem;
-    N1: TMenuItem;
+    N5: TMenuItem;
     ConfigBtn: TMenuItem;
-    N4: TMenuItem;
+    N6: TMenuItem;
     GamepadTestBtn: TMenuItem;
     ShowHideAppBtn: TMenuItem;
     CheckAppClosedTimer: TTimer;
     XPManifest1: TXPManifest;
-    N5: TMenuItem;
+    N4: TMenuItem;
     ProfilesBtn: TMenuItem;
     HidHideBtn: TMenuItem;
+    N3: TMenuItem;
+    UtilitiesBtn: TMenuItem;
+    Utility1Btn: TMenuItem;
+    Utility2Btn: TMenuItem;
+    Utility3Btn: TMenuItem;
+    Utility4Btn: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure CloseBtnClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -36,8 +42,13 @@ type
     procedure CheckAppClosedTimerTimer(Sender: TObject);
     procedure ProfilesBtnClick(Sender: TObject);
     procedure HidHideBtnClick(Sender: TObject);
+    procedure Utility1BtnClick(Sender: TObject);
+    procedure Utility2BtnClick(Sender: TObject);
+    procedure Utility3BtnClick(Sender: TObject);
+    procedure Utility4BtnClick(Sender: TObject);
   private
     procedure DefaultHandler(var Message); override;
+    procedure OpenUtility(FileName: string);
   protected
     procedure IconMouse(var Msg: TMessage); message WM_USER + 1;
     { Private declarations }
@@ -56,7 +67,9 @@ var
   SleepTimeOut: integer;
   DSAdvanceApp: HWND;
 
-  IDS_RUN, IDS_STOP, IDS_SHOW, IDS_HIDE, IDS_HIDHIDE_NOT_FOUND, IDS_LAST_UPDATE: string;
+  IDS_RUN, IDS_STOP, IDS_SHOW, IDS_HIDE, IDS_UTILITY_NOT_FOUND, IDS_LAST_UPDATE: string;
+
+  Utility1Path, Utility2Path, Utility3Path, Utility4Path: string;
 
 implementation
 
@@ -114,7 +127,24 @@ begin
   if not FileExists(HidHidePath) then
     HidHidePath:='';
   SleepTimeOut:=Ini.ReadInteger('Gamepad', 'SleepTimeOut', 1) * 2;
+
+  Utility1Path:=Ini.ReadString('Launcher', 'UtilityPath1', '');
+  Utility1Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle1', '');
+  Utility2Path:=Ini.ReadString('Launcher', 'UtilityPath2', '');
+  Utility2Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle2', '');
+  Utility3Path:=Ini.ReadString('Launcher', 'UtilityPath3', '');
+  Utility3Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle3', '');
+  Utility4Path:=Ini.ReadString('Launcher', 'UtilityPath4', '');
+  Utility4Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle4', '');
+
+  UtilitiesBtn.Visible:=(Utility1Path <> '') or (Utility2Path <> '') or (Utility3Path <> '') or (Utility4Path <> '');
+  N3.Visible:=UtilitiesBtn.Visible;
+  Utility1Btn.Visible:=Utility1Path <> '';
+  Utility2Btn.Visible:=Utility2Path <> '';
+  Utility3Btn.Visible:=Utility3Path <> '';
+  Utility4Btn.Visible:=Utility4Path <> '';
   Ini.Free;
+
   Application.Title:=Caption;
   WM_TASKBARCREATED:=RegisterWindowMessage('TaskbarCreated');
   
@@ -130,19 +160,36 @@ begin
     IDS_STOP:='Остановить';
     IDS_SHOW:='Показать';
     IDS_HIDE:='Скрыть';
-    IDS_HIDHIDE_NOT_FOUND:='Утилита HidHide не найдена. Измените путь в конфигурационном файле.';
+    IDS_UTILITY_NOT_FOUND:='Утилита не найдена. Измените путь в конфигурационном файле.';
+    if Utility1Btn.Caption = '' then
+      Utility1Btn.Caption:='Утилита 1';
+    if Utility2Btn.Caption = '' then
+      Utility2Btn.Caption:='Утилита 2';
+    if Utility3Btn.Caption = '' then
+      Utility3Btn.Caption:='Утилита 3';
+    if Utility4Btn.Caption = '' then
+      Utility4Btn.Caption:='Утилита 4';
   end else begin
     IDS_RUN:='Run';
     IDS_STOP:='Stop';
     RunStopBtn.Caption:=IDS_RUN;
     IDS_SHOW:='Show';
     IDS_HIDE:='Hide';
-    IDS_HIDHIDE_NOT_FOUND:='The HidHide utility was not found. Change the path in the configuration file.';
+    IDS_UTILITY_NOT_FOUND:='The utility was not found. Change the path in the configuration file.';
     SetupBtn.Caption:='Setup';
     ConfigBtn.Caption:='Options';
     ProfilesBtn.Caption:='Profiles';
     RunInBgBtn.Caption:='Run in background';
     GamepadTestBtn.Caption:='Gamepad test';
+    UtilitiesBtn.Caption:='Utilities';
+    if Utility1Btn.Caption = '' then
+      Utility1Btn.Caption:='Utility 1';
+    if Utility2Btn.Caption = '' then
+      Utility2Btn.Caption:='Utility 2';
+    if Utility3Btn.Caption = '' then
+      Utility3Btn.Caption:='Utility 3';
+    if Utility4Btn.Caption = '' then
+      Utility4Btn.Caption:='Utility 4';
     CloseBtn.Caption:='Exit';
   end;
 end;
@@ -263,11 +310,36 @@ end;
 
 procedure TMain.HidHideBtnClick(Sender: TObject);
 begin
-  if HidHidePath = '' then begin
-    Application.MessageBox(PChar(IDS_HIDHIDE_NOT_FOUND), PChar(Caption), MB_ICONWARNING);
+  OpenUtility(HidHidePath);
+end;
+
+procedure TMain.OpenUtility(FileName: string);
+begin
+  if (FileName = '') or (FileExists(FileName) = false) then begin
+    Application.MessageBox(PChar(IDS_UTILITY_NOT_FOUND), PChar(Caption), MB_ICONWARNING);
     Exit;
   end;
-  ShellExecute(Handle, 'open', PChar(HidHidePath), nil, nil, SW_SHOWNORMAL);
+  ShellExecute(Handle, 'open', PChar(FileName), nil, nil, SW_SHOWNORMAL);
+end;
+
+procedure TMain.Utility1BtnClick(Sender: TObject);
+begin
+  OpenUtility(Utility1Path);
+end;
+
+procedure TMain.Utility2BtnClick(Sender: TObject);
+begin
+  OpenUtility(Utility2Path);
+end;
+
+procedure TMain.Utility3BtnClick(Sender: TObject);
+begin
+  OpenUtility(Utility3Path);
+end;
+
+procedure TMain.Utility4BtnClick(Sender: TObject);
+begin
+  OpenUtility(Utility4Path);
 end;
 
 end.
