@@ -77,9 +77,9 @@
 #define MouseWheelStickMode				3
 #define NumpadsStickMode				4
 
-#define VK_VOLUME_DOWN					174
-#define VK_VOLUME_UP					175
-#define VK_VOLUME_MUTE					173
+#define VK_VOLUME_DOWN2					174 // VK_VOLUME_DOWN - already exists
+#define VK_VOLUME_UP2					175
+#define VK_VOLUME_MUTE2					173
 
 #define VK_MOUSE_LEFT_CLICK				501
 #define VK_MOUSE_MIDDLE_CLICK			502
@@ -535,9 +535,9 @@ int KeyNameToKeyCode(std::string KeyName) {
 	else if (KeyName == "NUMPAD-DEL") return VK_DECIMAL;
 
 	// Additional
-	else if (KeyName == "VOLUME-UP") return VK_VOLUME_UP;
-	else if (KeyName == "VOLUME-DOWN") return VK_VOLUME_DOWN;
-	else if (KeyName == "VOLUME-MUTE") return VK_VOLUME_MUTE;
+	else if (KeyName == "VOLUME-UP") return VK_VOLUME_UP2;
+	else if (KeyName == "VOLUME-DOWN") return VK_VOLUME_DOWN2;
+	else if (KeyName == "VOLUME-MUTE") return VK_VOLUME_MUTE2;
 	else if (KeyName == "HIDE-APPS") return VK_HIDE_APPS;
 	else if (KeyName == "SWITCH-APP") return VK_SWITCH_APP;
 	else if (KeyName == "DISPLAY-KEYBOARD") return VK_DISPLAY_KEYBOARD;

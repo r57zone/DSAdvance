@@ -501,7 +501,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.9.4");
+	SetConsoleTitle("DSAdvance 0.9.5");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -645,7 +645,7 @@ int main(int argc, char **argv)
 	TouchpadTouch FirstTouch, SecondTouch;
 	
 	auto previous_time = std::chrono::high_resolution_clock::now();
-	EulerAngles PreviousAngles = {0, 0, 0}, DeltaAnges;
+	EulerAngles PreviousAngles = {0, 0, 0};
 
 	while (! ( GetAsyncKeyState(VK_LMENU) & 0x8000 && GetAsyncKeyState(VK_ESCAPE) & 0x8000 ) )
 	{
@@ -878,7 +878,7 @@ int main(int argc, char **argv)
 		report.sThumbRY = CurGamepad.Sticks.InvertRightY == false ? DeadZoneAxis(InputState.stickRY, CurGamepad.Sticks.DeadZoneRightY) * 32767 : DeadZoneAxis(-InputState.stickRY, CurGamepad.Sticks.DeadZoneRightY) * 32767;
 
 		// Auto stick pressing when value is exceeded
-		if (AppStatus.LeftStickMode == LeftStickAutoPressMode && (abs(InputState.stickLX) > AutoPressModeValue || abs(InputState.stickLY) > AutoPressModeValue))
+		if (AppStatus.LeftStickMode == LeftStickAutoPressMode && ( sqrt(InputState.stickLX * InputState.stickLX + InputState.stickLY * InputState.stickLY) >= AutoPressModeValue ))
 			report.wButtons |= JSMASK_LCLICK;
 
 		report.bLeftTrigger = DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) * 255;
@@ -938,8 +938,8 @@ int main(int argc, char **argv)
 		if (PSReleasedCount > 0) PSReleasedCount--;
 
 		KeyPress(VK_GAMEBAR, PSOnlyCheckCount == 1 && PSOnlyPressed, &ButtonsStates.PS);
-		KeyPress(VK_VOLUME_DOWN, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_W, &ButtonsStates.VolumeDown);
-		KeyPress(VK_VOLUME_UP, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_E, &ButtonsStates.VolumeUP);
+		KeyPress(VK_VOLUME_DOWN2, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_W, &ButtonsStates.VolumeDown);
+		KeyPress(VK_VOLUME_UP2, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_E, &ButtonsStates.VolumeUP);
 		KeyPress(ScreenShotKey, InputState.buttons & JSMASK_MIC || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_S), &ButtonsStates.Mic); // + DualShock 4
 
 		// Custom sens
