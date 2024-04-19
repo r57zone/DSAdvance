@@ -15,6 +15,7 @@
 #include <atlstr.h>
 #include <dbt.h>
 #include <chrono>
+#include <mmsystem.h>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -22,7 +23,7 @@ void ArduinoRead()
 {
 	DWORD bytesRead;
 
-	while (AppStatus.ExternalPedalsConnected) {
+	while (AppStatus.ExternalPedalsArduinoConnected) {
 		ReadFile(hSerial, &PedalsValues, sizeof(PedalsValues), &bytesRead, 0);
 
 		if (PedalsValues[0] > 1.0 || PedalsValues[0] < 0 || PedalsValues[1] > 1.0 || PedalsValues[1] < 0)
@@ -438,8 +439,10 @@ void MainTextUpdate() {
 		printf_s(" Emulation: Keyboard and mouse (%s).\n Change profiles with \"ALT + Up | Down\" or \"PS + DPAD Up | Down\".\n", KMProfiles[ProfileIndex].c_str());
 	printf(" Press \"ALT + Q | Left | Right\" or \"PS + DPAD Left | Right\" to switch emulation.\n");
 
-	if (AppStatus.ExternalPedalsConnected)
-		printf(" External pedals connected.\n");
+	if (AppStatus.ExternalPedalsDInputConnected)
+		printf(" External pedals (DInput) connected.\n");
+	if (AppStatus.ExternalPedalsArduinoConnected)
+		printf(" External pedals (Arduino) connected.\n");
 
 	if (AppStatus.AimMode == AimMouseMode) printf(" AIM mode = mouse"); else printf(" AIM mode = mouse-joystick");
 	printf(", press \"ALT + A\" or \"PS + R1\" to switch.\n");
@@ -501,7 +504,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.9.5");
+	SetConsoleTitle("DSAdvance 0.9.6");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -560,8 +563,31 @@ int main(int argc, char **argv)
 	int MicCustomKey = KeyNameToKeyCode(IniFile.ReadString("Gamepad", "MicCustomKey", "NONE"));
 	if (MicCustomKey == 0) AppStatus.ScreenshotMode = ScreenShotXboxGameBarMode; // If not set, then hide this mode
 	else ScreenShotKey = MicCustomKey; 
-	
+
+	// External pedals
 	int ExternalPedalsCOMPort = IniFile.ReadInteger("ExternalPedals", "COMPort", 0);
+
+	JOYINFOEX joyInfo;
+	JOYCAPS joyCaps;
+	joyInfo.dwFlags = JOY_RETURNALL;
+	joyInfo.dwSize = sizeof(joyInfo);
+	int JoyIndex = JOYSTICKID1;
+
+	if (IniFile.ReadBoolean("ExternalPedals", "DInput", false)) {
+		if (joyGetPosEx(JOYSTICKID1, &joyInfo) == JOYERR_NOERROR)
+			if (joyGetDevCaps(JoyIndex, &joyCaps, sizeof(joyCaps)) == JOYERR_NOERROR && joyCaps.wNumButtons == 16) { // DualSense - 15, DigiJoy - 16
+				JoyIndex = JOYSTICKID1;
+				AppStatus.ExternalPedalsDInputConnected = true;
+				ExternalPedalsCOMPort = 0;
+			}
+
+		if (AppStatus.ExternalPedalsDInputConnected == false && joyGetPosEx(JOYSTICKID2, &joyInfo) == JOYERR_NOERROR) {
+			JoyIndex = JOYSTICKID2;
+			AppStatus.ExternalPedalsDInputConnected = true;
+			ExternalPedalsCOMPort = 0;
+		}
+	}
+
 	if (ExternalPedalsCOMPort != 0) {
 		char sPortName[32];
 		sprintf_s(sPortName, "\\\\.\\COM%d", ExternalPedalsCOMPort);
@@ -582,7 +608,7 @@ int main(int argc, char **argv)
 
 				if (SetCommState(hSerial, &dcbSerialParams))
 				{
-					AppStatus.ExternalPedalsConnected = true;
+					AppStatus.ExternalPedalsArduinoConnected = true;
 					PurgeComm(hSerial, PURGE_TXCLEAR | PURGE_RXCLEAR);
 					pArduinoReadThread = new std::thread(ArduinoRead);
 				}
@@ -884,7 +910,14 @@ int main(int argc, char **argv)
 		report.bLeftTrigger = DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) * 255;
 		report.bRightTrigger = DeadZoneAxis(InputState.rTrigger, CurGamepad.Triggers.DeadZoneRight) * 255;
 
-		if (AppStatus.ExternalPedalsConnected) {
+		// External pedals
+		if (AppStatus.ExternalPedalsDInputConnected && joyGetPosEx(JoyIndex, &joyInfo) == JOYERR_NOERROR) {
+			if (DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) == 0)
+				report.bLeftTrigger = joyInfo.dwVpos / 256;
+			if (DeadZoneAxis(InputState.rTrigger, CurGamepad.Triggers.DeadZoneRight) == 0)
+				report.bRightTrigger = joyInfo.dwUpos / 256;
+
+		} else if (AppStatus.ExternalPedalsArduinoConnected) {
 			if (DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) == 0)
 				report.bLeftTrigger = PedalsValues[0] * 255;
 			if (DeadZoneAxis(InputState.rTrigger, CurGamepad.Triggers.DeadZoneRight) == 0)
@@ -1108,8 +1141,8 @@ int main(int argc, char **argv)
 	if (CurGamepad.HidHandle != NULL)
 		hid_close(CurGamepad.HidHandle);
 
-	if (AppStatus.ExternalPedalsConnected) {
-		AppStatus.ExternalPedalsConnected = false;
+	if (AppStatus.ExternalPedalsArduinoConnected) {
+		AppStatus.ExternalPedalsArduinoConnected = false;
 		pArduinoReadThread->join();
 		delete pArduinoReadThread;
 		pArduinoReadThread = nullptr;

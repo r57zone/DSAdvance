@@ -178,7 +178,8 @@ struct _AppStatus {
 	bool ChangeModesWithoutPress = false;
 	bool ShowBatteryStatus = false;
 	int ScreenshotMode = 0;
-	bool ExternalPedalsConnected = false;
+	bool ExternalPedalsArduinoConnected = false;
+	bool ExternalPedalsDInputConnected = false;
 	struct _Gamepad
 	{
 		bool BTReset = true;
