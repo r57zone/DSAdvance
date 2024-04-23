@@ -28,7 +28,7 @@ By default, the microphone button takes a screenshot of `Win + Alt + PrtScr` (fo
 To emulate the keyboard and mouse for older games, switch the mode to `ALT + Q` or `PS + ←` and `PS + →` and select the desired profile or [create the desired profile](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles are switched to the `ALT + ↑` and `ALT + ↓` keys if the window is active or on a gamepad using `PS + ↑` and `PS + ↓`. The default profile allows to work in Windows.
 
 
-To connect external pedals, change the COM port number by changing the `COMPort` parameter in the `ExternalPedals` section.
+To connect [external pedals (DInput)](https://github.com/r57zone/XboxExternalPedals#setup-dinput-pedals-mh-et-live-board), change the `DInput` parameter to `1`, in the `ExternalPedals` section.  To connect [external pedals on Arduino](https://github.com/r57zone/XboxExternalPedals#setup-arduino-pedals), change the COM port number by changing the `COMPort` parameter.
 
 
 To turn off the DualSense or DualShock 4, hold down the PS button for 10-15 seconds until the controller turns off.

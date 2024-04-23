@@ -19,23 +19,42 @@
 
 #pragma comment(lib, "winmm.lib")
 
-void ArduinoRead()
+EulerAngles QuaternionToEulerAngle(double qW, double qX, double qY, double qZ) // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 {
-	DWORD bytesRead;
+	EulerAngles resAngles;
+	// roll (x-axis rotation)
+	double sinr = +2.0 * (qW * qX + qY * qZ);
+	double cosr = +1.0 - 2.0 * (qX * qX + qY * qY);
+	resAngles.Roll = atan2(sinr, cosr);
 
-	while (AppStatus.ExternalPedalsArduinoConnected) {
-		ReadFile(hSerial, &PedalsValues, sizeof(PedalsValues), &bytesRead, 0);
+	// pitch (y-axis rotation)
+	double sinp = +2.0 * (qW * qY - qZ * qX);
+	if (fabs(sinp) >= 1)
+		resAngles.Pitch = copysign(3.14159265358979323846 / 2, sinp); // use 90 degrees if out of range
+	else
+		resAngles.Pitch = asin(sinp);
 
-		if (PedalsValues[0] > 1.0 || PedalsValues[0] < 0 || PedalsValues[1] > 1.0 || PedalsValues[1] < 0)
-		{
-			PedalsValues[0] = 0;
-			PedalsValues[1] = 0;
+	// yaw (z-axis rotation)
+	double siny = +2.0 * (qW * qZ + qX * qY);
+	double cosy = +1.0 - 2.0 * (qY * qY + qZ * qZ);
+	resAngles.Yaw = atan2(siny, cosy);
 
-			PurgeComm(hSerial, PURGE_TXCLEAR | PURGE_RXCLEAR);
-		}
+	return resAngles;
+}
 
-		if (bytesRead == 0) Sleep(1);
-	}
+double RadToDeg(double Rad)
+{
+	return Rad / 3.14159265358979323846 * 180.0;
+}
+
+double OffsetYPR(float Angle1, float Angle2)
+{
+	Angle1 -= Angle2;
+	if (Angle1 < -180)
+		Angle1 += 360;
+	else if (Angle1 > 180)
+		Angle1 -= 360;
+	return Angle1;
 }
 
 void GamepadSetState(InputOutState OutState)
@@ -240,42 +259,38 @@ void GetBatteryInfo() {
 	}	
 }
 
-EulerAngles QuaternionToEulerAngle(double qW, double qX, double qY, double qZ) // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-{
-	EulerAngles resAngles;
-	// roll (x-axis rotation)
-	double sinr = +2.0 * (qW * qX + qY * qZ);
-	double cosr = +1.0 - 2.0 * (qX * qX + qY * qY);
-	resAngles.Roll = atan2(sinr, cosr);
-
-	// pitch (y-axis rotation)
-	double sinp = +2.0 * (qW * qY - qZ * qX);
-	if (fabs(sinp) >= 1)
-		resAngles.Pitch = copysign(3.14159265358979323846 / 2, sinp); // use 90 degrees if out of range
-	else
-		resAngles.Pitch = asin(sinp);
-
-	// yaw (z-axis rotation)
-	double siny = +2.0 * (qW * qZ + qX * qY);
-	double cosy = +1.0 - 2.0 * (qY * qY + qZ * qZ);
-	resAngles.Yaw = atan2(siny, cosy);
-
-	return resAngles;
+void ExternalPedalsDInputSearch() {
+	if (joyGetPosEx(JOYSTICKID1, &AppStatus.ExternalPedalsJoyInfo) == JOYERR_NOERROR &&
+		joyGetDevCaps(JOYSTICKID1, &AppStatus.ExternalPedalsJoyCaps, sizeof(AppStatus.ExternalPedalsJoyCaps)) == JOYERR_NOERROR &&
+		AppStatus.ExternalPedalsJoyCaps.wNumButtons == 16) { // DualSense - 15, DigiJoy - 16
+		AppStatus.ExternalPedalsJoyIndex = JOYSTICKID1;
+		AppStatus.ExternalPedalsDInputConnected = true;
+	} else if (joyGetPosEx(JOYSTICKID2, &AppStatus.ExternalPedalsJoyInfo) == JOYERR_NOERROR &&
+		joyGetDevCaps(JOYSTICKID2, &AppStatus.ExternalPedalsJoyCaps, sizeof(AppStatus.ExternalPedalsJoyCaps)) == JOYERR_NOERROR &&
+		AppStatus.ExternalPedalsJoyCaps.wNumButtons == 16) {
+		AppStatus.ExternalPedalsJoyIndex = JOYSTICKID2;
+		AppStatus.ExternalPedalsDInputConnected = true;
+	} else
+		AppStatus.ExternalPedalsDInputConnected = false;
 }
 
-double RadToDeg(double Rad)
+void ExternalPedalsArduinoRead()
 {
-	return Rad / 3.14159265358979323846 * 180.0;
-}
+	DWORD bytesRead;
 
-double OffsetYPR(float Angle1, float Angle2)
-{
-	Angle1 -= Angle2;
-	if (Angle1 < -180)
-		Angle1 += 360;
-	else if (Angle1 > 180)
-		Angle1 -= 360;
-	return Angle1;
+	while (AppStatus.ExternalPedalsArduinoConnected) {
+		ReadFile(hSerial, &PedalsValues, sizeof(PedalsValues), &bytesRead, 0);
+
+		if (PedalsValues[0] > 1.0 || PedalsValues[0] < 0 || PedalsValues[1] > 1.0 || PedalsValues[1] < 0)
+		{
+			PedalsValues[0] = 0;
+			PedalsValues[1] = 0;
+
+			PurgeComm(hSerial, PURGE_TXCLEAR | PURGE_RXCLEAR);
+		}
+
+		if (bytesRead == 0) Sleep(1);
+	}
 }
 
 static std::mutex m;
@@ -440,9 +455,9 @@ void MainTextUpdate() {
 	printf(" Press \"ALT + Q | Left | Right\" or \"PS + DPAD Left | Right\" to switch emulation.\n");
 
 	if (AppStatus.ExternalPedalsDInputConnected)
-		printf(" External pedals (DInput) connected.\n");
+		printf(" External pedals DInput connected.\n");
 	if (AppStatus.ExternalPedalsArduinoConnected)
-		printf(" External pedals (Arduino) connected.\n");
+		printf(" External pedals Arduino connected.\n");
 
 	if (AppStatus.AimMode == AimMouseMode) printf(" AIM mode = mouse"); else printf(" AIM mode = mouse-joystick");
 	printf(", press \"ALT + A\" or \"PS + R1\" to switch.\n");
@@ -488,6 +503,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				GamepadSearch();
 				GamepadSetState(GamepadOutState);
 				AppStatus.Gamepad.BTReset = false;
+				if (AppStatus.ExternalPedalsDInputSearch) ExternalPedalsDInputSearch();
 				MainTextUpdate();
 			}
 			break;
@@ -504,7 +520,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.9.6");
+	SetConsoleTitle("DSAdvance 0.9.7");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -516,15 +532,14 @@ int main(int argc, char **argv)
 
 	// Config parameters
 	CIniReader IniFile("Config.ini");
-
 	CurGamepad.Sticks.InvertLeftX = IniFile.ReadBoolean("Gamepad", "InvertLeftStickX", false);
 	CurGamepad.Sticks.InvertLeftY = IniFile.ReadBoolean("Gamepad", "InvertLeftStickY", false);
 	CurGamepad.Sticks.InvertRightX = IniFile.ReadBoolean("Gamepad", "InvertRightStickX", false);
 	CurGamepad.Sticks.InvertRightY = IniFile.ReadBoolean("Gamepad", "InvertRightStickY", false);
 	AppStatus.HotKeys.ResetKeyName = IniFile.ReadString("Gamepad", "ResetKey", "NONE");
-	int ResetKey = KeyNameToKeyCode(AppStatus.HotKeys.ResetKeyName);
-	bool ShowBatteryStatusOnLightBar = IniFile.ReadBoolean("Gamepad", "ShowBatteryStatusOnLightBar", true);
-	int SleepTimeOut = IniFile.ReadInteger("Gamepad", "SleepTimeOut", 1);
+	AppStatus.HotKeys.ResetKey = KeyNameToKeyCode(AppStatus.HotKeys.ResetKeyName);
+	AppStatus.ShowBatteryStatusOnLightBar = IniFile.ReadBoolean("Gamepad", "ShowBatteryStatusOnLightBar", true);
+	AppStatus.SleepTimeOut = IniFile.ReadInteger("Gamepad", "SleepTimeOut", 1);
 
 	CurGamepad.Sticks.DeadZoneLeftX = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickX", 0);
 	CurGamepad.Sticks.DeadZoneLeftY = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickY", 0);
@@ -533,17 +548,15 @@ int main(int argc, char **argv)
 	CurGamepad.Triggers.DeadZoneLeft = IniFile.ReadFloat("Gamepad", "DeadZoneLeftTrigger", 0);
 	CurGamepad.Triggers.DeadZoneRight = IniFile.ReadFloat("Gamepad", "DeadZoneRightTrigger", 0);
 
-	float TouchLeftStickX = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensX", 4);
-	float TouchLeftStickY = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensY", 4);
-	float TouchRightStickX = IniFile.ReadFloat("Gamepad", "TouchRightStickSensX", 4);
-	float TouchRightStickY = IniFile.ReadFloat("Gamepad", "TouchRightStickSensY", 4);
+	CurGamepad.TouchSticks.LeftX = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensX", 4);
+	CurGamepad.TouchSticks.LeftY = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensY", 4);
+	CurGamepad.TouchSticks.RightX = IniFile.ReadFloat("Gamepad", "TouchRightStickSensX", 4);
+	CurGamepad.TouchSticks.RightY = IniFile.ReadFloat("Gamepad", "TouchRightStickSensY", 4);
 
-	float AutoPressModeValue = IniFile.ReadFloat("Gamepad", "AutoPressModeStick", 99) * 0.01f;
+	CurGamepad.AutoPressStickValue = IniFile.ReadFloat("Gamepad", "AutoPressStickValue", 99) * 0.01f;
 
-	unsigned char DefaultLEDBrightness = std::clamp((int)(255 - IniFile.ReadInteger("Gamepad", "DefaultBrightness", 100) * 2.55), 0, 255);
-	bool LockedChangeBrightness = IniFile.ReadBoolean("Gamepad", "LockChangeBrightness", false);
-	bool LockChangeBrightness = true;
-	int BrightnessAreaPressed = 0;
+	CurGamepad.DefaultLEDBrightness = std::clamp((int)(255 - IniFile.ReadInteger("Gamepad", "DefaultBrightness", 100) * 2.55), 0, 255);
+	AppStatus.LockedChangeBrightness = IniFile.ReadBoolean("Gamepad", "LockChangeBrightness", false);
 	AppStatus.ChangeModesWithoutPress = IniFile.ReadBoolean("Gamepad", "ChangeModesWithoutPress", false);
 
 	AppStatus.AimMode = IniFile.ReadBoolean("Motion", "AimMode", AimMouseMode);
@@ -559,38 +572,23 @@ int main(int argc, char **argv)
 	CurGamepad.KMEmu.StickValuePressKey = IniFile.ReadFloat("KeyboardMouse", "StickValuePressKey", 0.2f);
 	CurGamepad.KMEmu.TriggerValuePressKey = IniFile.ReadFloat("KeyboardMouse", "TriggerValuePressKey", 0.2f);
 
-	int ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
-	int MicCustomKey = KeyNameToKeyCode(IniFile.ReadString("Gamepad", "MicCustomKey", "NONE"));
-	if (MicCustomKey == 0) AppStatus.ScreenshotMode = ScreenShotXboxGameBarMode; // If not set, then hide this mode
-	else ScreenShotKey = MicCustomKey; 
+	AppStatus.MicCustomKey = KeyNameToKeyCode(IniFile.ReadString("Gamepad", "MicCustomKey", "NONE"));
+	if (AppStatus.MicCustomKey == 0)
+		AppStatus.ScreenshotMode = ScreenShotXboxGameBarMode; // If not set, then hide this mode
+	else
+		AppStatus.ScreenShotKey = AppStatus.MicCustomKey;
 
 	// External pedals
-	int ExternalPedalsCOMPort = IniFile.ReadInteger("ExternalPedals", "COMPort", 0);
+	AppStatus.ExternalPedalsDInputSearch = IniFile.ReadBoolean("ExternalPedals", "DInput", false);
+	AppStatus.ExternalPedalsCOMPort = IniFile.ReadInteger("ExternalPedals", "COMPort", 0);
+	AppStatus.ExternalPedalsJoyInfo.dwFlags = JOY_RETURNALL;
+	AppStatus.ExternalPedalsJoyInfo.dwSize = sizeof(AppStatus.ExternalPedalsJoyInfo);
 
-	JOYINFOEX joyInfo;
-	JOYCAPS joyCaps;
-	joyInfo.dwFlags = JOY_RETURNALL;
-	joyInfo.dwSize = sizeof(joyInfo);
-	int JoyIndex = JOYSTICKID1;
-
-	if (IniFile.ReadBoolean("ExternalPedals", "DInput", false)) {
-		if (joyGetPosEx(JOYSTICKID1, &joyInfo) == JOYERR_NOERROR)
-			if (joyGetDevCaps(JoyIndex, &joyCaps, sizeof(joyCaps)) == JOYERR_NOERROR && joyCaps.wNumButtons == 16) { // DualSense - 15, DigiJoy - 16
-				JoyIndex = JOYSTICKID1;
-				AppStatus.ExternalPedalsDInputConnected = true;
-				ExternalPedalsCOMPort = 0;
-			}
-
-		if (AppStatus.ExternalPedalsDInputConnected == false && joyGetPosEx(JOYSTICKID2, &joyInfo) == JOYERR_NOERROR) {
-			JoyIndex = JOYSTICKID2;
-			AppStatus.ExternalPedalsDInputConnected = true;
-			ExternalPedalsCOMPort = 0;
-		}
-	}
-
-	if (ExternalPedalsCOMPort != 0) {
+	if (AppStatus.ExternalPedalsDInputSearch) // Dinput in priority
+		ExternalPedalsDInputSearch();
+	else if (AppStatus.ExternalPedalsCOMPort != 0) {
 		char sPortName[32];
-		sprintf_s(sPortName, "\\\\.\\COM%d", ExternalPedalsCOMPort);
+		sprintf_s(sPortName, "\\\\.\\COM%d", AppStatus.ExternalPedalsCOMPort);
 
 		hSerial = ::CreateFile(sPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 
@@ -610,12 +608,13 @@ int main(int argc, char **argv)
 				{
 					AppStatus.ExternalPedalsArduinoConnected = true;
 					PurgeComm(hSerial, PURGE_TXCLEAR | PURGE_RXCLEAR);
-					pArduinoReadThread = new std::thread(ArduinoRead);
+					pArduinoReadThread = new std::thread(ExternalPedalsArduinoRead);
 				}
 			}
 		}
 	}
 
+	// Sound for switching profiles
 	TCHAR ChangeEmuModeWav[MAX_PATH] = { 0 };
 	GetSystemWindowsDirectory(ChangeEmuModeWav, sizeof(ChangeEmuModeWav));
 	_tcscat_s(ChangeEmuModeWav, sizeof(ChangeEmuModeWav), _T("\\Media\\Windows Pop-up Blocked.wav"));
@@ -637,7 +636,7 @@ int main(int argc, char **argv)
 	GamepadSearch();
 	GamepadOutState.PlayersCount = 0;
 	GamepadOutState.LEDBlue = 255;
-	GamepadOutState.LEDBrightness = DefaultLEDBrightness;
+	GamepadOutState.LEDBrightness = CurGamepad.DefaultLEDBrightness;
 	GamepadSetState(GamepadOutState);
 
 	int SkipPollCount = 0;
@@ -673,7 +672,7 @@ int main(int argc, char **argv)
 	auto previous_time = std::chrono::high_resolution_clock::now();
 	EulerAngles PreviousAngles = {0, 0, 0};
 
-	while (! ( GetAsyncKeyState(VK_LMENU) & 0x8000 && GetAsyncKeyState(VK_ESCAPE) & 0x8000 ) )
+	while (!(GetAsyncKeyState(VK_LMENU) & 0x8000 && GetAsyncKeyState(VK_ESCAPE) & 0x8000))
 	{
 		if (PeekMessage(&WindowMsgs, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&WindowMsgs);
@@ -682,21 +681,27 @@ int main(int argc, char **argv)
 		}
 
 		// Reset
-		if ((SkipPollCount == 0 && (IsKeyPressed(VK_CONTROL) && IsKeyPressed('R')) || IsKeyPressed(ResetKey)) || AppStatus.Gamepad.BTReset)
+		if ((SkipPollCount == 0 && (IsKeyPressed(VK_CONTROL) && IsKeyPressed('R')) || IsKeyPressed(AppStatus.HotKeys.ResetKey)) || AppStatus.Gamepad.BTReset)
 		{
 			AppStatus.ControllerCount = JslConnectDevices();
 			JslGetConnectedDeviceHandles(CurGamepad.deviceID, AppStatus.ControllerCount);
 			GamepadSearch();
 			GamepadSetState(GamepadOutState);
 			AppStatus.Gamepad.BTReset = false;
+			if (AppStatus.ExternalPedalsDInputSearch) ExternalPedalsDInputSearch();
 			MainTextUpdate();
 			SkipPollCount = SkipPollTimeOut;
 		}
 
 		XUSB_REPORT_INIT(&report);
 		InputState = JslGetSimpleState(CurGamepad.deviceID[0]);
-		if (AppStatus.ControllerCount < 1)
-			InputState = { 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+		if (AppStatus.ControllerCount < 1) { // We do not process anything during idle time
+			//InputState = { 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+			report.sThumbLX = 1; // Maybe the crash is due to power saving? temporary test
+			ret = vigem_target_x360_update(client, x360, report); // Vigem always mode only
+			Sleep(AppStatus.SleepTimeOut);
+			continue;
+		}
 
 		MotionState = JslGetMotionState(CurGamepad.deviceID[0]);
 		MotionAngles = QuaternionToEulerAngle(MotionState.quatW, MotionState.quatZ, MotionState.quatX, MotionState.quatY);
@@ -780,11 +785,11 @@ int main(int argc, char **argv)
 		// Switch screenshot mode
 		if (SkipPollCount == 0 && IsKeyPressed(VK_MENU) && IsKeyPressed('X'))
 		{
-			AppStatus.ScreenshotMode++; if (AppStatus.ScreenshotMode > ScreenShotMaxModes) AppStatus.ScreenshotMode = MicCustomKey == 0 ? ScreenShotXboxGameBarMode : ScreenShotCustomKeyMode;
-			if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode) ScreenShotKey = MicCustomKey;
-			else if (AppStatus.ScreenshotMode == ScreenShotXboxGameBarMode) ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
-			else if (AppStatus.ScreenshotMode == ScreenShotSteamMode) ScreenShotKey = VK_STEAM_SCREENSHOT;
-			else if (AppStatus.ScreenshotMode == ScreenShotMultiMode) ScreenShotKey = VK_MULTI_SCREENSHOT;
+			AppStatus.ScreenshotMode++; if (AppStatus.ScreenshotMode > ScreenShotMaxModes) AppStatus.ScreenshotMode = AppStatus.MicCustomKey == 0 ? ScreenShotXboxGameBarMode : ScreenShotCustomKeyMode;
+			if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode) AppStatus.ScreenShotKey = AppStatus.MicCustomKey;
+			else if (AppStatus.ScreenshotMode == ScreenShotXboxGameBarMode) AppStatus.ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
+			else if (AppStatus.ScreenshotMode == ScreenShotSteamMode) AppStatus.ScreenShotKey = VK_STEAM_SCREENSHOT;
+			else if (AppStatus.ScreenshotMode == ScreenShotMultiMode) AppStatus.ScreenShotKey = VK_MULTI_SCREENSHOT;
 			MainTextUpdate();
 			SkipPollCount = SkipPollTimeOut;
 		}
@@ -792,10 +797,10 @@ int main(int argc, char **argv)
 		// Enable or disable lightbar
 		if (SkipPollCount == 0 && ( (IsKeyPressed(VK_MENU) && IsKeyPressed('B')) || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_L) ))
 		{
-			if (GamepadOutState.LEDBrightness == 255) GamepadOutState.LEDBrightness = DefaultLEDBrightness;
+			if (GamepadOutState.LEDBrightness == 255) GamepadOutState.LEDBrightness = CurGamepad.DefaultLEDBrightness;
 			else {
-				if (LockedChangeBrightness == false && GamepadOutState.LEDBrightness > 4) // 5 is the minimum brightness
-					DefaultLEDBrightness = GamepadOutState.LEDBrightness; // Save the new selected value as default
+				if (AppStatus.LockedChangeBrightness == false && GamepadOutState.LEDBrightness > 4) // 5 is the minimum brightness
+					CurGamepad.DefaultLEDBrightness = GamepadOutState.LEDBrightness; // Save the new selected value as default
 				GamepadOutState.LEDBrightness = 255;
 			} 
 			GamepadSetState(GamepadOutState);
@@ -820,7 +825,7 @@ int main(int argc, char **argv)
 
 			TouchState = JslGetTouchState(CurGamepad.deviceID[0]);
 
-			if (LockChangeBrightness == false && TouchState.t0Down && TouchState.t0Y <= 0.1 && TouchState.t0X >= 0.325 && TouchState.t0X <= 0.675) { // Brightness change
+			if (AppStatus.LockChangeBrightness == false && TouchState.t0Down && TouchState.t0Y <= 0.1 && TouchState.t0X >= 0.325 && TouchState.t0X <= 0.675) { // Brightness change
 				GamepadOutState.LEDBrightness = 255 - std::clamp((int)((TouchState.t0X - 0.335) * 255 * 3.2), 0, 255);
 				//printf("%5.2f %d\n", (TouchState.t0X - 0.335) * 255 * 3.2, GamepadOutState.LEDBrightness);
 				GamepadSetState(GamepadOutState);
@@ -828,14 +833,14 @@ int main(int argc, char **argv)
 
 			if ((InputState.buttons & JSMASK_TOUCHPAD_CLICK) || (TouchState.t0Down && AppStatus.ChangeModesWithoutPress)) {
 				if (SkipPollCount == 0 && TouchState.t0Y <= 0.1) { // Brightness area
-					BrightnessAreaPressed++;
-					if (BrightnessAreaPressed > 1) {
-						if (LockedChangeBrightness) {
-							if (GamepadOutState.LEDBrightness == 255) GamepadOutState.LEDBrightness = DefaultLEDBrightness; else GamepadOutState.LEDBrightness = 255;
+					AppStatus.BrightnessAreaPressed++;
+					if (AppStatus.BrightnessAreaPressed > 1) {
+						if (AppStatus.LockedChangeBrightness) {
+							if (GamepadOutState.LEDBrightness == 255) GamepadOutState.LEDBrightness = CurGamepad.DefaultLEDBrightness; else GamepadOutState.LEDBrightness = 255;
 						} else
-							LockChangeBrightness = !LockChangeBrightness;
+							AppStatus.LockChangeBrightness = !AppStatus.LockChangeBrightness;
 
-						BrightnessAreaPressed = 0;
+						AppStatus.BrightnessAreaPressed = 0;
 					}
 					SkipPollCount = SkipPollTimeOut;
 				
@@ -851,12 +856,12 @@ int main(int argc, char **argv)
 							GamepadActionMode = GamepadDefaultMode;
 							// Show battery level
 							GetBatteryInfo(); if (BackOutStateCounter == 0) BackOutStateCounter = 40; // It is executed many times, so it is done this way, it is necessary to save the old brightness value for return
-							if (ShowBatteryStatusOnLightBar) {
+							if (AppStatus.ShowBatteryStatusOnLightBar) {
 								if (BackOutStateCounter == 40) LastLEDBrightness = GamepadOutState.LEDBrightness; // Save on first click (tick)
 								if (CurGamepad.BatteryLevel >= 30) { GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255; } // Battery fine 30%-100%
 								else if (CurGamepad.BatteryLevel >= 10) { GamepadOutState.LEDBlue = 0; GamepadOutState.LEDGreen = 255; GamepadOutState.LEDRed = 255; } // Battery attention 10..29%
 								else { GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0; } // battery alarm 10%
-								GamepadOutState.LEDBrightness = DefaultLEDBrightness;
+								GamepadOutState.LEDBrightness = CurGamepad.DefaultLEDBrightness;
 							}
 							GamepadOutState.PlayersCount = CurGamepad.LEDBatteryLevel; // JslSetPlayerNumber(CurGamepad.deviceID[0], 5);
 							AppStatus.ShowBatteryStatus = true;
@@ -877,8 +882,8 @@ int main(int argc, char **argv)
 							GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
 						}
 					}
-					BrightnessAreaPressed = 0; // Reset lock brightness if clicked in another area
-					if (LockChangeBrightness == false) LockChangeBrightness = true;
+					AppStatus.BrightnessAreaPressed = 0; // Reset lock brightness if clicked in another area
+					if (AppStatus.LockChangeBrightness == false) AppStatus.LockChangeBrightness = true;
 				}
 				GamepadSetState(GamepadOutState);
 				//printf("current mode = %d\r\n", GamepadActionMode);
@@ -896,7 +901,6 @@ int main(int argc, char **argv)
 			MainTextUpdate();
 		}
 
-
 		//printf("%5.2f\t%5.2f\r\n", InputState.stickLX, DeadZoneAxis(InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX));
 		report.sThumbLX = CurGamepad.Sticks.InvertLeftX == false ? DeadZoneAxis(InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX) * 32767 : DeadZoneAxis(-InputState.stickLX, CurGamepad.Sticks.DeadZoneLeftX) * 32767;
 		report.sThumbLY = CurGamepad.Sticks.InvertLeftX == false ? DeadZoneAxis(InputState.stickLY, CurGamepad.Sticks.DeadZoneLeftY) * 32767 : DeadZoneAxis(-InputState.stickLY, CurGamepad.Sticks.DeadZoneLeftY) * 32767;
@@ -904,18 +908,21 @@ int main(int argc, char **argv)
 		report.sThumbRY = CurGamepad.Sticks.InvertRightY == false ? DeadZoneAxis(InputState.stickRY, CurGamepad.Sticks.DeadZoneRightY) * 32767 : DeadZoneAxis(-InputState.stickRY, CurGamepad.Sticks.DeadZoneRightY) * 32767;
 
 		// Auto stick pressing when value is exceeded
-		if (AppStatus.LeftStickMode == LeftStickAutoPressMode && ( sqrt(InputState.stickLX * InputState.stickLX + InputState.stickLY * InputState.stickLY) >= AutoPressModeValue ))
+		if (AppStatus.LeftStickMode == LeftStickAutoPressMode && ( sqrt(InputState.stickLX * InputState.stickLX + InputState.stickLY * InputState.stickLY) >= CurGamepad.AutoPressStickValue))
 			report.wButtons |= JSMASK_LCLICK;
 
 		report.bLeftTrigger = DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) * 255;
 		report.bRightTrigger = DeadZoneAxis(InputState.rTrigger, CurGamepad.Triggers.DeadZoneRight) * 255;
 
 		// External pedals
-		if (AppStatus.ExternalPedalsDInputConnected && joyGetPosEx(JoyIndex, &joyInfo) == JOYERR_NOERROR) {
-			if (DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) == 0)
-				report.bLeftTrigger = joyInfo.dwVpos / 256;
-			if (DeadZoneAxis(InputState.rTrigger, CurGamepad.Triggers.DeadZoneRight) == 0)
-				report.bRightTrigger = joyInfo.dwUpos / 256;
+		if (AppStatus.ExternalPedalsDInputConnected) {
+			if (joyGetPosEx(AppStatus.ExternalPedalsJoyIndex, &AppStatus.ExternalPedalsJoyInfo) == JOYERR_NOERROR) {
+				if (DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) == 0)
+					report.bLeftTrigger = AppStatus.ExternalPedalsJoyInfo.dwVpos / 256;
+				if (DeadZoneAxis(InputState.rTrigger, CurGamepad.Triggers.DeadZoneRight) == 0)
+					report.bRightTrigger = AppStatus.ExternalPedalsJoyInfo.dwUpos / 256;
+			} else
+				AppStatus.ExternalPedalsDInputConnected = false;
 
 		} else if (AppStatus.ExternalPedalsArduinoConnected) {
 			if (DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) == 0)
@@ -973,7 +980,7 @@ int main(int argc, char **argv)
 		KeyPress(VK_GAMEBAR, PSOnlyCheckCount == 1 && PSOnlyPressed, &ButtonsStates.PS);
 		KeyPress(VK_VOLUME_DOWN2, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_W, &ButtonsStates.VolumeDown);
 		KeyPress(VK_VOLUME_UP2, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_E, &ButtonsStates.VolumeUP);
-		KeyPress(ScreenShotKey, InputState.buttons & JSMASK_MIC || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_S), &ButtonsStates.Mic); // + DualShock 4
+		KeyPress(AppStatus.ScreenShotKey, InputState.buttons & JSMASK_MIC || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_S), &ButtonsStates.Mic); // + DualShock 4
 
 		// Custom sens
 		if (SkipPollCount == 0 && InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_N) {
@@ -1034,12 +1041,12 @@ int main(int argc, char **argv)
 				FirstTouch.AxisY = TouchState.t0Y - FirstTouch.InitAxisY;
 
 				if (FirstTouch.InitAxisX < 0.5 ) {
-					report.sThumbLX = ClampFloat(FirstTouch.AxisX * TouchLeftStickX, -1, 1) * 32767;
-					report.sThumbLY = ClampFloat(-FirstTouch.AxisY * TouchLeftStickY, -1, 1) * 32767;
+					report.sThumbLX = ClampFloat(FirstTouch.AxisX * CurGamepad.TouchSticks.LeftX, -1, 1) * 32767;
+					report.sThumbLY = ClampFloat(-FirstTouch.AxisY * CurGamepad.TouchSticks.LeftY, -1, 1) * 32767;
 					if (InputState.buttons & JSMASK_TOUCHPAD_CLICK) report.wButtons |= XINPUT_GAMEPAD_LEFT_THUMB;
 				} else {
-					report.sThumbRX = ClampFloat((TouchState.t0X - FirstTouch.LastAxisX) * TouchRightStickX * 200, -1, 1) * 32767;
-					report.sThumbRY = ClampFloat(-(TouchState.t0Y - FirstTouch.LastAxisY) * TouchRightStickY * 200, -1, 1) * 32767;
+					report.sThumbRX = ClampFloat((TouchState.t0X - FirstTouch.LastAxisX) * CurGamepad.TouchSticks.RightX * 200, -1, 1) * 32767;
+					report.sThumbRY = ClampFloat(-(TouchState.t0Y - FirstTouch.LastAxisY) * CurGamepad.TouchSticks.RightY * 200, -1, 1) * 32767;
 					FirstTouch.LastAxisX = TouchState.t0X; FirstTouch.LastAxisY = TouchState.t0Y;
 					if (InputState.buttons & JSMASK_TOUCHPAD_CLICK) report.wButtons |= XINPUT_GAMEPAD_RIGHT_THUMB;
 				}
@@ -1059,11 +1066,11 @@ int main(int argc, char **argv)
 				SecondTouch.AxisY = TouchState.t1Y - SecondTouch.InitAxisY;
 
 				if (SecondTouch.InitAxisX < 0.5) {
-					report.sThumbLX = ClampFloat(SecondTouch.AxisX * TouchLeftStickX, -1, 1) * 32767;
-					report.sThumbLY = ClampFloat(-SecondTouch.AxisY * TouchLeftStickY, -1, 1) * 32767;
+					report.sThumbLX = ClampFloat(SecondTouch.AxisX * CurGamepad.TouchSticks.LeftX, -1, 1) * 32767;
+					report.sThumbLY = ClampFloat(-SecondTouch.AxisY * CurGamepad.TouchSticks.LeftY, -1, 1) * 32767;
 				} else {
-					report.sThumbRX = ClampFloat((TouchState.t1X - SecondTouch.LastAxisX) * TouchRightStickX * 200, -1, 1) * 32767;
-					report.sThumbRY = ClampFloat(-(TouchState.t1Y - SecondTouch.LastAxisY) * TouchRightStickY * 200, -1, 1) * 32767;
+					report.sThumbRX = ClampFloat((TouchState.t1X - SecondTouch.LastAxisX) * CurGamepad.TouchSticks.RightX * 200, -1, 1) * 32767;
+					report.sThumbRY = ClampFloat(-(TouchState.t1Y - SecondTouch.LastAxisY) * CurGamepad.TouchSticks.RightY * 200, -1, 1) * 32767;
 					SecondTouch.LastAxisX = TouchState.t1X; SecondTouch.LastAxisY = TouchState.t1Y;
 				}
 			} else {
@@ -1130,11 +1137,10 @@ int main(int argc, char **argv)
 		ret = vigem_target_x360_update(client, x360, report);
 
 		// Battery level display
-		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0; GamepadOutState.PlayersCount = 0; if (ShowBatteryStatusOnLightBar) GamepadOutState.LEDBrightness = LastLEDBrightness; GamepadSetState(GamepadOutState); AppStatus.ShowBatteryStatus = false; MainTextUpdate(); } BackOutStateCounter--; }
+		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0; GamepadOutState.PlayersCount = 0; if (AppStatus.ShowBatteryStatusOnLightBar) GamepadOutState.LEDBrightness = LastLEDBrightness; GamepadSetState(GamepadOutState); AppStatus.ShowBatteryStatus = false; MainTextUpdate(); } BackOutStateCounter--; }
 
 		if (SkipPollCount > 0) SkipPollCount--;
-		//ButtonsSkipPoll();
-		Sleep(SleepTimeOut);
+		Sleep(AppStatus.SleepTimeOut);
 	}
 
 	JslDisconnectAndDisposeAll();

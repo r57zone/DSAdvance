@@ -118,6 +118,8 @@ struct Gamepad {
 	unsigned char BatteryLevel;
 	unsigned char LEDBatteryLevel;
 	wchar_t *serial_number;
+	float AutoPressStickValue = 0;
+	unsigned char DefaultLEDBrightness = 0;
 
 	struct _Sticks
 	{
@@ -166,6 +168,15 @@ struct Gamepad {
 		float CustomMulSens = 1.0f;
 	};
 	_Motion Motion;
+
+	struct _TouchSticks
+	{
+		float LeftX = 0;
+		float LeftY = 0;
+		float RightX = 0;
+		float RightY = 0;
+	};
+	_TouchSticks TouchSticks;
 };
 Gamepad CurGamepad;
 
@@ -177,9 +188,20 @@ struct _AppStatus {
 	int LeftStickMode = 0;
 	bool ChangeModesWithoutPress = false;
 	bool ShowBatteryStatus = false;
+	bool ShowBatteryStatusOnLightBar = false;
 	int ScreenshotMode = 0;
+	int ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
 	bool ExternalPedalsArduinoConnected = false;
+	int ExternalPedalsCOMPort = 0;
+	bool ExternalPedalsDInputSearch = false;
 	bool ExternalPedalsDInputConnected = false;
+	JOYINFOEX ExternalPedalsJoyInfo;
+	JOYCAPS ExternalPedalsJoyCaps;
+	int ExternalPedalsJoyIndex = JOYSTICKID1;
+	bool LockedChangeBrightness = false;
+	bool LockChangeBrightness = true;
+	int BrightnessAreaPressed = 0;
+	int MicCustomKey = 0;
 	struct _Gamepad
 	{
 		bool BTReset = true;
@@ -189,12 +211,14 @@ struct _AppStatus {
 	struct _HotKeys
 	{
 		std::string ResetKeyName;
+		int ResetKey = 0;
 	};
 	_HotKeys HotKeys;
 	bool DeadZoneMode = false;
 
 	bool XboxGamepadReset = false;
 	bool LastConnectionType = true; // Problems with BlueTooth, on first connection. Reset fixes this problem.
+	int SleepTimeOut = 0;
 }; _AppStatus AppStatus;
 
 //struct _Settings {}; _Settings Settings;
@@ -267,27 +291,6 @@ struct _ButtonsState{
 	Button Right;
 };
 _ButtonsState ButtonsStates;
-
-//void ButtonsSkipPoll() {
-//	if (ButtonsStates.LeftBumper.SkipPollCount > 0) ButtonsStates.LeftBumper.SkipPollCount--;
-//	if (ButtonsStates.RightBumper.SkipPollCount > 0) ButtonsStates.RightBumper.SkipPollCount--;
-//	if (ButtonsStates.LeftTrigger.SkipPollCount > 0) ButtonsStates.LeftTrigger.SkipPollCount--;
-//	if (ButtonsStates.RightTrigger.SkipPollCount > 0) ButtonsStates.RightTrigger.SkipPollCount--;
-//	if (ButtonsStates.Back.SkipPollCount > 0) ButtonsStates.Back.SkipPollCount--;
-//	if (ButtonsStates.Start.SkipPollCount > 0) ButtonsStates.Start.SkipPollCount--;
-//	if (ButtonsStates.DPADUp.SkipPollCount > 0) ButtonsStates.DPADUp.SkipPollCount--;
-//	if (ButtonsStates.DPADDown.SkipPollCount > 0) ButtonsStates.DPADDown.SkipPollCount--;
-//	if (ButtonsStates.DPADLeft.SkipPollCount > 0) ButtonsStates.DPADLeft.SkipPollCount--;
-//	if (ButtonsStates.DPADRight.SkipPollCount > 0) ButtonsStates.DPADRight.SkipPollCount--;
-//	if (ButtonsStates.Y.SkipPollCount > 0) ButtonsStates.Y.SkipPollCount--;
-//	if (ButtonsStates.X.SkipPollCount > 0) ButtonsStates.X.SkipPollCount--;
-//	if (ButtonsStates.A.SkipPollCount > 0) ButtonsStates.A.SkipPollCount--;
-//	if (ButtonsStates.B.SkipPollCount > 0) ButtonsStates.B.SkipPollCount--;
-//	if (ButtonsStates.LeftStick.SkipPollCount > 0) ButtonsStates.LeftStick.SkipPollCount--;
-//	if (ButtonsStates.RightStick.SkipPollCount > 0) ButtonsStates.RightStick.SkipPollCount--;
-//	if (ButtonsStates.PS.SkipPollCount > 0) ButtonsStates.PS.SkipPollCount--;
-//	if (ButtonsStates.Mic.SkipPollCount > 0) ButtonsStates.Mic.SkipPollCount--;
-//}
 
 void MousePress(int MouseBtn, bool ButtonPressed, Button* ButtonState) {
 	if (ButtonPressed) {

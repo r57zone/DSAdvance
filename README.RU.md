@@ -30,7 +30,7 @@
 Для эмуляции клавиатуры и мыши, для старых игр, переключите режим работы на `ALT + Q` или `PS + ←` и `PS + →` и выберите нужный профиль или [создайте новый профиль](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.RU.md). Профили переключаются на клавиши `ALT + ↑` и `ALT + ↓`, если окно активно или на геймпаде, с помощью `PS + ↑` и `PS + ↓`. Профиль по умолчанию позволяет работать в Windows. 
 
 
-Для подключения внешних педалей измените номер COM-порта, изменив параметр `COMPort`, в разделе `ExternalPedals`.
+Для подключения [внешних педалей (DInput)](https://github.com/r57zone/XboxExternalPedals#setup-dinput-pedals-mh-et-live-board) измените параметр `DInput` на `1`, в разделе `ExternalPedals`.  Для поключения [внешних педалей на Arduino](https://github.com/r57zone/XboxExternalPedals#setup-arduino-pedals) измените номер COM-порта, изменив параметр `COMPort`.
 
 
 Для выключения DualSense или DualShock 4 удерживайте кнопку PS в течении 10-15 секунд, пока контроллер не выключиться.
