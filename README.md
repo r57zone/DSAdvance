@@ -44,6 +44,11 @@ To turn off the DualSense or DualShock 4, hold down the PS button for 10-15 seco
 8. (Optional) To launch from the notification area (tray), by double-clicking, you can add a shortcut to `Launcher.exe` to Windows startup `%AppData%\Microsoft\Windows\Start Menu\Programs\Startup`.
 9. (Optional) To run third-party utilities via Launcher, specify the title and path to the application in the configuration file.
 
+## Download
+>Version for Windows 10, 11.
+
+**[Download](https://github.com/r57zone/DSAdvance/releases)**
+
 ## Possible problems
 • **The game sees 2 controllers at the same time (DualSense / DualShock 4 / Nintendo Pro controller or JoyCons and Xbox)**<br>
 If the game supports a modern gamepad you can turn off the emulation of the Xbox gamepad on the keys `ALT + Q` or hide this gamepad at all using the program [HidHide](https://github.com/ViGEm/HidHide) or try in wireless mode.
@@ -67,11 +72,6 @@ Launch DSAdvance first, and only then the game itself, the game can give priorit
 
 • **Keyboard emulation don't work in some games**<br>
 In some games, for example, Max Payne or Crysis 2, unfortunately, this don'n work yet.
-
-## Download
->Version for Windows 10, 11.
-
-**[Download](https://github.com/r57zone/DSAdvance/releases)**
 
 ## Credits
 * Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.
