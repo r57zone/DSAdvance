@@ -199,8 +199,15 @@ void GamepadSearch() {
 			} else if (cur_dev->product_id == SONY_DS4_USB || cur_dev->product_id == SONY_DS4_V2_USB || cur_dev->product_id == SONY_DS4_DONGLE) {
 				CurGamepad.ControllerType = SONY_DUALSHOCK4;
 				CurGamepad.USBConnection = true;
+
+				// BT detection
+				unsigned char buf[64];
+				memset(buf, 0, sizeof(buf));
+				int bytesRead = hid_read_timeout(CurGamepad.HidHandle, buf, sizeof(buf), 100);
+				if (bytesRead > 0 && buf[0] == 0x11)
+					CurGamepad.USBConnection = false;
 			
-			} else if (cur_dev->product_id == SONY_DS4_BT) {
+			} else if (cur_dev->product_id == SONY_DS4_BT) { // ?
 				CurGamepad.ControllerType = SONY_DUALSHOCK4;
 				CurGamepad.USBConnection = false;
 			}
@@ -253,25 +260,23 @@ void GetBatteryInfo() {
 			if (CurGamepad.USBConnection)
 				CurGamepad.BatteryLevel = (buf[30] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS4_USB_BATTERY_MAX;
 			else
-				CurGamepad.BatteryLevel = (buf[31] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX; // offset 1?
+				CurGamepad.BatteryLevel = (buf[32] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX;
 		}
 		if (CurGamepad.BatteryLevel > 100) CurGamepad.BatteryLevel = 100; // It looks like something is not right, once it gave out 125%
 	}	
 }
 
 void ExternalPedalsDInputSearch() {
-	if (joyGetPosEx(JOYSTICKID1, &AppStatus.ExternalPedalsJoyInfo) == JOYERR_NOERROR &&
-		joyGetDevCaps(JOYSTICKID1, &AppStatus.ExternalPedalsJoyCaps, sizeof(AppStatus.ExternalPedalsJoyCaps)) == JOYERR_NOERROR &&
-		AppStatus.ExternalPedalsJoyCaps.wNumButtons == 16) { // DualSense - 15, DigiJoy - 16
-		AppStatus.ExternalPedalsJoyIndex = JOYSTICKID1;
-		AppStatus.ExternalPedalsDInputConnected = true;
-	} else if (joyGetPosEx(JOYSTICKID2, &AppStatus.ExternalPedalsJoyInfo) == JOYERR_NOERROR &&
-		joyGetDevCaps(JOYSTICKID2, &AppStatus.ExternalPedalsJoyCaps, sizeof(AppStatus.ExternalPedalsJoyCaps)) == JOYERR_NOERROR &&
-		AppStatus.ExternalPedalsJoyCaps.wNumButtons == 16) {
-		AppStatus.ExternalPedalsJoyIndex = JOYSTICKID2;
-		AppStatus.ExternalPedalsDInputConnected = true;
-	} else
-		AppStatus.ExternalPedalsDInputConnected = false;
+	ExternalPedalsConnected = false;
+	for (int JoyID = 0; JoyID < 4; ++JoyID) { // JOYSTICKID4 - 3
+		if (joyGetPosEx(JoyID, &AppStatus.ExternalPedalsJoyInfo) == JOYERR_NOERROR && // JoyID - JOYSTICKID1..4
+			joyGetDevCaps(JoyID, &AppStatus.ExternalPedalsJoyCaps, sizeof(AppStatus.ExternalPedalsJoyCaps)) == JOYERR_NOERROR &&
+			AppStatus.ExternalPedalsJoyCaps.wNumButtons == 16) { // DualSense - 15, DigiJoy - 16
+			AppStatus.ExternalPedalsJoyIndex = JoyID;
+			AppStatus.ExternalPedalsDInputConnected = true;
+			break;
+		}
+	}
 }
 
 void ExternalPedalsArduinoRead()
@@ -520,7 +525,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.9.7");
+	SetConsoleTitle("DSAdvance 0.9.8");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;

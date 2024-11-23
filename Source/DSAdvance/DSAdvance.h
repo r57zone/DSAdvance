@@ -7,7 +7,7 @@
 #define SONY_DS4_USB					0x05C4
 #define SONY_DS4_V2_USB					0x09CC
 #define SONY_DS4_DONGLE					0x0BA0
-#define SONY_DS4_BT						0x081F
+#define SONY_DS4_BT						0x081F // ?
 #define SONY_DS5						0x0CE6
 #define SONY_DS5_EDGE					0x0DF2
 
@@ -98,6 +98,9 @@
 #define VK_FULLSCREEN					513
 #define VK_FULLSCREEN_PLUS				514
 #define VK_CHANGE_LANGUAGE				515
+#define VK_CUT							516
+#define VK_COPY							517
+#define VK_PASTE						518
 
 
 bool ExternalPedalsConnected = false;
@@ -368,6 +371,15 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 					keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
+				}  else if (KeyCode == VK_CUT) {
+					keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event('X', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				} else if (KeyCode == VK_COPY) {
+					keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event('C', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				} else if (KeyCode == VK_PASTE) {
+					keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event('V', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 				}
 			
 			ButtonState->PressedOnce = true;
@@ -412,6 +424,16 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 			} else if (KeyCode == VK_CHANGE_LANGUAGE) {
 				keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			
+			} else if (KeyCode == VK_CUT) {
+				keybd_event('X', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			} else if (KeyCode == VK_COPY) {
+				keybd_event('C', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			} else if (KeyCode == VK_PASTE) {
+				keybd_event('V', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			}
 
 		ButtonState->UnpressedOnce = false;
@@ -422,158 +444,172 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 int KeyNameToKeyCode(std::string KeyName) {
 	std::transform(KeyName.begin(), KeyName.end(), KeyName.begin(), ::toupper);
 
-	if (KeyName == "NONE") return 0;
+	std::unordered_map<std::string, int> KeyMap = {
+		{"NONE", 0},
+		{"MOUSE-LEFT-CLICK", VK_MOUSE_LEFT_CLICK},
+		{"MOUSE-RIGHT-CLICK", VK_MOUSE_RIGHT_CLICK},
+		{"MOUSE-MIDDLE-CLICK", VK_MOUSE_MIDDLE_CLICK},
+		//{"MOUSE-SIDE1-CLICK", VK_XBUTTON1},
+		//{"MOUSE-SIDE2-CLICK", VK_XBUTTON2},
+		{"MOUSE-WHEEL-UP", VK_MOUSE_WHEEL_UP},
+		{"MOUSE-WHEEL-DOWN", VK_MOUSE_WHEEL_DOWN},
 
-	else if (KeyName == "MOUSE-LEFT-CLICK") return VK_MOUSE_LEFT_CLICK;
-	else if (KeyName == "MOUSE-RIGHT-CLICK") return VK_MOUSE_RIGHT_CLICK;
-	else if (KeyName == "MOUSE-MIDDLE-CLICK") return VK_MOUSE_MIDDLE_CLICK;
-	//else if (KeyName == "MOUSE-SIDE1-CLICK") return VK_XBUTTON1;
-	//else if (KeyName == "MOUSE-SIDE2-CLICK") return VK_XBUTTON2;
-	else if (KeyName == "MOUSE-WHEEL-UP") return VK_MOUSE_WHEEL_UP;
-	else if (KeyName == "MOUSE-WHEEL-DOWN") return VK_MOUSE_WHEEL_DOWN;
+		{"ESCAPE", VK_ESCAPE},
+		{"F1", VK_F1},
+		{"F2", VK_F2},
+		{"F3", VK_F3},
+		{"F4", VK_F4},
+		{"F5", VK_F5},
+		{"F6", VK_F6},
+		{"F7", VK_F7},
+		{"F8", VK_F8},
+		{"F9", VK_F9},
+		{"F10", VK_F10},
+		{"F11", VK_F11},
+		{"F12", VK_F12},
 
-	else if (KeyName == "ESCAPE") return VK_ESCAPE;
-	else if (KeyName == "F1") return VK_F1;
-	else if (KeyName == "F2") return VK_F2;
-	else if (KeyName == "F3") return VK_F3;
-	else if (KeyName == "F4") return VK_F4;
-	else if (KeyName == "F5") return VK_F5;
-	else if (KeyName == "F6") return VK_F6;
-	else if (KeyName == "F7") return VK_F7;
-	else if (KeyName == "F8") return VK_F8;
-	else if (KeyName == "F9") return VK_F9;
-	else if (KeyName == "F10") return VK_F10;
-	else if (KeyName == "F11") return VK_F11;
-	else if (KeyName == "F12") return VK_F12;
+		{"~", 192},
+		{"1", '1'},
+		{"2", '2'},
+		{"3", '3'},
+		{"4", '4'},
+		{"5", '5'},
+		{"6", '6'},
+		{"7", '7'},
+		{"8", '8'},
+		{"9", '9'},
+		{"0", '0'},
+		{"-", 189},
+		{"=", 187},
 
-	else if (KeyName == "~") return 192; // VK_OEM_3
-	else if (KeyName == "1") return '1';
-	else if (KeyName == "2") return '2';
-	else if (KeyName == "3") return '3';
-	else if (KeyName == "4") return '4';
-	else if (KeyName == "5") return '5';
-	else if (KeyName == "6") return '6';
-	else if (KeyName == "7") return '7';
-	else if (KeyName == "8") return '8';
-	else if (KeyName == "9") return '9';
-	else if (KeyName == "0") return '0';
-	else if (KeyName == "-") return 189;
-	else if (KeyName == "=") return 187;
+		{"TAB", VK_TAB},
+		{"CAPS-LOCK", VK_CAPITAL},
+		{"SHIFT", VK_SHIFT},
+		{"LSHIFT", VK_LSHIFT},
+		{"RSHIFT", VK_RSHIFT},
+		{"CTRL", VK_CONTROL},
+		{"LCTRL", VK_LCONTROL},
+		{"RCTRL", VK_RCONTROL},
 
-	else if (KeyName == "TAB") return VK_TAB;
-	else if (KeyName == "CAPS-LOCK") return VK_CAPITAL;
-	else if (KeyName == "SHIFT") return VK_SHIFT;
-	else if (KeyName == "CTRL") return VK_CONTROL;
-	else if (KeyName == "WIN") return VK_LWIN;
-	else if (KeyName == "ALT") return VK_MENU;
-	else if (KeyName == "SPACE") return VK_SPACE;
-	else if (KeyName == "ENTER") return VK_RETURN;
-	else if (KeyName == "BACKSPACE") return VK_BACK;
+		{"WIN", VK_LWIN},
+		{"ALT", VK_MENU},
+		{"LALT", VK_LMENU},
+		{"RALT", VK_RMENU},
+		{"SPACE", VK_SPACE},
+		{"ENTER", VK_RETURN},
+		{"BACKSPACE", VK_BACK},
 
-	else if (KeyName == "Q") return 'Q';
-	else if (KeyName == "W") return 'W';
-	else if (KeyName == "E") return 'E';
-	else if (KeyName == "R") return 'R';
-	else if (KeyName == "T") return 'T';
-	else if (KeyName == "Y") return 'Y';
-	else if (KeyName == "U") return 'U';
-	else if (KeyName == "I") return 'I';
-	else if (KeyName == "O") return 'O';
-	else if (KeyName == "P") return 'P';
-	else if (KeyName == "[") return 219; // VK_OEM_4
-	else if (KeyName == "]") return 221; // VK_OEM_6
-	else if (KeyName == "A") return 'A';
-	else if (KeyName == "S") return 'S';
-	else if (KeyName == "D") return 'D';
-	else if (KeyName == "F") return 'F';
-	else if (KeyName == "G") return 'G';
-	else if (KeyName == "H") return 'H';
-	else if (KeyName == "J") return 'J';
-	else if (KeyName == "K") return 'K';
-	else if (KeyName == "L") return 'L';
-	else if (KeyName == ":") return 186;
-	else if (KeyName == "APOSTROPHE") return 222; // VK_OEM_7
-	else if (KeyName == "\\") return 220; // VK_OEM_6
-	else if (KeyName == "Z") return 'Z';
-	else if (KeyName == "X") return 'X';
-	else if (KeyName == "C") return 'C';
-	else if (KeyName == "V") return 'V';
-	else if (KeyName == "B") return 'B';
-	else if (KeyName == "N") return 'N';
-	else if (KeyName == "M") return 'M';
-	else if (KeyName == "<") return 188;
-	else if (KeyName == ">") return 190;
-	else if (KeyName == "?") return 191; // VK_OEM_2
+		{"Q", 'Q'},
+		{"W", 'W'},
+		{"E", 'E'},
+		{"R", 'R'},
+		{"T", 'T'},
+		{"Y", 'Y'},
+		{"U", 'U'},
+		{"I", 'I'},
+		{"O", 'O'},
+		{"P", 'P'},
+		{"[", 219},
+		{"]", 221},
+		{"A", 'A'},
+		{"S", 'S'},
+		{"D", 'D'},
+		{"F", 'F'},
+		{"G", 'G'},
+		{"H", 'H'},
+		{"J", 'J'},
+		{"K", 'K'},
+		{"L", 'L'},
+		{":", 186},
+		{"APOSTROPHE", 222},
+		{"\\", 220},
+		{"Z", 'Z'},
+		{"X", 'X'},
+		{"C", 'C'},
+		{"V", 'V'},
+		{"B", 'B'},
+		{"N", 'N'},
+		{"M", 'M'},
+		{"<", 188},
+		{">", 190},
+		{"?", 191},
 
-	else if (KeyName == "PRINTSCREEN") return VK_SNAPSHOT;
-	else if (KeyName == "SCROLL-LOCK") return VK_SCROLL;
-	else if (KeyName == "PAUSE") return VK_PAUSE;
-	else if (KeyName == "INSERT") return VK_INSERT;
-	else if (KeyName == "HOME") return VK_HOME;
-	else if (KeyName == "PAGE-UP") return VK_NEXT;
-	else if (KeyName == "DELETE") return VK_DELETE;
-	else if (KeyName == "END") return VK_END;
-	else if (KeyName == "PAGE-DOWN") return VK_PRIOR;
+		{"PRINTSCREEN", VK_SNAPSHOT},
+		{"SCROLL-LOCK", VK_SCROLL},
+		{"PAUSE", VK_PAUSE},
+		{"INSERT", VK_INSERT},
+		{"HOME", VK_HOME},
+		{"PAGE-UP", VK_NEXT},
+		{"DELETE", VK_DELETE},
+		{"END", VK_END},
+		{"PAGE-DOWN", VK_PRIOR},
 
-	else if (KeyName == "UP") return VK_UP;
-	else if (KeyName == "DOWN") return VK_DOWN;
-	else if (KeyName == "LEFT") return VK_LEFT;
-	else if (KeyName == "RIGHT") return VK_RIGHT;
+		{"UP", VK_UP},
+		{"DOWN", VK_DOWN},
+		{"LEFT", VK_LEFT},
+		{"RIGHT", VK_RIGHT},
 
-	else if (KeyName == "NUM-LOCK") return VK_NUMLOCK;
-	else if (KeyName == "NUMPAD0") return VK_NUMPAD0;
-	else if (KeyName == "NUMPAD1") return VK_NUMPAD1;
-	else if (KeyName == "NUMPAD2") return VK_NUMPAD2;
-	else if (KeyName == "NUMPAD3") return VK_NUMPAD3;
-	else if (KeyName == "NUMPAD4") return VK_NUMPAD4;
-	else if (KeyName == "NUMPAD5") return VK_NUMPAD5;
-	else if (KeyName == "NUMPAD6") return VK_NUMPAD6;
-	else if (KeyName == "NUMPAD7") return VK_NUMPAD7;
-	else if (KeyName == "NUMPAD8") return VK_NUMPAD8;
-	else if (KeyName == "NUMPAD9") return VK_NUMPAD9;
+		{"NUM-LOCK", VK_NUMLOCK},
+		{"NUMPAD0", VK_NUMPAD0},
+		{"NUMPAD1", VK_NUMPAD1},
+		{"NUMPAD2", VK_NUMPAD2},
+		{"NUMPAD3", VK_NUMPAD3},
+		{"NUMPAD4", VK_NUMPAD4},
+		{"NUMPAD5", VK_NUMPAD5},
+		{"NUMPAD6", VK_NUMPAD6},
+		{"NUMPAD7", VK_NUMPAD7},
+		{"NUMPAD8", VK_NUMPAD8},
+		{"NUMPAD9", VK_NUMPAD9},
 
-	else if (KeyName == "NUMPAD-DIVIDE") return VK_DIVIDE;
-	else if (KeyName == "NUMPAD-MULTIPLY") return VK_MULTIPLY;
-	else if (KeyName == "NUMPAD-MINUS") return VK_SUBTRACT;
-	else if (KeyName == "NUMPAD-PLUS") return VK_ADD;
-	else if (KeyName == "NUMPAD-DEL") return VK_DECIMAL;
+		{"NUMPAD-DIVIDE", VK_DIVIDE},
+		{"NUMPAD-MULTIPLY", VK_MULTIPLY},
+		{"NUMPAD-MINUS", VK_SUBTRACT},
+		{"NUMPAD-PLUS", VK_ADD},
+		{"NUMPAD-DEL", VK_DECIMAL},
 
-	// Additional
-	else if (KeyName == "VOLUME-UP") return VK_VOLUME_UP2;
-	else if (KeyName == "VOLUME-DOWN") return VK_VOLUME_DOWN2;
-	else if (KeyName == "VOLUME-MUTE") return VK_VOLUME_MUTE2;
-	else if (KeyName == "HIDE-APPS") return VK_HIDE_APPS;
-	else if (KeyName == "SWITCH-APP") return VK_SWITCH_APP;
-	else if (KeyName == "DISPLAY-KEYBOARD") return VK_DISPLAY_KEYBOARD;
-	else if (KeyName == "GAMEBAR") return VK_GAMEBAR;
-	else if (KeyName == "GAMEBAR-SCREENSHOT") return VK_GAMEBAR_SCREENSHOT;
-	else if (KeyName == "FULLSCREEN") return VK_FULLSCREEN;
-	else if (KeyName == "FULLSCREEN-PLUS") return VK_FULLSCREEN_PLUS;
-	else if (KeyName == "CHANGE-LANGUAGE") return VK_CHANGE_LANGUAGE;
+		// Additional
+		{"VOLUME-UP", VK_VOLUME_UP2},
+		{"VOLUME-DOWN", VK_VOLUME_DOWN2},
+		{"VOLUME-MUTE", VK_VOLUME_MUTE2},
+		{"HIDE-APPS", VK_HIDE_APPS},
+		{"SWITCH-APP", VK_SWITCH_APP},
+		{"DISPLAY-KEYBOARD", VK_DISPLAY_KEYBOARD},
+		{"GAMEBAR", VK_GAMEBAR},
+		{"GAMEBAR-SCREENSHOT", VK_GAMEBAR_SCREENSHOT},
+		{"FULLSCREEN", VK_FULLSCREEN},
+		{"FULLSCREEN-PLUS", VK_FULLSCREEN_PLUS},
+		{"CHANGE-LANGUAGE", VK_CHANGE_LANGUAGE},
+		{"CUT", VK_CUT},
+		{"COPY", VK_COPY },
+		{"PASTE", VK_PASTE},
 
-	// Special
-	else if (KeyName == "WASD") return WASDStickMode;
-	else if (KeyName == "ARROWS") return ArrowsStickMode;
-	else if (KeyName == "NUMPAD-ARROWS") return NumpadsStickMode;
-	else if (KeyName == "MOUSE-LOOK") return MouseLookStickMode;
-	else if (KeyName == "MOUSE-WHEEL") return MouseWheelStickMode;
+		// Special
+		{"WASD", WASDStickMode},
+		{"ARROWS", ArrowsStickMode},
+		{"NUMPAD-ARROWS", NumpadsStickMode},
+		{"MOUSE-LOOK", MouseLookStickMode},
+		{"MOUSE-WHEEL", MouseWheelStickMode},
 
-	// Media
-	//else if (KeyName == "MEDIA-NEXT-TRACK") return VK_MEDIA_NEXT_TRACK;
-	//else if (KeyName == "MEDIA-PREV-TRACK") return VK_MEDIA_PREV_TRACK;
-	//else if (KeyName == "MEDIA-STOP") return VK_MEDIA_STOP;
-	//else if (KeyName == "MEDIA-PLAY-PAUSE") return VK_MEDIA_PLAY_PAUSE;
+		// Media
+		{"MEDIA-NEXT-TRACK", VK_MEDIA_NEXT_TRACK},
+		{"MEDIA-PREV-TRACK", VK_MEDIA_PREV_TRACK},
+		{"MEDIA-STOP", VK_MEDIA_STOP},
+		{"MEDIA-PLAY-PAUSE", VK_MEDIA_PLAY_PAUSE},
 
-	// Browser
-	//else if (KeyName == "BROWSER-BACK") return VK_BROWSER_BACK;
-	//else if (KeyName == "BROWSER-FORWARD") return VK_BROWSER_FORWARD;
-	//else if (KeyName == "BROWSER-REFRESH") return VK_BROWSER_REFRESH;
-	//else if (KeyName == "BROWSER-STOP") return VK_BROWSER_STOP;
-	//else if (KeyName == "BROWSER-SEARCH") return VK_BROWSER_SEARCH;
-	//else if (KeyName == "BROWSER-FAVORITES") return VK_BROWSER_FAVORITES;
-	//else if (KeyName == "BROWSER-HOME") return VK_BROWSER_HOME;
+		// Browser
+		{"BROWSER-BACK", VK_BROWSER_BACK},
+		{"BROWSER-FORWARD", VK_BROWSER_FORWARD},
+		{"BROWSER-REFRESH", VK_BROWSER_REFRESH},
+		{"BROWSER-STOP", VK_BROWSER_STOP},
+		{"BROWSER-SEARCH", VK_BROWSER_SEARCH},
+		{"BROWSER-FAVORITES", VK_BROWSER_FAVORITES},
+		{"BROWSER-HOME", VK_BROWSER_HOME}
+	};
 
-	else return 0;
+	if (KeyMap.find(KeyName) != KeyMap.end())
+		return KeyMap[KeyName];
+	else
+		return 0;
 }
 
 // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp

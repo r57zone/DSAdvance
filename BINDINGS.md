@@ -34,9 +34,15 @@ F12 | `F12`
 TAB | `TAB`
 CAPS-LOCK | `CAPS-LOCK`
 SHIFT | `SHIFT`
+LEFT SHIFT | `LSHIFT`
+RIGHT SHIFT | `RSHIFT`
 CTRL | `CTRL`
+LEFT CTRL | `LCTRL`
+RIGHT CTRL | `RCTRL`
 WIN | `WIN`
 ALT | `ALT`
+LEFT ALT | `LALT`
+RIGHT ALT | `RALT`
 SPACE | `SPACE`
 ENTER | `ENTER`
 BACKSPACE | `BACKSPACE`
@@ -120,14 +126,28 @@ NUMPAD DEL | `NUMPAD-DEL`
 ## Additional action buttons
 Value | Description
 ------------ | -------------
-`VOLUME-UP` | Volume up
-`VOLUME-DOWN` | Volume down
-`VOLUME-MUTE` | Enable / disable sound
-`HIDE-APPS` | Minimize all applications
-`SWITCH-APP` | Show all windows
-`DISPLAY-KEYBOARD` | Show / hide the on-screen keyboard
-`GAMEBAR` | Show / hide the Game Bar
-`GAMEBAR-SCREENSHOT` | Game bar screenshot
-`FULLSCREEN` | Switch to full screen mode `ALT + ENTER`
-`FULLSCREEN-PLUS` | Switch to full screen mode `ALT + ENTER` + `F` for YouTube and Twitch services
-`CHANGE-LANGUAGE` | Switch to another language
+`VOLUME-UP` | Volume up.
+`VOLUME-DOWN` | Volume down.
+`VOLUME-MUTE` | Enable / disable sound.
+`HIDE-APPS` | Minimize all applications.
+`SWITCH-APP` | Show all windows.
+`DISPLAY-KEYBOARD` | Show / hide the on-screen keyboard.
+`GAMEBAR` | Show / hide the Game Bar.
+`GAMEBAR-SCREENSHOT` | Game bar screenshot.
+`FULLSCREEN` | Switch to full screen mode `ALT + ENTER`.
+`FULLSCREEN-PLUS` | Switch to full screen mode `ALT + ENTER` + `F` for YouTube and Twitch services.
+`CHANGE-LANGUAGE` | Switch to another language.
+`CUT` | Cut.
+`COPY` | Copy.
+`PASTE` | Paste.
+`MEDIA-NEXT-TRACK` | Play the next track.
+`MEDIA-PREV-TRACK` | Play the previous track.
+`MEDIA-STOP` | Stop media playback.
+`MEDIA-PLAY-PAUSE` | Play or pause media.
+`BROWSER-BACK` | Go back in the browser.
+`BROWSER-FORWARD` | Go forward in the browser.
+`BROWSER-REFRESH` | Refresh the current page.
+`BROWSER-STOP` | Stop loading the page.
+`BROWSER-SEARCH` | Open search in the browser.
+`BROWSER-FAVORITES` | Open the favorites list.
+`BROWSER-HOME` | Go to the home page.

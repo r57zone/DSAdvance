@@ -35,9 +35,15 @@ F12 | `F12`
 TAB | `TAB`
 CAPS-LOCK | `CAPS-LOCK`
 SHIFT | `SHIFT`
+ЛЕВЫЙ SHIFT | `LSHIFT`
+ПРАВЫЙ SHIFT | `RSHIFT`
 CTRL | `CTRL`
+ЛЕВЫЙ CTRL | `LCTRL`
+ПРАВЫЙ CTRL | `RCTRL`
 WIN | `WIN`
 ALT | `ALT`
+ЛЕВЫЙ ALT | `LALT`
+ПРАВЫЙ ALT | `RALT`
 ПРОБЕЛ | `SPACE`
 ENTER | `ENTER`
 BACKSPACE | `BACKSPACE`
@@ -119,16 +125,30 @@ NUMPAD + | `NUMPAD-PLUS`
 NUMPAD DEL | `NUMPAD-DEL`
 
 ## Дополнительные кнопки
-Описание | Значение
+Значение | Описание
 ------------ | -------------
-`VOLUME-UP` | Увеличить громкость
-`VOLUME-DOWN` | Уменьшить громкость
-`VOLUME-MUTE` | Включить / выключить звук
-`HIDE-APPS` | Свернуть все приложения
-`SWITCH-APP` | Показать все окна
-`DISPLAY-KEYBOARD` | Вывести / спрятать экранную клавиатуру
-`GAMEBAR` | Игровая панель
-`GAMEBAR-SCREENSHOT` | Скриншот игровой панели
-`FULLSCREEN` | Переключиться в полноэкранный режим `ALT + ENTER`
-`FULLSCREEN-PLUS` | Переключиться в полноэкранный режим `ALT + ENTER` + `F` для сервисов YouTube и Twitch
-`CHANGE-LANGUAGE` | Переключиться на другой язык
+`VOLUME-UP` | Увеличить громкость.
+`VOLUME-DOWN` | Уменьшить громкость.
+`VOLUME-MUTE` | Включить / выключить звук.
+`HIDE-APPS` | Свернуть все приложения.
+`SWITCH-APP` | Показать все окна.
+`DISPLAY-KEYBOARD` | Вывести / спрятать экранную клавиатуру.
+`GAMEBAR` | Игровая панель.
+`GAMEBAR-SCREENSHOT` | Скриншот игровой панели.
+`FULLSCREEN` | Переключиться в полноэкранный режим `ALT + ENTER`.
+`FULLSCREEN-PLUS` | Переключиться в полноэкранный режим `ALT + ENTER` + `F` для сервисов YouTube и Twitch.
+`CHANGE-LANGUAGE` | Переключиться на другой язык.
+`CUT` | Вырезать.
+`COPY` | Копировать.
+`PASTE` | Вставить.
+`MEDIA-NEXT-TRACK` | Воспроизведение следующего трека.
+`MEDIA-PREV-TRACK` | Воспроизведение предыдущего трека.
+`MEDIA-STOP` | Остановка воспроизведения медиа.
+`MEDIA-PLAY-PAUSE` | Воспроизведение или пауза медиа.
+`BROWSER-BACK` | Переход назад в браузере.
+`BROWSER-FORWARD` | Переход вперед в браузере.
+`BROWSER-REFRESH` | Обновление текущей страницы.
+`BROWSER-STOP` | Остановка загрузки страницы.
+`BROWSER-SEARCH` | Открытие поиска в браузере.
+`BROWSER-FAVORITES` | Открытие списка избранного.
+`BROWSER-HOME` | Переход на главную страницу.
