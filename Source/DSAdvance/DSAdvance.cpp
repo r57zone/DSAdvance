@@ -271,6 +271,8 @@ void ExternalPedalsDInputSearch() {
 	for (int JoyID = 0; JoyID < 4; ++JoyID) { // JOYSTICKID4 - 3
 		if (joyGetPosEx(JoyID, &AppStatus.ExternalPedalsJoyInfo) == JOYERR_NOERROR && // JoyID - JOYSTICKID1..4
 			joyGetDevCaps(JoyID, &AppStatus.ExternalPedalsJoyCaps, sizeof(AppStatus.ExternalPedalsJoyCaps)) == JOYERR_NOERROR &&
+			(AppStatus.ExternalPedalsJoyCaps.wMid != 1406 ||
+			(AppStatus.ExternalPedalsJoyCaps.wPid != 8198 && AppStatus.ExternalPedalsJoyCaps.wPid != 8199)) && // Exclude Pro Controller и JoyCon
 			AppStatus.ExternalPedalsJoyCaps.wNumButtons == 16) { // DualSense - 15, DigiJoy - 16
 			AppStatus.ExternalPedalsJoyIndex = JoyID;
 			AppStatus.ExternalPedalsDInputConnected = true;
@@ -525,7 +527,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.9.8");
+	SetConsoleTitle("DSAdvance 0.9.9");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -699,7 +701,37 @@ int main(int argc, char **argv)
 		}
 
 		XUSB_REPORT_INIT(&report);
-		InputState = JslGetSimpleState(CurGamepad.deviceID[0]);
+
+		if (JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS4 || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_PRO_CONTROLLER) {
+			InputState = JslGetSimpleState(CurGamepad.deviceID[0]);
+			MotionState = JslGetMotionState(CurGamepad.deviceID[0]);
+
+		} else if (JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_LEFT || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_RIGHT) { // The state of the joycons is the same for both
+			memset(&InputState, 0, sizeof(JOY_SHOCK_STATE));
+			memset(&MotionState, 0, sizeof(MOTION_STATE));
+
+			for (int i = 0; i < AppStatus.ControllerCount; i++) {
+				
+				if (JslGetControllerType(CurGamepad.deviceID[i]) != JS_TYPE_JOYCON_LEFT && JslGetControllerType(CurGamepad.deviceID[i]) != JS_TYPE_JOYCON_RIGHT) continue;
+				JOY_SHOCK_STATE tempState = JslGetSimpleState(CurGamepad.deviceID[i]);
+
+				InputState.buttons |= tempState.buttons;
+
+
+
+				if (JslGetControllerType(CurGamepad.deviceID[i]) == JS_TYPE_JOYCON_LEFT) {
+					InputState.stickLX = tempState.stickLX;
+					InputState.stickLY = tempState.stickLY;
+					InputState.lTrigger = tempState.lTrigger;
+				} else if (JslGetControllerType(CurGamepad.deviceID[i]) == JS_TYPE_JOYCON_RIGHT) {
+					MotionState = JslGetMotionState(CurGamepad.deviceID[i]);
+					InputState.stickRX = tempState.stickRX;
+					InputState.stickRY = tempState.stickRY;
+					InputState.rTrigger = tempState.rTrigger;
+				}
+			}
+		}
+
 		if (AppStatus.ControllerCount < 1) { // We do not process anything during idle time
 			//InputState = { 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 			report.sThumbLX = 1; // Maybe the crash is due to power saving? temporary test
@@ -707,8 +739,7 @@ int main(int argc, char **argv)
 			Sleep(AppStatus.SleepTimeOut);
 			continue;
 		}
-
-		MotionState = JslGetMotionState(CurGamepad.deviceID[0]);
+		
 		MotionAngles = QuaternionToEulerAngle(MotionState.quatW, MotionState.quatZ, MotionState.quatX, MotionState.quatY);
 
 		// Stick dead zones
@@ -918,7 +949,7 @@ int main(int argc, char **argv)
 
 		report.bLeftTrigger = DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) * 255;
 		report.bRightTrigger = DeadZoneAxis(InputState.rTrigger, CurGamepad.Triggers.DeadZoneRight) * 255;
-
+		
 		// External pedals
 		if (AppStatus.ExternalPedalsDInputConnected) {
 			if (joyGetPosEx(AppStatus.ExternalPedalsJoyIndex, &AppStatus.ExternalPedalsJoyInfo) == JOYERR_NOERROR) {
@@ -946,7 +977,7 @@ int main(int argc, char **argv)
 			report.wButtons |= InputState.buttons & JSMASK_PLUS ? XINPUT_GAMEPAD_START : 0;
 		}
 
-		if (!(InputState.buttons & JSMASK_PS)) { // During special functions, nothing is pressed in the game
+		if (!(InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_CAPTURE && InputState.buttons & JSMASK_CAPTURE)) { // During special functions, nothing is pressed in the game
 			report.wButtons |= InputState.buttons & JSMASK_L ? XINPUT_GAMEPAD_LEFT_SHOULDER : 0;
 			report.wButtons |= InputState.buttons & JSMASK_R ? XINPUT_GAMEPAD_RIGHT_SHOULDER : 0;
 			if (AppStatus.LeftStickMode != LeftStickInvertPressMode) // Invert stick mode
@@ -968,27 +999,37 @@ int main(int argc, char **argv)
 		if (JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_PRO_CONTROLLER || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_LEFT || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_RIGHT) {
 			if (SkipPollCount == 0 && InputState.buttons & JSMASK_CAPTURE) { if (GamepadActionMode == 1) GamepadActionMode = 0; else { GamepadActionMode = 1; AnglesOffset = MotionAngles; } SkipPollCount = SkipPollTimeOut; }
 			if (SkipPollCount == 0 && InputState.buttons & JSMASK_HOME) { if (GamepadActionMode == 0 || GamepadActionMode == 1) GamepadActionMode = LastAIMProCtrlMode; else if (GamepadActionMode == 2) { GamepadActionMode = 3; LastAIMProCtrlMode = 3; } else { GamepadActionMode = 2; LastAIMProCtrlMode = 2; } SkipPollCount = SkipPollTimeOut; }
-		} 
+		
+		// Sony
+		} else {
 
-		// GameBar & multi keys
-		// PS without any keys
-		if (PSReleasedCount == 0 && InputState.buttons == JSMASK_PS) { PSOnlyCheckCount = 20; PSOnlyPressed = true; }
-		if (PSOnlyCheckCount > 0) {
-			if (PSOnlyCheckCount == 1 && PSOnlyPressed)
-				PSReleasedCount = PSReleasedTimeOut; // Timeout to release the PS button and don't execute commands
-			PSOnlyCheckCount--;
-			if (InputState.buttons != JSMASK_PS && InputState.buttons != 0) { PSOnlyPressed = false; PSOnlyCheckCount = 0; }
+			// GameBar & multi keys
+			// PS without any keys
+			if (PSReleasedCount == 0 && InputState.buttons == JSMASK_PS) { PSOnlyCheckCount = 20; PSOnlyPressed = true; }
+			if (PSOnlyCheckCount > 0) {
+				if (PSOnlyCheckCount == 1 && PSOnlyPressed)
+					PSReleasedCount = PSReleasedTimeOut; // Timeout to release the PS button and don't execute commands
+				PSOnlyCheckCount--;
+				if (InputState.buttons != JSMASK_PS && InputState.buttons != 0) { PSOnlyPressed = false; PSOnlyCheckCount = 0; }
+			}
+			if (InputState.buttons & JSMASK_PS && InputState.buttons != JSMASK_PS) PSReleasedCount = PSReleasedTimeOut; // printf("PS + any button\n"); }
+			if (PSReleasedCount > 0) PSReleasedCount--;
 		}
-		if (InputState.buttons & JSMASK_PS && InputState.buttons != JSMASK_PS) PSReleasedCount = PSReleasedTimeOut; // printf("PS + any button\n"); }
-		if (PSReleasedCount > 0) PSReleasedCount--;
 
-		KeyPress(VK_GAMEBAR, PSOnlyCheckCount == 1 && PSOnlyPressed, &ButtonsStates.PS);
-		KeyPress(VK_VOLUME_DOWN2, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_W, &ButtonsStates.VolumeDown);
-		KeyPress(VK_VOLUME_UP2, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_E, &ButtonsStates.VolumeUP);
-		KeyPress(AppStatus.ScreenShotKey, InputState.buttons & JSMASK_MIC || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_S), &ButtonsStates.Mic); // + DualShock 4
+		KeyPress(VK_GAMEBAR, (PSOnlyCheckCount == 1 && PSOnlyPressed) || (InputState.buttons & JSMASK_CAPTURE && InputState.buttons & JSMASK_HOME), &ButtonsStates.PS);
+
+		if (JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_PRO_CONTROLLER || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_LEFT || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_RIGHT) {
+			KeyPress(VK_VOLUME_DOWN2, InputState.buttons & JSMASK_CAPTURE && InputState.buttons & JSMASK_W, &ButtonsStates.VolumeDown);
+			KeyPress(VK_VOLUME_UP2, InputState.buttons & JSMASK_CAPTURE && InputState.buttons & JSMASK_E, &ButtonsStates.VolumeUP);
+		} else {
+			KeyPress(VK_VOLUME_DOWN2, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_W, &ButtonsStates.VolumeDown);
+			KeyPress(VK_VOLUME_UP2, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_E, &ButtonsStates.VolumeUP);
+		}
+
+		KeyPress(AppStatus.ScreenShotKey, InputState.buttons & JSMASK_MIC || ((InputState.buttons & JSMASK_PS || InputState.buttons & JSMASK_CAPTURE) && InputState.buttons & JSMASK_S), &ButtonsStates.Mic); // + DualShock 4
 
 		// Custom sens
-		if (SkipPollCount == 0 && InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_N) {
+		if (SkipPollCount == 0 && (InputState.buttons & JSMASK_PS || InputState.buttons & JSMASK_CAPTURE)  && InputState.buttons & JSMASK_N) {
 			CurGamepad.Motion.CustomMulSens += 0.2;
 			if (CurGamepad.Motion.CustomMulSens > 2.4)
 				CurGamepad.Motion.CustomMulSens = 0.2;
