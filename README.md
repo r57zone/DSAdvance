@@ -19,13 +19,19 @@ To exit the stick emulation mode on the touchpad, need to switch to the default 
 By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%), also on DualSense and DualShock 4 the battery status is shown on the lightbar (green - 100..30%, yellow - 29..10%, red - 9..1%), can be disabled in the config, parameter `ShowBatteryStatusOnLightBar`. For DualSense and DualShock 4 the current charge is displayed in the program itself.
 
 
+To change the brightness of Sony controllers, double-click on the brightness area. If the brightness change is blocked, the backlight will turn off by double-clicking.
+
+
 `PS` or `Capture + Home` button opens "Xbox Game Bar" (press `Win + G`), `PS + □` or `CAPTURE + Y` - decrease volume, `PS + ○` or `PS + A` - increase volume, `PS + △` or `CAPTURE + X` - increases and then decreases aiming sensitivity (reset to `PS + R3` or `CAPTURE + R3`), `PS + X` or `CAPTURE + B` - microphone button (screenshot or pressing configured keyboard button).
+
+
+You can make the stick automatically pressed at a certain stick tilt (value in the configuration file), and also invert the pressing of `ALT + S` or `PS/HOME + LS`.
 
 
 By default, the microphone button takes a screenshot of `Win + Alt + PrtScr` (for DualShock 4 `PS + X`, and for Nintendo controllers `CAPTURE + B`). By changing the `MicCustomKey` parameter to the [desired button value](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md), it will be pressed.
 
 
-To emulate keyboard and mouse, for old games, switch the operating mode to `ALT + Q` or `PS + ←` and `PS + →`, or `HOME + ←` and `HOME + →`, and select the desired profile or [create the desired profile](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles are switched to the `ALT + ↑` and `ALT + ↓` keys if the window is active or on a gamepad using `PS + ↑` and `PS + ↓` or `HOME + ↑` and `HOME + ↓`. The default profile allows to work in Windows.
+To emulate keyboard and mouse, for old games, switch the operating mode to `ALT + Q` or `PS/HOME + ←` and `PS/HOME + →`, and select the desired profile or [create the desired profile](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles are switched to the `ALT + ↑` and `ALT + ↓` keys if the window is active or on a gamepad using `PS + ↑` and `PS + ↓` or `HOME + ↑` and `HOME + ↓`. The default profile allows to work in Windows.
 
 
 To connect [external pedals (DInput)](https://github.com/r57zone/XboxExternalPedals#setup-dinput-pedals-mh-et-live-board), change the `DInput` parameter to `1`, in the `ExternalPedals` section.  To connect [external pedals on Arduino](https://github.com/r57zone/XboxExternalPedals#setup-arduino-pedals), change the COM port number by changing the `COMPort` parameter.
@@ -73,14 +79,17 @@ Launch DSAdvance first, and only then the game itself, the game can give priorit
 • **Keyboard emulation don't work in some games**<br>
 In some games, for example, Max Payne or Crysis 2, unfortunately, this don'n work yet.
 
+
+
+• **Vibration does not work on Nintendo controllers**<br>
+Unfortunately, this is not yet implemented.
+
 ## Credits
 * Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.
 * [ViGEm](https://github.com/ViGEm) for the ability to emulate different gamepads.
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
-* [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also some code from this library is used.
-* For [Reddit users](https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/) for a detailed description of the DualSense USB output packet.
+* [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also uses some code from this library and [JibbSmart snippet](https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df) for aiming.
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) for the battery level.
-* ChatGPT for improved aiming.
 
 ## Building
 1. Download the sources and unzip them.

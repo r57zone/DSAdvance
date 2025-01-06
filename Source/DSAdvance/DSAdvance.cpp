@@ -92,7 +92,8 @@ void GamepadSetState(InputOutState OutState)
 
 				hid_write(CurGamepad.HidHandle, outputReport, 48);
 
-			} else { // BT
+			}
+			else { // BT
 				unsigned char outputReport[79]; // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds5_rumble_light_bt)
 				memset(outputReport, 0, 79);
 
@@ -119,7 +120,8 @@ void GamepadSetState(InputOutState OutState)
 				hid_write(CurGamepad.HidHandle, &outputReport[1], 78);
 			}
 
-		} else if (CurGamepad.ControllerType == SONY_DUALSHOCK4) { // JoyShockLibrary rumble working for USB DS4 ??? 
+		}
+		else if (CurGamepad.ControllerType == SONY_DUALSHOCK4) { // JoyShockLibrary rumble working for USB DS4 ??? 
 			if (CurGamepad.USBConnection) {
 				unsigned char outputReport[31];
 				memset(outputReport, 0, 31);
@@ -133,7 +135,8 @@ void GamepadSetState(InputOutState OutState)
 				outputReport[8] = std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255);
 
 				hid_write(CurGamepad.HidHandle, outputReport, 31);
-			} else { // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds4_rumble_light_bt)
+			}
+			else { // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds4_rumble_light_bt)
 				unsigned char outputReport[79];
 				memset(outputReport, 0, 79);
 
@@ -160,6 +163,16 @@ void GamepadSetState(InputOutState OutState)
 
 				hid_write(CurGamepad.HidHandle, &outputReport[1], 78);
 			}
+		//} else if (CurGamepad.ControllerType == NINTENDO_JOYCON_L || CurGamepad.ControllerType == NINTENDO_JOYCON_R) {
+			/*unsigned char outputReport[10];
+			memset(outputReport, 0, 10);
+
+			outputReport[0] = 0x10;
+			outputReport[1] = 0x01;
+			
+
+			hid_write(CurGamepad.HidHandle, outputReport, 10);
+			*/
 		} else {
 			//if (JslGetControllerType(0) == JS_TYPE_DS || JslGetControllerType(0) == JS_TYPE_DS4)
 				//JslSetLightColour(0, (std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255) << 16) + (std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255) << 8) + std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255)); // https://github.com/CyberPlaton/_Nautilus_/blob/master/Engine/PSGamepad.cpp
@@ -261,6 +274,12 @@ void GetBatteryInfo() {
 				CurGamepad.BatteryLevel = (buf[30] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS4_USB_BATTERY_MAX;
 			else
 				CurGamepad.BatteryLevel = (buf[32] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX;
+		/*} else if (CurGamepad.ControllerType == NINTENDO_JOYCON_L || CurGamepad.ControllerType == NINTENDO_JOYCON_R) {
+			unsigned char buf[64];
+			memset(buf, 0, sizeof(buf));
+
+			hid_read(CurGamepad.HidHandle, buf, 64);
+			CurGamepad.BatteryLevel = (buf[2] & 0x0F) * 100 / 5;*/
 		}
 		if (CurGamepad.BatteryLevel > 100) CurGamepad.BatteryLevel = 100; // It looks like something is not right, once it gave out 125%
 	}	
@@ -375,6 +394,29 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 	return LeftAxisX;
 }
 
+double OffsetYPR2(double Angle1, double Angle2) // CalcMotionStick
+{
+	Angle1 -= Angle2;
+	if (Angle1 < -3.14159265358979323846)
+		Angle1 += 2 * 3.14159265358979323846;
+	else if (Angle1 > 3.14159265358979323846)
+		Angle1 -= 2 * 3.14159265358979323846;
+	return Angle1;
+}
+
+SHORT CalcMotionStick(float gravA, float gravB, float wheelAngle, float offsetAxis) {
+	float angleRadians = wheelAngle * (3.14159f / 180.0f); // To radians
+
+	float normalizedValue = OffsetYPR2(atan2f(gravA, gravB), offsetAxis) / angleRadians;
+
+	if (normalizedValue > 1.0f)
+		normalizedValue = 1.0f;
+	else if (normalizedValue < -1.0f)
+		normalizedValue = -1.0f;
+
+	return normalizedValue * 32767;
+}
+
 void KMStickMode(float StickX, float StickY, int Mode) {
 	if (Mode == WASDStickMode) {
 		KeyPress('W', StickY > CurGamepad.KMEmu.StickValuePressKey, &ButtonsStates.Up);
@@ -432,8 +474,8 @@ void LoadKMProfile(std::string ProfileFile) {
 	CurGamepad.KMEmu.LeftStickMode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "LEFT-STICK", "WASD"));
 	CurGamepad.KMEmu.RightStickMode = KeyNameToKeyCode(IniFile.ReadString("GAMEPAD", "RIGHT-STICK", "MOUSE-LOOK"));
 
-	CurGamepad.KMEmu.JoySensX = IniFile.ReadFloat("MOUSE", "SensitivityX", 100) * 0.176;
-	CurGamepad.KMEmu.JoySensY = IniFile.ReadFloat("MOUSE", "SensitivityY", 100) * 0.176;
+	CurGamepad.KMEmu.JoySensX = IniFile.ReadFloat("MOUSE", "SensitivityX", 100) * 0.22;
+	CurGamepad.KMEmu.JoySensY = IniFile.ReadFloat("MOUSE", "SensitivityY", 100) * 0.22;
 }
 
 void MainTextUpdate() {
@@ -458,8 +500,8 @@ void MainTextUpdate() {
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled)
 		printf(" Emulation: Only mouse (for mouse aiming).\n");
 	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
-		printf_s(" Emulation: Keyboard and mouse (%s).\n Change profiles with \"ALT + Up | Down\" or \"PS + DPAD Up | Down\".\n", KMProfiles[ProfileIndex].c_str());
-	printf(" Press \"ALT + Q | Left | Right\" or \"PS + DPAD Left | Right\" to switch emulation.\n");
+		printf_s(" Emulation: Keyboard and mouse (%s).\n Change profiles with \"ALT + Up/Down\" or \"PS/HOME + DPAD Up/Down\".\n", KMProfiles[ProfileIndex].c_str());
+	printf(" Press \"ALT + Q\" or \"ALT + Left/Right\" or \"PS/CAPTURE + DPAD Left/Right\" to switch emulation.\n");
 
 	if (AppStatus.ExternalPedalsDInputConnected)
 		printf(" External pedals DInput connected.\n");
@@ -467,7 +509,7 @@ void MainTextUpdate() {
 		printf(" External pedals Arduino connected.\n");
 
 	if (AppStatus.AimMode == AimMouseMode) printf(" AIM mode = mouse"); else printf(" AIM mode = mouse-joystick");
-	printf(", press \"ALT + A\" or \"PS + R1\" to switch.\n");
+	printf(", press \"ALT + A\" or \"PS/CAPTURE + R1\" to switch.\n");
 
 	if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled) {
 		if (AppStatus.LeftStickMode == LeftStickDefaultMode)
@@ -476,12 +518,12 @@ void MainTextUpdate() {
 			printf(" Left stick mode: Auto pressing by value");
 		else if (AppStatus.LeftStickMode == LeftStickInvertPressMode)
 				printf(" Left stick mode: Invert pressed");
-		printf(", press \"ALT + S\" or \"PS + LS\" to switch.\n");
+		printf(", press \"ALT + S\" or \"PS/HOME + LS\" to switch.\n");
 	}
 
 	if (AppStatus.ChangeModesWithoutPress) printf(" Change modes without pressing the touchpad"); else printf(" Change modes by pressing the touchpad");
-	printf(", press \"ALT + W\" or  \"PS + Share\" to switch.\n");
-	printf(" Press \"ALT + B\" or \"PS + L1\" to turn the backlight on or off.\n");
+	printf(", press \"ALT + W\" or  \"PS + Share\" to switch (only Sony).\n");
+	printf(" Press \"ALT + B\" or \"PS + L1\" to turn the backlight on or off (only Sony).\n");
 
 	if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
 		printf(" Screenshot mode: Custom key");
@@ -494,7 +536,7 @@ void MainTextUpdate() {
 	printf(", press \"ALT + X\" to switch.\n");
 
 	printf(" Press \"ALT + F9\" to get the sticks dead zones.\n");
-	printf(" Press \"ALT + I\" to get the battery status.\n");
+	printf(" Press \"ALT + I\" to get the battery status (only Sony).\n");
 	printf(" Press \"ALT + Escape\" to exit.\n");
 }
 
@@ -527,7 +569,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 0.9.9");
+	SetConsoleTitle("DSAdvance 1.0");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -570,11 +612,11 @@ int main(int argc, char **argv)
 	CurGamepad.Motion.WheelAngle = IniFile.ReadFloat("Motion", "WheelAngle", 150) / 2.0f;
 	CurGamepad.Motion.WheelPitch = IniFile.ReadBoolean("Motion", "WheelPitch", false);
 	CurGamepad.Motion.WheelRoll = IniFile.ReadBoolean("Motion", "WheelRoll", true);
-	CurGamepad.Motion.WheelInvertPitch = IniFile.ReadBoolean("Motion", "WheelInvertPitch", false) ? -1 : 1;
-	CurGamepad.Motion.SensX = IniFile.ReadFloat("Motion", "MouseSensX", 100) * 0.135f;
-	CurGamepad.Motion.SensY = IniFile.ReadFloat("Motion", "MouseSensY", 90) * 0.135f;
-	CurGamepad.Motion.JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 100) * 0.0205;
-	CurGamepad.Motion.JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 90) * 0.0205;
+	CurGamepad.Motion.WheelInvertPitch = IniFile.ReadBoolean("Motion", "WheelInvertPitch", false) ? 1 : -1;
+	CurGamepad.Motion.SensX = IniFile.ReadFloat("Motion", "MouseSensX", 100) * 0.005; // Calibration with Crysis 2, old 0.01
+	CurGamepad.Motion.SensY = IniFile.ReadFloat("Motion", "MouseSensY", 90) * 0.005;
+	CurGamepad.Motion.JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 100) * 0.0013;
+	CurGamepad.Motion.JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 90) * 0.0013;
 
 	CurGamepad.KMEmu.StickValuePressKey = IniFile.ReadFloat("KeyboardMouse", "StickValuePressKey", 0.2f);
 	CurGamepad.KMEmu.TriggerValuePressKey = IniFile.ReadFloat("KeyboardMouse", "TriggerValuePressKey", 0.2f);
@@ -717,8 +759,6 @@ int main(int argc, char **argv)
 
 				InputState.buttons |= tempState.buttons;
 
-
-
 				if (JslGetControllerType(CurGamepad.deviceID[i]) == JS_TYPE_JOYCON_LEFT) {
 					InputState.stickLX = tempState.stickLX;
 					InputState.stickLY = tempState.stickLY;
@@ -741,6 +781,8 @@ int main(int argc, char **argv)
 		}
 		
 		MotionAngles = QuaternionToEulerAngle(MotionState.quatW, MotionState.quatZ, MotionState.quatX, MotionState.quatY);
+		float velocityX, velocityY, velocityZ;
+		JslGetAndFlushAccumulatedGyro(CurGamepad.deviceID[0], velocityX, velocityY, velocityZ);
 
 		// Stick dead zones
 		if (SkipPollCount == 0 && IsKeyPressed(VK_MENU) && IsKeyPressed(VK_F9) != 0)
@@ -795,7 +837,7 @@ int main(int argc, char **argv)
 		}
 
 		// Switch aiming mode: mouse / joymouse
-		if (SkipPollCount == 0 && ( (IsKeyPressed(VK_MENU) != 0 && IsKeyPressed('A')) || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_R) ) )
+		if (SkipPollCount == 0 && ( (IsKeyPressed(VK_MENU) != 0 && IsKeyPressed('A')) || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_R) || (InputState.buttons & JSMASK_CAPTURE && InputState.buttons & JSMASK_R)) )
 		{
 			AppStatus.AimMode = !AppStatus.AimMode;
 			MainTextUpdate();
@@ -811,7 +853,7 @@ int main(int argc, char **argv)
 		}
 
 		// Switch left stick mode
-		if (SkipPollCount == 0 && ( (IsKeyPressed(VK_MENU) != 0 && IsKeyPressed('S')) || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_LCLICK)))
+		if (SkipPollCount == 0 && ( (IsKeyPressed(VK_MENU) != 0 && IsKeyPressed('S')) || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_LCLICK))) // PS - Home (Switch)
 		{
 			AppStatus.LeftStickMode++; if (AppStatus.LeftStickMode > LeftStickMaxModes) AppStatus.LeftStickMode = LeftStickDefaultMode;
 			MainTextUpdate();
@@ -884,6 +926,10 @@ int main(int argc, char **argv)
 					if (TouchState.t0X > 0 && TouchState.t0X <= 1 / 3.0 && GamepadActionMode != TouchpadSticksMode) { // [O--] - Driving mode
 						GamepadActionMode = MotionDrivingMode;
 						AnglesOffset = MotionAngles;
+		
+						CurGamepad.Motion.OffsetAxisX = atan2f(MotionState.gravX, MotionState.gravZ);
+						CurGamepad.Motion.OffsetAxisY = atan2f(MotionState.gravY, MotionState.gravZ);
+						
 						GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 255; GamepadOutState.LEDGreen = 0;
 					
 					} else if (TouchState.t0X > 1 / 3.0 && TouchState.t0X <= 1 / 3.0 * 2.0) { // [-O-] // Default & touch sticks modes
@@ -909,7 +955,6 @@ int main(int argc, char **argv)
 						}
 
 					} else if (TouchState.t0X > (1 / 3.0) * 2.0 && TouchState.t0X <= 1 && GamepadActionMode != TouchpadSticksMode) { // [--O] Aiming mode
-						AnglesOffset = MotionAngles;
 						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.5) { // Motion AIM always
 							GamepadActionMode = MotionAimingMode;
 							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
@@ -1035,44 +1080,35 @@ int main(int argc, char **argv)
 				CurGamepad.Motion.CustomMulSens = 0.2;
  			SkipPollCount = SkipPollTimeOut;
 		}
-		if (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_RCLICK) CurGamepad.Motion.CustomMulSens = 1.0f; //printf("%5.2f\n", CustomMulSens);
+		if ((InputState.buttons & JSMASK_PS || InputState.buttons & JSMASK_CAPTURE) && InputState.buttons & JSMASK_RCLICK) CurGamepad.Motion.CustomMulSens = 1.0f; //printf("%5.2f\n", CustomMulSens);
 
 		// Gamepad modes
 		if (GamepadActionMode == MotionDrivingMode) { // Motion racing  [O--]
-			report.sThumbLX = CurGamepad.Motion.WheelRoll ? ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Roll), RadToDeg(AnglesOffset.Roll)) * -1, CurGamepad.Motion.WheelAngle) : report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Yaw), RadToDeg(AnglesOffset.Yaw)) * -1, CurGamepad.Motion.WheelAngle);
-			if (CurGamepad.Motion.WheelPitch) report.sThumbLY = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch)) * CurGamepad.Motion.WheelInvertPitch, CurGamepad.Motion.WheelAngle);
+			
+			if (CurGamepad.Motion.WheelRoll)
+				report.sThumbLX = CalcMotionStick(MotionState.gravX, MotionState.gravZ, CurGamepad.Motion.WheelAngle, CurGamepad.Motion.OffsetAxisX);
+			else
+				report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Yaw), RadToDeg(AnglesOffset.Yaw)) * -1, CurGamepad.Motion.WheelAngle); // Not tested, axes swap roles
+
+			if (CurGamepad.Motion.WheelPitch)
+				report.sThumbLY = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch)) * CurGamepad.Motion.WheelInvertPitch, CurGamepad.Motion.WheelAngle); // Not tested, axes swap roles
+		
 		} else if (GamepadActionMode == MotionAimingMode || GamepadActionMode == MotionAimingModeOnlyPressed) { // Motion aiming  [--X}]
 			
-			// Low-pass filter
-			const float smoothing_factor = 0.2f; // BT, USB - 0.2 good, default 0.5
-			CurGamepad.Motion.DeltaXSmoothed = RadToDeg(MotionAngles.Yaw - PreviousAngles.Yaw) * smoothing_factor + CurGamepad.Motion.DeltaXSmoothed * (1 - smoothing_factor);
-			CurGamepad.Motion.DeltaYSmoothed = RadToDeg(MotionAngles.Pitch - PreviousAngles.Pitch) * smoothing_factor + CurGamepad.Motion.DeltaYSmoothed * (1 - smoothing_factor);
-
-			float deltaX = CurGamepad.Motion.DeltaXSmoothed;
-			float deltaY = CurGamepad.Motion.DeltaYSmoothed;
-
-			// Cursor movement speed
-			auto current_time = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<double> elapsed_time = current_time - previous_time;
-			float delta_time = elapsed_time.count();
-			previous_time = current_time;
-
-			float max_cursor_speed = 100.0f; // Maximum speed of cursor movement
-			float deltaXY = sqrt(deltaX * deltaX + deltaY * deltaY);
-			if (deltaXY > max_cursor_speed * delta_time) {
-				deltaX *= max_cursor_speed * delta_time / deltaXY;
-				deltaY *= max_cursor_speed * delta_time / deltaXY;
-			}
-
-			PreviousAngles.Yaw = MotionAngles.Yaw;
-			PreviousAngles.Pitch = MotionAngles.Pitch;
+			// Snippet by JibbSmart https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df
+			float frameTime = 0.0166666666666667f; // 1.f / 60.f;
+			float _tightening = 2.f;
+			const float inputSize = sqrtf(velocityX * velocityX + velocityY * velocityY + velocityZ * velocityZ);
+			float tightenedSensitivity = CurGamepad.Motion.SensX * 50.f;
+			if (inputSize < _tightening && _tightening > 0)
+				tightenedSensitivity *= inputSize / _tightening;
 			
 			if (GamepadActionMode == MotionAimingMode || (GamepadActionMode == MotionAimingModeOnlyPressed && DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) > 0) )
-				if (AppStatus.AimMode == AimMouseMode)
-					MouseMove(deltaX * -1.0f * CurGamepad.Motion.SensX * CurGamepad.Motion.CustomMulSens, deltaY * -1.0f * CurGamepad.Motion.SensY  * CurGamepad.Motion.CustomMulSens);
-				else {
-					report.sThumbRX = std::clamp((int)(ClampFloat(-(deltaX) * CurGamepad.Motion.JoySensX * CurGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
-					report.sThumbRY = std::clamp((int)(ClampFloat(deltaY * CurGamepad.Motion.JoySensY * CurGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
+				if (AppStatus.AimMode == AimMouseMode) {
+					MouseMove(-velocityY * tightenedSensitivity * frameTime * CurGamepad.Motion.SensX * CurGamepad.Motion.CustomMulSens, -velocityX * tightenedSensitivity * frameTime * CurGamepad.Motion.SensY  * CurGamepad.Motion.CustomMulSens);
+				} else { // Mouse-Joystick
+					report.sThumbRX = std::clamp((int)(ClampFloat(-(velocityY * tightenedSensitivity * frameTime * CurGamepad.Motion.JoySensX * CurGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
+					report.sThumbRY = std::clamp((int)(ClampFloat(velocityX * tightenedSensitivity * frameTime * CurGamepad.Motion.JoySensY * CurGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
 				}
 
 		} else if (GamepadActionMode == TouchpadSticksMode) { // [-_-] Touchpad sticks

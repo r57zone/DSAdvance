@@ -1,2 +1,2 @@
-JoyShockLibrary 2.2.0
+JoyShockLibrary 3.0
 https://github.com/JibbSmart/JoyShockLibrary/

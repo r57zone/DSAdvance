@@ -119,6 +119,7 @@ struct Gamepad {
 	bool USBConnection;
 	unsigned char BatteryMode;
 	unsigned char BatteryLevel;
+	// unsigned char Battery2Level;
 	unsigned char LEDBatteryLevel;
 	wchar_t *serial_number;
 	float AutoPressStickValue = 0;
@@ -158,8 +159,9 @@ struct Gamepad {
 
 	struct _Motion
 	{
-		float DeltaXSmoothed = 0;
-		float DeltaYSmoothed = 0;
+		float OffsetAxisX = 0.0f;
+		float OffsetAxisY = 0.0f;
+
 		float SensX = 0;
 		float SensY = 0;
 		float JoySensX = 0;
