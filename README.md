@@ -81,8 +81,8 @@ In some games, for example, Max Payne or Crysis 2, unfortunately, this don'n wor
 
 
 
-• **Vibration does not work on Nintendo controllers**<br>
-Unfortunately, this is not yet implemented.
+• **Rumble don't work on Nintendo Pro controller**<br>
+Change the `ProContollerRumble` parameter to `1`, restart the program and check. It might work.
 
 ## Credits
 * Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.
@@ -90,6 +90,7 @@ Unfortunately, this is not yet implemented.
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also uses some code from this library and [JibbSmart snippet](https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df) for aiming.
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) for the battery level.
+* [JoyCon-Driver](https://github.com/fossephate/JoyCon-Driver/blob/857e4e76e26f05d72400ae5d9f2a22cae88f3548/joycon-driver/include/Joycon.hpp) for Joy-Cons rumble.
 
 ## Building
 1. Download the sources and unzip them.

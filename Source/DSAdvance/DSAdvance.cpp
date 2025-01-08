@@ -42,19 +42,13 @@ EulerAngles QuaternionToEulerAngle(double qW, double qX, double qY, double qZ) /
 	return resAngles;
 }
 
-double RadToDeg(double Rad)
+float ClampFloat(float Value, float Min, float Max)
 {
-	return Rad / 3.14159265358979323846 * 180.0;
-}
-
-double OffsetYPR(float Angle1, float Angle2)
-{
-	Angle1 -= Angle2;
-	if (Angle1 < -180)
-		Angle1 += 360;
-	else if (Angle1 > 180)
-		Angle1 -= 360;
-	return Angle1;
+	if (Value > Max)
+		Value = Max;
+	else if (Value < Min)
+		Value = Min;
+	return Value;
 }
 
 void GamepadSetState(InputOutState OutState)
@@ -163,16 +157,48 @@ void GamepadSetState(InputOutState OutState)
 
 				hid_write(CurGamepad.HidHandle, &outputReport[1], 78);
 			}
-		//} else if (CurGamepad.ControllerType == NINTENDO_JOYCON_L || CurGamepad.ControllerType == NINTENDO_JOYCON_R) {
-			/*unsigned char outputReport[10];
-			memset(outputReport, 0, 10);
+		}
+		else if (CurGamepad.ControllerType == NINTENDO_JOYCONS) {
 
+			// Left Joycon
+			unsigned char outputReport[64] = { 0 };
 			outputReport[0] = 0x10;
-			outputReport[1] = 0x01;
-			
+			outputReport[1] = (++CurGamepad.RumbleOffCounter) & 0xF; if (CurGamepad.RumbleOffCounter > 0xF) CurGamepad.RumbleOffCounter = 0x0;
+			outputReport[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not possible to use the Nintendo Switch motors at 100%, so we will limit ourselves to 90%.
+			//outputReport[9] = 0x1;
+			//outputReport[13] = 0x1;
 
 			hid_write(CurGamepad.HidHandle, outputReport, 10);
-			*/
+
+			// Right Joycon
+			if (CurGamepad.HidHandle2 != NULL) {
+				outputReport[6] = std::clamp(OutState.LargeMotor - 0, 0, 229);
+				hid_write(CurGamepad.HidHandle2, outputReport, 10);
+			}
+
+			if (OutState.SmallMotor == 0 && OutState.LargeMotor == 0) CurGamepad.RumbleOffCounter = 2; // Looks like Nintendo needs some "0" rumble packets to stop it
+
+
+		} else if (CurGamepad.ControllerType == NINTENDO_SWITCH_PRO) { // Need test
+				if (CurGamepad.TestRumbleProController) {
+					unsigned char outputReport[64] = { 0 };
+					outputReport[0] = 0x10;
+					outputReport[1] = (++CurGamepad.RumbleOffCounter) & 0xF; if (CurGamepad.RumbleOffCounter > 0xF) CurGamepad.RumbleOffCounter = 0x0;
+					outputReport[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not possible to use the Nintendo Switch motors at 100%, so we will limit ourselves to 90%.
+					outputReport[6] = std::clamp(OutState.LargeMotor - 0, 0, 229);
+					//outputReport[9] = 0x1;
+					//outputReport[13] = 0x1;
+
+					// USB?
+					if (CurGamepad.USBConnection) {
+						outputReport[0x00] = 0x80;
+						outputReport[0x01] = 0x92;
+						outputReport[0x03] = 0x31;
+						outputReport[0x08] = 0x10;
+					}
+
+					hid_write(CurGamepad.HidHandle, outputReport, 10);
+				}
 		} else {
 			//if (JslGetControllerType(0) == JS_TYPE_DS || JslGetControllerType(0) == JS_TYPE_DS4)
 				//JslSetLightColour(0, (std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255) << 16) + (std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255) << 8) + std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255)); // https://github.com/CyberPlaton/_Nautilus_/blob/master/Engine/PSGamepad.cpp
@@ -243,6 +269,37 @@ void GamepadSearch() {
 		cur_dev = cur_dev->next;
 	}
 
+	// Nintendo compatible controllers
+	cur_dev = hid_enumerate(NINTENDO_VENDOR, 0x0);
+	while (cur_dev) {
+		if (cur_dev->product_id == NINTENDO_JOYCON_L)
+		{
+			CurGamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
+			hid_set_nonblocking(CurGamepad.HidHandle, 1);
+			CurGamepad.USBConnection = false;
+			CurGamepad.ControllerType = NINTENDO_JOYCONS;
+		} else if (cur_dev->product_id == NINTENDO_JOYCON_R) {
+			CurGamepad.HidHandle2 = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
+			hid_set_nonblocking(CurGamepad.HidHandle2, 1);
+			CurGamepad.USBConnection = false;
+			CurGamepad.ControllerType = NINTENDO_JOYCONS;
+		
+		} else if (cur_dev->product_id == NINTENDO_SWITCH_PRO) {
+			CurGamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
+			CurGamepad.ControllerType = NINTENDO_SWITCH_PRO;
+			hid_set_nonblocking(CurGamepad.HidHandle, 1);
+			CurGamepad.USBConnection = true;
+
+			// BT detection
+			unsigned char buf[64];
+			memset(buf, 0, sizeof(buf));
+			int bytesRead = hid_read_timeout(CurGamepad.HidHandle, buf, sizeof(buf), 100);
+			if (bytesRead > 0 && buf[0] == 0x11)
+				CurGamepad.USBConnection = false;
+		}
+		cur_dev = cur_dev->next;
+	}
+
 	if (cur_dev)
 		hid_free_enumeration(cur_dev);
 }
@@ -274,12 +331,17 @@ void GetBatteryInfo() {
 				CurGamepad.BatteryLevel = (buf[30] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS4_USB_BATTERY_MAX;
 			else
 				CurGamepad.BatteryLevel = (buf[32] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX;
-		/*} else if (CurGamepad.ControllerType == NINTENDO_JOYCON_L || CurGamepad.ControllerType == NINTENDO_JOYCON_R) {
+		} else if (CurGamepad.ControllerType == NINTENDO_JOYCONS || CurGamepad.ControllerType == NINTENDO_SWITCH_PRO) {
 			unsigned char buf[64];
 			memset(buf, 0, sizeof(buf));
-
 			hid_read(CurGamepad.HidHandle, buf, 64);
-			CurGamepad.BatteryLevel = (buf[2] & 0x0F) * 100 / 5;*/
+			CurGamepad.BatteryLevel = ((buf[2] >> 4) & 0x0F) * 100 / 8;
+			
+			if (CurGamepad.HidHandle2 != NULL) {
+				memset(buf, 0, sizeof(buf));
+				hid_read(CurGamepad.HidHandle2, buf, 64);
+				CurGamepad.BatteryLevel2 = ((buf[2] >> 4) & 0x0F) * 100 / 8;
+			}
 		}
 		if (CurGamepad.BatteryLevel > 100) CurGamepad.BatteryLevel = 100; // It looks like something is not right, once it gave out 125%
 	}	
@@ -350,15 +412,6 @@ float DeadZoneAxis(float StickAxis, float DeadZoneValue) // Possibly wrong
 	return StickAxis * 1 / (1 - DeadZoneValue); // 1 - max value of stick
 }
 
-float ClampFloat(float Value, float Min, float Max)
-{
-	if (Value > Max)
-		Value = Max;
-	else if (Value < Min)
-		Value = Min;
-	return Value;
-}
-
 float accumulatedX = 0, accumulatedY = 0;
 void MouseMove(float x, float y) { // Implementation from https://github.com/JibbSmart/JoyShockMapper/blob/master/JoyShockMapper/src/win32/InputHelpers.cpp
 	accumulatedX += x;
@@ -394,7 +447,12 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 	return LeftAxisX;
 }
 
-double OffsetYPR2(double Angle1, double Angle2) // CalcMotionStick
+double RadToDeg(double Rad)
+{
+	return Rad / 3.14159265358979323846 * 180.0;
+}
+
+double OffsetYPR(double Angle1, double Angle2) // CalcMotionStick
 {
 	Angle1 -= Angle2;
 	if (Angle1 < -3.14159265358979323846)
@@ -407,7 +465,7 @@ double OffsetYPR2(double Angle1, double Angle2) // CalcMotionStick
 SHORT CalcMotionStick(float gravA, float gravB, float wheelAngle, float offsetAxis) {
 	float angleRadians = wheelAngle * (3.14159f / 180.0f); // To radians
 
-	float normalizedValue = OffsetYPR2(atan2f(gravA, gravB), offsetAxis) / angleRadians;
+	float normalizedValue = OffsetYPR(atan2f(gravA, gravB), offsetAxis) / angleRadians;
 
 	if (normalizedValue > 1.0f)
 		normalizedValue = 1.0f;
@@ -482,12 +540,37 @@ void MainTextUpdate() {
 	system("cls");
 	if (AppStatus.ControllerCount < 1)
 		printf("\n Connect DualSense, DualShock 4, Pro controller or Joycons and reset.");
+	else
+		switch (CurGamepad.ControllerType) {
+			case SONY_DUALSENSE:
+				printf("\n Sony DualSense connected.");
+				break;
+			case SONY_DUALSHOCK4:
+				printf("\n Sony DualShock 4 connected.");
+				break;
+			case NINTENDO_JOYCONS:
+				printf("\n Nintendo Joy-Cons (");
+				if (CurGamepad.HidHandle != NULL && CurGamepad.HidHandle2 != NULL) printf("left & right");
+				else if (CurGamepad.HidHandle != NULL) printf("left - not enough");
+				else if (CurGamepad.HidHandle2 != NULL) printf("right - not enough");
+				printf(") connected.");
+				break;
+			case NINTENDO_SWITCH_PRO:
+				printf("\n Nintendo Switch Pro Controller connected.");
+				break;
+		}
 	printf("\n Press \"CTRL + R\" or \"%s\" to reset controllers.\n", AppStatus.HotKeys.ResetKeyName.c_str());
-	
-	if (AppStatus.ControllerCount > 0 && AppStatus.ShowBatteryStatus && (CurGamepad.ControllerType == SONY_DUALSENSE || CurGamepad.ControllerType == SONY_DUALSHOCK4)) {
+	if (AppStatus.ControllerCount > 0 && AppStatus.ShowBatteryStatus) {
 		printf(" Gamepad mode:");
 		if (CurGamepad.USBConnection) printf(" wired"); else printf(" wireless");
-		printf(", battery charge: %d\%%.", CurGamepad.BatteryLevel);
+		if (CurGamepad.ControllerType != NINTENDO_JOYCONS)
+			printf(", battery charge: %d\%%.", CurGamepad.BatteryLevel);
+		else {
+			if (CurGamepad.HidHandle != NULL && CurGamepad.HidHandle2 != NULL) printf(", battery charge: %d\%%, %d\%%.", CurGamepad.BatteryLevel, CurGamepad.BatteryLevel2);
+			else if (CurGamepad.HidHandle != NULL) printf(", battery charge: %d\%%.", CurGamepad.BatteryLevel);
+			else if (CurGamepad.HidHandle2 != NULL) printf(", battery charge: %d\%%.", CurGamepad.BatteryLevel2);
+		}
+
 		if (CurGamepad.BatteryMode == 0x2)
 			printf(" (charging)", CurGamepad.BatteryLevel);
 		printf("\n");
@@ -536,7 +619,7 @@ void MainTextUpdate() {
 	printf(", press \"ALT + X\" to switch.\n");
 
 	printf(" Press \"ALT + F9\" to get the sticks dead zones.\n");
-	printf(" Press \"ALT + I\" to get the battery status (only Sony).\n");
+	printf(" Press \"ALT + I\" to get the battery status.\n");
 	printf(" Press \"ALT + Escape\" to exit.\n");
 }
 
@@ -549,6 +632,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			{
 				AppStatus.ControllerCount = JslConnectDevices();
 				JslGetConnectedDeviceHandles(CurGamepad.deviceID, AppStatus.ControllerCount);
+				if (AppStatus.ControllerCount > 0) {
+					//JslSetGyroSpace(CurGamepad.deviceID[0], 2);
+					JslSetAutomaticCalibration(CurGamepad.deviceID[0], true);
+					if (AppStatus.ControllerCount > 1)
+						JslSetAutomaticCalibration(CurGamepad.deviceID[1], true);
+				}
 				GamepadSearch();
 				GamepadSetState(GamepadOutState);
 				AppStatus.Gamepad.BTReset = false;
@@ -569,7 +658,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 1.0");
+	SetConsoleTitle("DSAdvance 1.0.1");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -581,6 +670,7 @@ int main(int argc, char **argv)
 
 	// Config parameters
 	CIniReader IniFile("Config.ini");
+	CurGamepad.TestRumbleProController = IniFile.ReadBoolean("Gamepad", "ProContollerRumble", false); //Temporary test
 	CurGamepad.Sticks.InvertLeftX = IniFile.ReadBoolean("Gamepad", "InvertLeftStickX", false);
 	CurGamepad.Sticks.InvertLeftY = IniFile.ReadBoolean("Gamepad", "InvertLeftStickY", false);
 	CurGamepad.Sticks.InvertRightX = IniFile.ReadBoolean("Gamepad", "InvertRightStickX", false);
@@ -589,7 +679,7 @@ int main(int argc, char **argv)
 	AppStatus.HotKeys.ResetKey = KeyNameToKeyCode(AppStatus.HotKeys.ResetKeyName);
 	AppStatus.ShowBatteryStatusOnLightBar = IniFile.ReadBoolean("Gamepad", "ShowBatteryStatusOnLightBar", true);
 	AppStatus.SleepTimeOut = IniFile.ReadInteger("Gamepad", "SleepTimeOut", 1);
-
+	
 	CurGamepad.Sticks.DeadZoneLeftX = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickX", 0);
 	CurGamepad.Sticks.DeadZoneLeftY = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickY", 0);
 	CurGamepad.Sticks.DeadZoneRightX = IniFile.ReadFloat("Gamepad", "DeadZoneRightStickX", 0);
@@ -698,8 +788,14 @@ int main(int argc, char **argv)
 	EulerAngles MotionAngles, AnglesOffset;
 
 	AppStatus.ControllerCount = JslConnectDevices();
-	
 	JslGetConnectedDeviceHandles(CurGamepad.deviceID, AppStatus.ControllerCount);
+	
+	if (AppStatus.ControllerCount > 0) {
+		//JslSetGyroSpace(CurGamepad.deviceID[0], 2);
+		JslSetAutomaticCalibration(CurGamepad.deviceID[0], true);
+		if (AppStatus.ControllerCount > 1)
+			JslSetAutomaticCalibration(CurGamepad.deviceID[1], true);
+	}
 
 	MainTextUpdate();
 
@@ -744,6 +840,14 @@ int main(int argc, char **argv)
 
 		XUSB_REPORT_INIT(&report);
 
+		if (AppStatus.ControllerCount < 1) { // We do not process anything during idle time
+			//InputState = { 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+			report.sThumbLX = 1; // helps with crash, maybe power saving turns off the controller
+			ret = vigem_target_x360_update(client, x360, report); // Vigem always mode only
+			Sleep(AppStatus.SleepTimeOut);
+			continue;
+		}
+
 		if (JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS4 || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_PRO_CONTROLLER) {
 			InputState = JslGetSimpleState(CurGamepad.deviceID[0]);
 			MotionState = JslGetMotionState(CurGamepad.deviceID[0]);
@@ -770,14 +874,6 @@ int main(int argc, char **argv)
 					InputState.rTrigger = tempState.rTrigger;
 				}
 			}
-		}
-
-		if (AppStatus.ControllerCount < 1) { // We do not process anything during idle time
-			//InputState = { 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-			report.sThumbLX = 1; // Maybe the crash is due to power saving? temporary test
-			ret = vigem_target_x360_update(client, x360, report); // Vigem always mode only
-			Sleep(AppStatus.SleepTimeOut);
-			continue;
 		}
 		
 		MotionAngles = QuaternionToEulerAngle(MotionState.quatW, MotionState.quatZ, MotionState.quatX, MotionState.quatY);
@@ -1220,6 +1316,15 @@ int main(int argc, char **argv)
 
 		// Battery level display
 		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0; GamepadOutState.PlayersCount = 0; if (AppStatus.ShowBatteryStatusOnLightBar) GamepadOutState.LEDBrightness = LastLEDBrightness; GamepadSetState(GamepadOutState); AppStatus.ShowBatteryStatus = false; MainTextUpdate(); } BackOutStateCounter--; }
+
+		if (CurGamepad.RumbleOffCounter > 0) {
+			CurGamepad.RumbleOffCounter--;
+			if (CurGamepad.RumbleOffCounter == 1) {
+				GamepadOutState.SmallMotor = 0;
+				GamepadOutState.LargeMotor = 0;
+				GamepadSetState(GamepadOutState);
+			}
+		}
 
 		if (SkipPollCount > 0) SkipPollCount--;
 		Sleep(AppStatus.SleepTimeOut);

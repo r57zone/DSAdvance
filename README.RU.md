@@ -80,8 +80,8 @@
 
 
 
-• **Не работает вибрация на Nintendo контроллерах**<br>
-К сожалению, это пока не реализовано.
+• **Не работает вибрация на Nintendo Pro контроллере**<br>
+Измените параметр `ProContollerRumble` на `1`, перезапустите программу и проверьте. Возможно заработает. 
 
 ## Благодарности
 * Sony и Nintendo за самые продвинутые геймпады и инвестирование в инновации, а также за продвижение инноваций в игры.
@@ -89,6 +89,7 @@
 * [HIDAPI library](https://github.com/signal11/hidapi), с [исправлениями](https://github.com/libusb/hidapi), за библиотеку для работы с USB устройства. В проекте используется этот [форк](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) за классную библиотеку геймпадов, позволяющую легко получить вращение контроллера. Также используется некоторый код из этой библиотеки и [пример JibbSmart](https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df) для прицеливания.
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) за уровень заряда батареи.
+* [JoyCon-Driver](https://github.com/fossephate/JoyCon-Driver/blob/857e4e76e26f05d72400ae5d9f2a22cae88f3548/joycon-driver/include/Joycon.hpp) за вибрацию джойконов.
 
 ## Сборка
 1. Загрузите исходники и распакуйте.

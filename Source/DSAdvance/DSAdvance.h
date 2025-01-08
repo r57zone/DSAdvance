@@ -2,6 +2,7 @@
 
 #define SONY_DUALSHOCK4					27
 #define SONY_DUALSENSE					28
+#define NINTENDO_JOYCONS				29
 
 #define SONY_VENDOR						0x054C
 #define SONY_DS4_USB					0x05C4
@@ -115,15 +116,18 @@ int ProfileIndex = 0;
 struct Gamepad {
 	int deviceID[4];
 	hid_device *HidHandle;
+	hid_device *HidHandle2;
 	WORD ControllerType;
 	bool USBConnection;
 	unsigned char BatteryMode;
 	unsigned char BatteryLevel;
-	// unsigned char Battery2Level;
+	unsigned char BatteryLevel2;
 	unsigned char LEDBatteryLevel;
 	wchar_t *serial_number;
 	float AutoPressStickValue = 0;
 	unsigned char DefaultLEDBrightness = 0;
+	unsigned char RumbleOffCounter = 0;
+	bool TestRumbleProController;
 
 	struct _Sticks
 	{
