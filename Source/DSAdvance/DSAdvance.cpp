@@ -159,46 +159,63 @@ void GamepadSetState(InputOutState OutState)
 			}
 		}
 		else if (CurGamepad.ControllerType == NINTENDO_JOYCONS) {
-
 			// Left Joycon
-			unsigned char outputReport[64] = { 0 };
+			/*unsigned char outputReport[64] = { 0 }; 
 			outputReport[0] = 0x10;
-			outputReport[1] = (++CurGamepad.RumbleOffCounter) & 0xF; if (CurGamepad.RumbleOffCounter > 0xF) CurGamepad.RumbleOffCounter = 0x0;
-			outputReport[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not possible to use the Nintendo Switch motors at 100%, so we will limit ourselves to 90%.
-			//outputReport[9] = 0x1;
-			//outputReport[13] = 0x1;
-
+			outputReport[1] = (++CurGamepad.PacketCounter) & 0xF; if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
+			outputReport[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
+	
 			hid_write(CurGamepad.HidHandle, outputReport, 10);
 
 			// Right Joycon
 			if (CurGamepad.HidHandle2 != NULL) {
 				outputReport[6] = std::clamp(OutState.LargeMotor - 0, 0, 229);
 				hid_write(CurGamepad.HidHandle2, outputReport, 10);
+			}*/
+
+			// Left JoyCon
+			unsigned char outputReportLeft[64] = { 0 };
+			outputReportLeft[0] = 0x10;
+			outputReportLeft[1] = (++CurGamepad.PacketCounter) & 0xF; if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
+			outputReportLeft[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
+			outputReportLeft[3] = 0x00;
+			outputReportLeft[4] = OutState.SmallMotor == 0 ? 0x00 : 0x01; 
+			outputReportLeft[5] = 0x40;
+
+			hid_write(CurGamepad.HidHandle, outputReportLeft, 64); 
+
+			// Right JoyCon
+			if (CurGamepad.HidHandle2 != NULL) {
+				unsigned char outputReportRight[64] = { 0 }; 
+				outputReportRight[0] = 0x10;
+				outputReportRight[1] = (CurGamepad.PacketCounter) & 0xF; 
+				outputReportRight[2] = 0x00; 
+				outputReportRight[3] = 0x00; 
+				outputReportRight[4] = OutState.LargeMotor == 0 ? 0x00 : 0x01; 
+				outputReportRight[5] = 0x40; 
+				outputReportRight[6] = OutState.LargeMotor == 0 ? 0x00 : std::clamp(OutState.LargeMotor - 0, 0, 229);
+
+				hid_write(CurGamepad.HidHandle2, outputReportRight, 64);
 			}
 
 			if (OutState.SmallMotor == 0 && OutState.LargeMotor == 0) CurGamepad.RumbleOffCounter = 2; // Looks like Nintendo needs some "0" rumble packets to stop it
-
-
 		} else if (CurGamepad.ControllerType == NINTENDO_SWITCH_PRO) { // Need test
-				if (CurGamepad.TestRumbleProController) {
-					unsigned char outputReport[64] = { 0 };
-					outputReport[0] = 0x10;
-					outputReport[1] = (++CurGamepad.RumbleOffCounter) & 0xF; if (CurGamepad.RumbleOffCounter > 0xF) CurGamepad.RumbleOffCounter = 0x0;
-					outputReport[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not possible to use the Nintendo Switch motors at 100%, so we will limit ourselves to 90%.
-					outputReport[6] = std::clamp(OutState.LargeMotor - 0, 0, 229);
-					//outputReport[9] = 0x1;
-					//outputReport[13] = 0x1;
+				unsigned char outputReport[64] = { 0 };
 
-					// USB?
-					if (CurGamepad.USBConnection) {
-						outputReport[0x00] = 0x80;
-						outputReport[0x01] = 0x92;
-						outputReport[0x03] = 0x31;
-						outputReport[0x08] = 0x10;
-					}
+				outputReport[0] = 0x10;
+				outputReport[1] = (++CurGamepad.PacketCounter) & 0xF; if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
+				outputReport[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
+				outputReport[6] = std::clamp(OutState.LargeMotor - 0, 0, 229);
 
-					hid_write(CurGamepad.HidHandle, outputReport, 10);
+				// USB
+				if (CurGamepad.USBConnection) {
+					outputReport[0] = 0x80;
+					outputReport[1] = 0x92;
+					outputReport[3] = 0x31;
+					outputReport[8] = 0x10;
 				}
+
+				hid_write(CurGamepad.HidHandle, outputReport, 64);
 		} else {
 			//if (JslGetControllerType(0) == JS_TYPE_DS || JslGetControllerType(0) == JS_TYPE_DS4)
 				//JslSetLightColour(0, (std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255) << 16) + (std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255) << 8) + std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255)); // https://github.com/CyberPlaton/_Nautilus_/blob/master/Engine/PSGamepad.cpp
@@ -658,7 +675,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 1.0.1");
+	SetConsoleTitle("DSAdvance 1.0.2");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -1318,12 +1335,12 @@ int main(int argc, char **argv)
 		if (BackOutStateCounter > 0) { if (BackOutStateCounter == 1) { GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 0; GamepadOutState.PlayersCount = 0; if (AppStatus.ShowBatteryStatusOnLightBar) GamepadOutState.LEDBrightness = LastLEDBrightness; GamepadSetState(GamepadOutState); AppStatus.ShowBatteryStatus = false; MainTextUpdate(); } BackOutStateCounter--; }
 
 		if (CurGamepad.RumbleOffCounter > 0) {
-			CurGamepad.RumbleOffCounter--;
 			if (CurGamepad.RumbleOffCounter == 1) {
 				GamepadOutState.SmallMotor = 0;
 				GamepadOutState.LargeMotor = 0;
 				GamepadSetState(GamepadOutState);
 			}
+			CurGamepad.RumbleOffCounter--;
 		}
 
 		if (SkipPollCount > 0) SkipPollCount--;

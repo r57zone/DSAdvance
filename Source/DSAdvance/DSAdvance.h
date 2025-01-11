@@ -126,6 +126,7 @@ struct Gamepad {
 	wchar_t *serial_number;
 	float AutoPressStickValue = 0;
 	unsigned char DefaultLEDBrightness = 0;
+	unsigned char PacketCounter = 0;
 	unsigned char RumbleOffCounter = 0;
 	bool TestRumbleProController;
 
