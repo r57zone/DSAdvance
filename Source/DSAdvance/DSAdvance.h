@@ -82,9 +82,9 @@
 #define VK_VOLUME_UP2					175
 #define VK_VOLUME_MUTE2					173
 
-#define VK_MOUSE_LEFT_CLICK				501
-#define VK_MOUSE_MIDDLE_CLICK			502
-#define VK_MOUSE_RIGHT_CLICK			503
+#define VK_MOUSE_LEFT					501
+#define VK_MOUSE_MIDDLE					502
+#define VK_MOUSE_RIGHT					503
 #define VK_MOUSE_WHEEL_UP				504
 #define VK_MOUSE_WHEEL_DOWN				505
 
@@ -128,7 +128,6 @@ struct Gamepad {
 	unsigned char DefaultLEDBrightness = 0;
 	unsigned char PacketCounter = 0;
 	unsigned char RumbleOffCounter = 0;
-	bool TestRumbleProController;
 
 	struct _Sticks
 	{
@@ -306,11 +305,11 @@ void MousePress(int MouseBtn, bool ButtonPressed, Button* ButtonState) {
 	if (ButtonPressed) {
 		ButtonState->UnpressedOnce = true;
 		if (ButtonState->PressedOnce == false) {
-			if (MouseBtn == VK_MOUSE_LEFT_CLICK)
+			if (MouseBtn == VK_MOUSE_LEFT)
 				mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-			else if (MouseBtn == VK_MOUSE_RIGHT_CLICK)
+			else if (MouseBtn == VK_MOUSE_RIGHT)
 				mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
-			else if (MouseBtn == VK_MOUSE_MIDDLE_CLICK)
+			else if (MouseBtn == VK_MOUSE_MIDDLE)
 				mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
 			else if (MouseBtn == VK_MOUSE_WHEEL_UP)
 				mouse_event(MOUSEEVENTF_WHEEL, 0, 0, -120, 0);
@@ -322,11 +321,11 @@ void MousePress(int MouseBtn, bool ButtonPressed, Button* ButtonState) {
 	}
 	else if (ButtonPressed == false && ButtonState->UnpressedOnce) {
 		//printf("unpressed\n");
-		if (MouseBtn == VK_MOUSE_LEFT_CLICK)
+		if (MouseBtn == VK_MOUSE_LEFT)
 			mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-		else if (MouseBtn == VK_MOUSE_RIGHT_CLICK)
+		else if (MouseBtn == VK_MOUSE_RIGHT)
 			mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
-		else if (MouseBtn == VK_MOUSE_MIDDLE_CLICK)
+		else if (MouseBtn == VK_MOUSE_MIDDLE)
 			mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0);
 		ButtonState->UnpressedOnce = false;
 		ButtonState->PressedOnce = false;
@@ -335,7 +334,7 @@ void MousePress(int MouseBtn, bool ButtonPressed, Button* ButtonState) {
 
 void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 	if (KeyCode == 0) exit;
-	else if (KeyCode == VK_MOUSE_LEFT_CLICK || KeyCode == VK_MOUSE_MIDDLE_CLICK || KeyCode == VK_MOUSE_RIGHT_CLICK || 
+	else if (KeyCode == VK_MOUSE_LEFT || KeyCode == VK_MOUSE_MIDDLE || KeyCode == VK_MOUSE_RIGHT || 
 		KeyCode == VK_MOUSE_WHEEL_UP || KeyCode == VK_MOUSE_WHEEL_DOWN) // Move to mouse press
 		MousePress(KeyCode, ButtonPressed, ButtonState);
 	else if (ButtonPressed) {
@@ -453,9 +452,9 @@ int KeyNameToKeyCode(std::string KeyName) {
 
 	std::unordered_map<std::string, int> KeyMap = {
 		{"NONE", 0},
-		{"MOUSE-LEFT-CLICK", VK_MOUSE_LEFT_CLICK},
-		{"MOUSE-RIGHT-CLICK", VK_MOUSE_RIGHT_CLICK},
-		{"MOUSE-MIDDLE-CLICK", VK_MOUSE_MIDDLE_CLICK},
+		{"MOUSE-LEFT", VK_MOUSE_LEFT},
+		{"MOUSE-RIGHT", VK_MOUSE_RIGHT},
+		{"MOUSE-MIDDLE", VK_MOUSE_MIDDLE},
 		//{"MOUSE-SIDE1-CLICK", VK_XBUTTON1},
 		//{"MOUSE-SIDE2-CLICK", VK_XBUTTON2},
 		{"MOUSE-WHEEL-UP", VK_MOUSE_WHEEL_UP},

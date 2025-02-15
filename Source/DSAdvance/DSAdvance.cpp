@@ -202,13 +202,56 @@ void GamepadSetState(InputOutState OutState)
 		} else if (CurGamepad.ControllerType == NINTENDO_SWITCH_PRO) { // Need test
 				unsigned char outputReport[64] = { 0 };
 
-				outputReport[0] = 0x10;
+				/*outputReport[0] = 0x10;
 				outputReport[1] = (++CurGamepad.PacketCounter) & 0xF; if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
 				outputReport[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
 				outputReport[6] = std::clamp(OutState.LargeMotor - 0, 0, 229);
 
-				// USB
+				// BT
+				if (!CurGamepad.USBConnection) {
+					outputReport[0] = 0x80; // Заголовок для Bluetooth
+					outputReport[1] = 0x92; // Команда вибрации для Bluetooth
+					outputReport[3] = 0x31; // Подкоманда для вибрации
+					outputReport[8] = 0x10; // Дополнительные данные для Bluetooth
+				}*/
+
+				// Настройка амплитуды
+				/*unsigned char h_amp = (OutState.SmallMotor / 649) * 2;
+				unsigned char l_amp1 = (OutState.LargeMotor / 649);
+				unsigned char l_amp2 = ((l_amp1 % 2) * 128);
+				l_amp1 = (l_amp1 / 2) + 64;
+
+				outputReport[2] = 0x20; // Высокая частота
+				outputReport[4] = 0x28; // Низкая частота
+				outputReport[3] = h_amp;
+				outputReport[5] = l_amp1;
+				outputReport[4] += l_amp2;
+
+				// USB-пакет
 				if (CurGamepad.USBConnection) {
+					outputReport[0] = 0x80;
+					outputReport[1] = 0x92;
+					outputReport[3] = 0x31;
+					outputReport[8] = 0x10;
+				}*/
+
+				outputReport[0] = 0x10;
+				outputReport[1] = (++CurGamepad.PacketCounter) & 0xF;
+				if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
+
+				unsigned char hf = 0x20; // Высокая частота
+				unsigned char lf = 0x28; // Низкая частота
+				unsigned char h_amp = std::clamp(OutState.SmallMotor * 2 / 229, 0, 255);
+				unsigned char l_amp1 = std::clamp(OutState.LargeMotor / 229, 0, 255);
+				unsigned char l_amp2 = ((l_amp1 % 2) * 128);
+				l_amp1 = (l_amp1 / 2) + 64;
+
+				outputReport[2] = hf;
+				outputReport[3] = h_amp;
+				outputReport[4] = lf + l_amp2;
+				outputReport[5] = l_amp1;
+
+				if (!CurGamepad.USBConnection) {
 					outputReport[0] = 0x80;
 					outputReport[1] = 0x92;
 					outputReport[3] = 0x31;
@@ -256,12 +299,19 @@ void GamepadSearch() {
 				CurGamepad.ControllerType = SONY_DUALSHOCK4;
 				CurGamepad.USBConnection = true;
 
-				// BT detection
+				// JoyShock Library apparently sent something, so it worked without a package (needed for BT detection to work, does not affect USB)
+				unsigned char checkBT[2] = { 0x02, 0x00 };
+				hid_write(CurGamepad.HidHandle, checkBT, sizeof(checkBT));
+
+				// BT detection for compatible gamepads that output USB VID/PID on BT connection
 				unsigned char buf[64];
 				memset(buf, 0, sizeof(buf));
 				int bytesRead = hid_read_timeout(CurGamepad.HidHandle, buf, sizeof(buf), 100);
 				if (bytesRead > 0 && buf[0] == 0x11)
 					CurGamepad.USBConnection = false;
+				
+				//printf("Detected device ID: 0x%X\n", cur_dev->product_id);
+				//if (CurGamepad.USBConnection) printf("USB"); else printf("Wireless");
 			
 			} else if (cur_dev->product_id == SONY_DS4_BT) { // ?
 				CurGamepad.ControllerType = SONY_DUALSHOCK4;
@@ -675,7 +725,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 1.0.2");
+	SetConsoleTitle("DSAdvance 1.0.3");
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -687,7 +737,6 @@ int main(int argc, char **argv)
 
 	// Config parameters
 	CIniReader IniFile("Config.ini");
-	CurGamepad.TestRumbleProController = IniFile.ReadBoolean("Gamepad", "ProContollerRumble", false); //Temporary test
 	CurGamepad.Sticks.InvertLeftX = IniFile.ReadBoolean("Gamepad", "InvertLeftStickX", false);
 	CurGamepad.Sticks.InvertLeftY = IniFile.ReadBoolean("Gamepad", "InvertLeftStickY", false);
 	CurGamepad.Sticks.InvertRightX = IniFile.ReadBoolean("Gamepad", "InvertRightStickX", false);
