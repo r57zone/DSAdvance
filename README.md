@@ -82,7 +82,7 @@ In some games, for example, Max Payne or Crysis 2, unfortunately, this don'n wor
 
 
 • **Rumble don't work on Nintendo Pro controller**<br>
-Change the `ProContollerRumble` parameter to `1`, restart the program and check. It might work.
+Not supported yet, solutions are being explored.
 
 ## Credits
 * Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.
