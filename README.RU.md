@@ -33,6 +33,7 @@
 Переключение режимов происходит на `ALT + Q` или `PS/Home + ←/→` и `PS/HOME`. Эмуляция клавиатуры и мыши поддерживает разные профили, выберите нужный профиль или [создайте новый профиль](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.RU.md). Профили переключаются на клавиши `ALT + ↑/↓`, если окно активно или на геймпаде, с помощью `PS/Home + ↑/↓`. Профиль по умолчанию позволяет работать в Windows. 
 
 Для подключения [внешних педалей (DInput)](https://github.com/r57zone/XboxExternalPedals#setup-dinput-pedals-mh-et-live-board) измените параметр `DInput` на `1`, в разделе `ExternalPedals`.  Для подключения [внешних педалей на Arduino](https://github.com/r57zone/XboxExternalPedals#setup-arduino-pedals) измените номер COM-порта, изменив параметр `COMPort`.
+
 [![](https://github.com/r57zone/XboxExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
 [![](https://user-images.githubusercontent.com/9499881/195859587-65cdaca4-5abd-4594-b079-e388721ae25d.gif)](https://youtu.be/liI_7U_R0as)
 
