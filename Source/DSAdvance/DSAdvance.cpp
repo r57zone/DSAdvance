@@ -16,6 +16,7 @@
 #include <dbt.h>
 #include <chrono>
 #include <mmsystem.h>
+#include <locale.h>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -72,8 +73,8 @@ void GamepadSetState(InputOutState OutState)
 				outputReport[0] = 0x02;
 				outputReport[1] = 0xff;
 				outputReport[2] = 0x15;
-				outputReport[3] = OutState.LargeMotor;
-				outputReport[4] = OutState.SmallMotor;
+				outputReport[3] = (unsigned int)OutState.LargeMotor * CurGamepad.RumbleStrength / 100;
+				outputReport[4] = (unsigned int)OutState.SmallMotor * CurGamepad.RumbleStrength / 100;
 				outputReport[5] = 0xff;
 				outputReport[6] = 0xff;
 				outputReport[7] = 0xff;
@@ -96,8 +97,8 @@ void GamepadSetState(InputOutState OutState)
 				outputReport[2] = 0x02;
 				outputReport[3] = 0x03;
 				outputReport[4] = 0x54;
-				outputReport[5] = OutState.LargeMotor;
-				outputReport[6] = OutState.SmallMotor;
+				outputReport[5] = (unsigned int)OutState.LargeMotor * CurGamepad.RumbleStrength / 100;
+				outputReport[6] = (unsigned int)OutState.SmallMotor * CurGamepad.RumbleStrength / 100;
 				outputReport[11] = 0x00;
 				outputReport[41] = 0x02;
 				outputReport[44] = 0x02;
@@ -122,8 +123,8 @@ void GamepadSetState(InputOutState OutState)
 
 				outputReport[0] = 0x05;
 				outputReport[1] = 0xff;
-				outputReport[4] = OutState.SmallMotor;
-				outputReport[5] = OutState.LargeMotor;
+				outputReport[4] = (unsigned int)OutState.LargeMotor * CurGamepad.RumbleStrength / 100;
+				outputReport[5] = (unsigned int)OutState.SmallMotor * CurGamepad.RumbleStrength / 100;
 				outputReport[6] = std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255);
 				outputReport[7] = std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255);
 				outputReport[8] = std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255);
@@ -142,8 +143,8 @@ void GamepadSetState(InputOutState OutState)
 				outputReport[5] = 0x00;
 				outputReport[6] = 0x00;
 
-				outputReport[7] = OutState.SmallMotor;
-				outputReport[8] = OutState.LargeMotor;
+				outputReport[7] = (unsigned int)OutState.LargeMotor * CurGamepad.RumbleStrength / 100;
+				outputReport[8] = (unsigned int)OutState.SmallMotor * CurGamepad.RumbleStrength / 100;
 
 				outputReport[9] = std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255);
 				outputReport[10] = std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255);
@@ -159,55 +160,53 @@ void GamepadSetState(InputOutState OutState)
 			}
 		}
 		else if (CurGamepad.ControllerType == NINTENDO_JOYCONS) {
-			// Left Joycon
-			/*unsigned char outputReport[64] = { 0 }; 
-			outputReport[0] = 0x10;
-			outputReport[1] = (++CurGamepad.PacketCounter) & 0xF; if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
-			outputReport[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
-	
-			hid_write(CurGamepad.HidHandle, outputReport, 10);
-
-			// Right Joycon
-			if (CurGamepad.HidHandle2 != NULL) {
-				outputReport[6] = std::clamp(OutState.LargeMotor - 0, 0, 229);
-				hid_write(CurGamepad.HidHandle2, outputReport, 10);
-			}*/
-
-			// Left JoyCon
-			unsigned char outputReportLeft[64] = { 0 };
-			outputReportLeft[0] = 0x10;
-			outputReportLeft[1] = (++CurGamepad.PacketCounter) & 0xF; if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
-			outputReportLeft[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
-			outputReportLeft[3] = 0x00;
-			outputReportLeft[4] = OutState.SmallMotor == 0 ? 0x00 : 0x01; 
-			outputReportLeft[5] = 0x40;
-
-			hid_write(CurGamepad.HidHandle, outputReportLeft, 64); 
-
-			// Right JoyCon
-			if (CurGamepad.HidHandle2 != NULL) {
-				unsigned char outputReportRight[64] = { 0 }; 
-				outputReportRight[0] = 0x10;
-				outputReportRight[1] = (CurGamepad.PacketCounter) & 0xF; 
-				outputReportRight[2] = 0x00; 
-				outputReportRight[3] = 0x00; 
-				outputReportRight[4] = OutState.LargeMotor == 0 ? 0x00 : 0x01; 
-				outputReportRight[5] = 0x40; 
-				outputReportRight[6] = OutState.LargeMotor == 0 ? 0x00 : std::clamp(OutState.LargeMotor - 0, 0, 229);
-
-				hid_write(CurGamepad.HidHandle2, outputReportRight, 64);
-			}
-
-			if (OutState.SmallMotor == 0 && OutState.LargeMotor == 0) CurGamepad.RumbleOffCounter = 2; // Looks like Nintendo needs some "0" rumble packets to stop it
-		} else if (CurGamepad.ControllerType == NINTENDO_SWITCH_PRO) { // Need test
-				unsigned char outputReport[64] = { 0 };
-
-				/*outputReport[0] = 0x10;
+			if (CurGamepad.RumbleStrength != 0) {
+				// Left Joycon
+				/*unsigned char outputReport[64] = { 0 };
+				outputReport[0] = 0x10;
 				outputReport[1] = (++CurGamepad.PacketCounter) & 0xF; if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
 				outputReport[2] = std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
-				outputReport[6] = std::clamp(OutState.LargeMotor - 0, 0, 229);
 
-				// BT
+				hid_write(CurGamepad.HidHandle, outputReport, 10);
+
+				// Right Joycon
+				if (CurGamepad.HidHandle2 != NULL) {
+					outputReport[6] = std::clamp(OutState.LargeMotor - 0, 0, 229);
+					hid_write(CurGamepad.HidHandle2, outputReport, 10);
+				}*/
+
+				// Left JoyCon
+				unsigned char outputReportLeft[64] = { 0 };
+				outputReportLeft[0] = 0x10;
+				outputReportLeft[1] = (++CurGamepad.PacketCounter) & 0xF; if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
+				outputReportLeft[2] = (unsigned int)OutState.SmallMotor * CurGamepad.RumbleStrength * 90 / 10000; // std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
+				outputReportLeft[3] = 0x00;
+				outputReportLeft[4] = OutState.SmallMotor == 0 ? 0x00 : 0x01;
+				outputReportLeft[5] = 0x40;
+
+				hid_write(CurGamepad.HidHandle, outputReportLeft, 64);
+
+				// Right JoyCon
+				if (CurGamepad.HidHandle2 != NULL) {
+					unsigned char outputReportRight[64] = { 0 };
+					outputReportRight[0] = 0x10;
+					outputReportRight[1] = (CurGamepad.PacketCounter) & 0xF;
+					outputReportRight[2] = 0x00;
+					outputReportRight[3] = 0x00;
+					outputReportRight[4] = OutState.LargeMotor == 0 ? 0x00 : 0x01;
+					outputReportRight[5] = 0x40;
+					outputReportRight[6] = OutState.LargeMotor == 0 ? 0x00 : std::clamp(OutState.LargeMotor - 0, 0, 229);
+
+					hid_write(CurGamepad.HidHandle2, outputReportRight, 64);
+				}
+			
+				if (OutState.SmallMotor == 0 && OutState.LargeMotor == 0) CurGamepad.RumbleOffCounter = 2; // Looks like Nintendo needs some "0" rumble packets to stop it
+			}
+		} else if (CurGamepad.ControllerType == NINTENDO_SWITCH_PRO) {
+			if (CurGamepad.RumbleStrength != 0) {
+				unsigned char outputReport[64] = { 0 };
+
+				/* // BT ???
 				if (!CurGamepad.USBConnection) {
 					outputReport[0] = 0x80; // Заголовок для Bluetooth
 					outputReport[1] = 0x92; // Команда вибрации для Bluetooth
@@ -215,34 +214,14 @@ void GamepadSetState(InputOutState OutState)
 					outputReport[8] = 0x10; // Дополнительные данные для Bluetooth
 				}*/
 
-				// Настройка амплитуды
-				/*unsigned char h_amp = (OutState.SmallMotor / 649) * 2;
-				unsigned char l_amp1 = (OutState.LargeMotor / 649);
-				unsigned char l_amp2 = ((l_amp1 % 2) * 128);
-				l_amp1 = (l_amp1 / 2) + 64;
-
-				outputReport[2] = 0x20; // Высокая частота
-				outputReport[4] = 0x28; // Низкая частота
-				outputReport[3] = h_amp;
-				outputReport[5] = l_amp1;
-				outputReport[4] += l_amp2;
-
-				// USB-пакет
-				if (CurGamepad.USBConnection) {
-					outputReport[0] = 0x80;
-					outputReport[1] = 0x92;
-					outputReport[3] = 0x31;
-					outputReport[8] = 0x10;
-				}*/
-
 				outputReport[0] = 0x10;
-				outputReport[1] = (++CurGamepad.PacketCounter) & 0xF;
-				if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
+				outputReport[1] = (++CurGamepad.PacketCounter) & 0xF; if (CurGamepad.PacketCounter > 0xF) CurGamepad.PacketCounter = 0x0;
 
-				unsigned char hf = 0x20; // Высокая частота
-				unsigned char lf = 0x28; // Низкая частота
-				unsigned char h_amp = std::clamp(OutState.SmallMotor * 2 / 229, 0, 255);
-				unsigned char l_amp1 = std::clamp(OutState.LargeMotor / 229, 0, 255);
+				// Amplitudes
+				unsigned char hf = 0x20; // High frequency
+				unsigned char lf = 0x28; // Low frequency
+				unsigned char h_amp = (unsigned int)OutState.SmallMotor * CurGamepad.RumbleStrength * 90 / 10000; // std::clamp(OutState.SmallMotor * 2 / 229, 0, 255); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
+				unsigned char l_amp1 = (unsigned int)OutState.LargeMotor * CurGamepad.RumbleStrength * 90 / 10000; // std::clamp(OutState.LargeMotor / 229, 0, 255);
 				unsigned char l_amp2 = ((l_amp1 % 2) * 128);
 				l_amp1 = (l_amp1 / 2) + 64;
 
@@ -259,13 +238,16 @@ void GamepadSetState(InputOutState OutState)
 				}
 
 				hid_write(CurGamepad.HidHandle, outputReport, 64);
+
+				if (OutState.SmallMotor == 0 && OutState.LargeMotor == 0) CurGamepad.RumbleOffCounter = 2; // Looks like Nintendo needs some "0" rumble packets to stop it
+			}
 		} else {
 			//if (JslGetControllerType(0) == JS_TYPE_DS || JslGetControllerType(0) == JS_TYPE_DS4)
 				//JslSetLightColour(0, (std::clamp(OutState.LEDRed - OutState.LEDBrightness, 0, 255) << 16) + (std::clamp(OutState.LEDGreen - OutState.LEDBrightness, 0, 255) << 8) + std::clamp(OutState.LEDBlue - OutState.LEDBrightness, 0, 255)); // https://github.com/CyberPlaton/_Nautilus_/blob/master/Engine/PSGamepad.cpp
-			JslSetRumble(0, OutState.SmallMotor, OutState.LargeMotor); // Not working with DualSense USB connection
+			JslSetRumble(0, (unsigned int)OutState.LargeMotor * CurGamepad.RumbleStrength / 100, (unsigned int)OutState.SmallMotor * CurGamepad.RumbleStrength / 100); // Not working with DualSense USB connection
 		}
 	} else // Unknown controllers - Pro controller, Joy-cons
-		JslSetRumble(0, OutState.SmallMotor, OutState.LargeMotor);
+		JslSetRumble(0, (unsigned int)OutState.LargeMotor * CurGamepad.RumbleStrength / 100, (unsigned int)OutState.SmallMotor * CurGamepad.RumbleStrength / 100);
 }
 
 void GamepadSearch() {
@@ -603,32 +585,31 @@ void LoadKMProfile(std::string ProfileFile) {
 	CurGamepad.KMEmu.JoySensY = IniFile.ReadFloat("MOUSE", "SensitivityY", 100) * 0.22;
 }
 
-void MainTextUpdate() {
-	system("cls");
+void DefaultMainText() {
 	if (AppStatus.ControllerCount < 1)
 		printf("\n Connect DualSense, DualShock 4, Pro controller or Joycons and reset.");
 	else
 		switch (CurGamepad.ControllerType) {
-			case SONY_DUALSENSE:
-				printf("\n Sony DualSense connected.");
-				break;
-			case SONY_DUALSHOCK4:
-				printf("\n Sony DualShock 4 connected.");
-				break;
-			case NINTENDO_JOYCONS:
-				printf("\n Nintendo Joy-Cons (");
-				if (CurGamepad.HidHandle != NULL && CurGamepad.HidHandle2 != NULL) printf("left & right");
-				else if (CurGamepad.HidHandle != NULL) printf("left - not enough");
-				else if (CurGamepad.HidHandle2 != NULL) printf("right - not enough");
-				printf(") connected.");
-				break;
-			case NINTENDO_SWITCH_PRO:
-				printf("\n Nintendo Switch Pro Controller connected.");
-				break;
+		case SONY_DUALSENSE:
+			printf("\n Sony DualSense connected.");
+			break;
+		case SONY_DUALSHOCK4:
+			printf("\n Sony DualShock 4 connected.");
+			break;
+		case NINTENDO_JOYCONS:
+			printf("\n Nintendo Joy-Cons (");
+			if (CurGamepad.HidHandle != NULL && CurGamepad.HidHandle2 != NULL) printf("left & right");
+			else if (CurGamepad.HidHandle != NULL) printf("left - not enough");
+			else if (CurGamepad.HidHandle2 != NULL) printf("right - not enough");
+			printf(") connected.");
+			break;
+		case NINTENDO_SWITCH_PRO:
+			printf("\n Nintendo Switch Pro Controller connected.");
+			break;
 		}
-	printf("\n Press \"CTRL + R\" or \"%s\" to reset controllers.\n", AppStatus.HotKeys.ResetKeyName.c_str());
+	printf("\n Press \"CTRL + R\" or \"%s\" to reset or search for controllers.\n", AppStatus.HotKeys.ResetKeyName.c_str());
 	if (AppStatus.ControllerCount > 0 && AppStatus.ShowBatteryStatus) {
-		printf(" Gamepad mode:");
+		printf(" Connection type:");
 		if (CurGamepad.USBConnection) printf(" wired"); else printf(" wireless");
 		if (CurGamepad.ControllerType != NINTENDO_JOYCONS)
 			printf(", battery charge: %d\%%.", CurGamepad.BatteryLevel);
@@ -650,16 +631,20 @@ void MainTextUpdate() {
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled)
 		printf(" Emulation: Only mouse (for mouse aiming).\n");
 	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
-		printf_s(" Emulation: Keyboard and mouse (%s).\n Change profiles with \"ALT + Up/Down\" or \"PS/HOME + DPAD Up/Down\".\n", KMProfiles[ProfileIndex].c_str());
-	printf(" Press \"ALT + Q\" or \"ALT + Left/Right\" or \"PS/CAPTURE + DPAD Left/Right\" to switch emulation.\n");
+		printf_s(" Emulation: Keyboard and mouse (%s).\n Change profiles with \"ALT + Up/Down\" or \"PS/Home + DPAD Up/Down\".\n", KMProfiles[ProfileIndex].c_str());
+	printf(" Press \"ALT + Q/Left/Right\", \"PS/Home + DPAD Left/Right\" to switch emulation.\n");
 
 	if (AppStatus.ExternalPedalsDInputConnected)
 		printf(" External pedals DInput connected.\n");
 	if (AppStatus.ExternalPedalsArduinoConnected)
 		printf(" External pedals Arduino connected.\n");
 
-	if (AppStatus.AimMode == AimMouseMode) printf(" AIM mode = mouse"); else printf(" AIM mode = mouse-joystick");
-	printf(", press \"ALT + A\" or \"PS/CAPTURE + R1\" to switch.\n");
+	if (AppStatus.AimMode == AimMouseMode) printf("\n AIM mode = Mouse"); else printf("\n AIM mode = Mouse-Joystick");
+	printf(", press \"ALT + A\" or \"PS/Capture + R1\" to switch.\n");
+
+	printf(" Rumble strength is %d%%, press \"ALT + </>\", \"PS + Options\", or \"Capture + Plus\" to adjust.\n", CurGamepad.RumbleStrength);
+
+	printf(" %s touchpad press for mode switching - \"ALT + W\" or \"PS + SHARE\" (Sony only).\n", AppStatus.ChangeModesWithClick ? "Disable" : "Enable");
 
 	if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled) {
 		if (AppStatus.LeftStickMode == LeftStickDefaultMode)
@@ -667,27 +652,120 @@ void MainTextUpdate() {
 		else if (AppStatus.LeftStickMode == LeftStickAutoPressMode)
 			printf(" Left stick mode: Auto pressing by value");
 		else if (AppStatus.LeftStickMode == LeftStickInvertPressMode)
-				printf(" Left stick mode: Invert pressed");
-		printf(", press \"ALT + S\" or \"PS/HOME + LS\" to switch.\n");
+			printf(" Left stick mode: Invert pressed");
+		printf(", press \"ALT + S\" or \"PS/Home + LS\" to switch.\n");
 	}
 
-	if (AppStatus.ChangeModesWithoutPress) printf(" Change modes without pressing the touchpad"); else printf(" Change modes by pressing the touchpad");
-	printf(", press \"ALT + W\" or  \"PS + Share\" to switch (only Sony).\n");
-	printf(" Press \"ALT + B\" or \"PS + L1\" to turn the backlight on or off (only Sony).\n");
-
 	if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
-		printf(" Screenshot mode: Custom key");
+		printf(" Screenshot mode: Custom key (%s)", &AppStatus.MicCustomKeyName);
 	else if (AppStatus.ScreenshotMode == ScreenShotXboxGameBarMode)
 		printf(" Screenshot mode: Xbox Game Bar");
 	else if (AppStatus.ScreenshotMode == ScreenShotSteamMode)
-		printf(" Screenshot mode: Steam (F12)");
+		printf(" Screenshot mode: Steam (%s)", &AppStatus.SteamScrKeyName);
 	else if (AppStatus.ScreenshotMode == ScreenShotMultiMode)
 		printf(" Screenshot mode: Xbox Game Bar & Steam (F12)");
 	printf(", press \"ALT + X\" to switch.\n");
 
-	printf(" Press \"ALT + F9\" to get the sticks dead zones.\n");
+	printf("\n Press \"ALT + F9\" to view stick and trigger dead zones.\n");
 	printf(" Press \"ALT + I\" to get the battery status.\n");
+	printf(" Press \"ALT + B\" or \"PS + L1\" to toggle backlight (Sony only).\n");
 	printf(" Press \"ALT + Escape\" to exit.\n");
+}
+
+void RussianMainText() {
+	if (AppStatus.ControllerCount < 1)
+		printf("\n Подключите DualSense, DualShock 4, Pro контроллер или джойконы и сделайте сброс.");
+	else
+		switch (CurGamepad.ControllerType) {
+		case SONY_DUALSENSE:
+			printf("\n Sony DualSense подключен.");
+			break;
+		case SONY_DUALSHOCK4:
+			printf("\n Sony DualShock 4 подключен.");
+			break;
+		case NINTENDO_JOYCONS:
+			printf("\n Nintendo Joy-Cons (");
+			if (CurGamepad.HidHandle != NULL && CurGamepad.HidHandle2 != NULL) printf("левый и правый");
+			else if (CurGamepad.HidHandle != NULL) printf("левый - недостаточно");
+			else if (CurGamepad.HidHandle2 != NULL) printf("правый - недостаточно");
+			printf(") покдлючен.");
+			break;
+		case NINTENDO_SWITCH_PRO:
+			printf("\n Nintendo Switch Pro Controller подключен.");
+			break;
+		}
+	printf("\n Нажмите \"CTRL + R\" или \"%s\" для сброса или поиска контроллеров.\n", AppStatus.HotKeys.ResetKeyName.c_str());
+	if (AppStatus.ControllerCount > 0 && AppStatus.ShowBatteryStatus) {
+		printf(" Тип подключения:");
+		if (CurGamepad.USBConnection) printf(" проводной"); else printf(" беспроводной");
+		if (CurGamepad.ControllerType != NINTENDO_JOYCONS)
+			printf(", заряд батареи: %d\%%.", CurGamepad.BatteryLevel);
+		else {
+			if (CurGamepad.HidHandle != NULL && CurGamepad.HidHandle2 != NULL) printf(", заряд батареи: %d\%%, %d\%%.", CurGamepad.BatteryLevel, CurGamepad.BatteryLevel2);
+			else if (CurGamepad.HidHandle != NULL) printf(", заряд батареи: %d\%%.", CurGamepad.BatteryLevel);
+			else if (CurGamepad.HidHandle2 != NULL) printf(", заряд батареи: %d\%%.", CurGamepad.BatteryLevel2);
+		}
+
+		if (CurGamepad.BatteryMode == 0x2)
+			printf(" (зарядка)", CurGamepad.BatteryLevel);
+		printf("\n");
+	}
+
+	if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled)
+		printf(" Эмуляция: Xbox геймпад.\n");
+	else if (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving)
+		printf(" Эмуляция: Xbox геймпад (только вождение) и прицеливание мышкой.\n");
+	else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled)
+		printf(" Эмуляция: только мышь (для прицеливанию мышкой).\n");
+	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
+		printf_s(" Эмуляция: клавиатура и мышь (%s).\n Измените профиль, с помощью \"ALT + Up/Down\" или \"PS/Home + DPAD Up/Down\".\n", KMProfiles[ProfileIndex].c_str());
+	printf(" Нажмите \"ALT + Q/Влево/Вправо\" или \"PS/Home + DPAD Влево/Вправо\" для переключения режима эмуляции.\n");
+
+	if (AppStatus.ExternalPedalsDInputConnected)
+		printf(" Внешние DInput педали подключены.\n");
+	if (AppStatus.ExternalPedalsArduinoConnected)
+		printf(" Внешние Arduinoпедали подключены.\n");
+
+	if (AppStatus.AimMode == AimMouseMode) printf("\n Режим прицеливания: мышь"); else printf("\n Режим прицеливания: джойстик-мышь");
+	printf(", нажмите \"ALT + A\" или \"PS/Capture + R1\" для переключения.\n");
+
+	printf(" Сила вибрации %d%%, нажмите \"ALT + </>\", \"PS + Options\" или \"Capture + Плюс\" для изменения.\n", CurGamepad.RumbleStrength);
+
+	printf(" %s нажатие тачпада для переключения режимов - \"ALT + W\" или \"PS + Share\" (только Sony).\n", AppStatus.ChangeModesWithClick ? "Выключить" : "Включить");
+
+	if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled) {
+		if (AppStatus.LeftStickMode == LeftStickDefaultMode)
+			printf(" Режим левого стика: по умолчанию");
+		else if (AppStatus.LeftStickMode == LeftStickAutoPressMode)
+			printf(" Режим левого стика: автонажатие по значению");
+		else if (AppStatus.LeftStickMode == LeftStickInvertPressMode)
+			printf(" Режим левого стика: инверсия нажатия");
+		printf(", нажмите \"ALT + S\" или \"PS/Home + LS\" для переключения.\n");
+	}
+
+	if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
+		printf(" Режим скриншота: своя кнопка (%s)", &AppStatus.MicCustomKeyName);
+	else if (AppStatus.ScreenshotMode == ScreenShotXboxGameBarMode)
+		printf(" Режим скриншота: Игровая панель Xbox");
+	else if (AppStatus.ScreenshotMode == ScreenShotSteamMode)
+		printf(" Режим скриншота: Steam (%s)", &AppStatus.SteamScrKeyName);
+	else if (AppStatus.ScreenshotMode == ScreenShotMultiMode)
+		printf(" Режим скриншота: Игровая панель Xbox и Steam (F12)");
+	printf(", нажмите \"ALT + X\" для переключения.\n");
+
+	printf("\n Нажмите \"ALT + F9\" для просмотра мёртвых зон стиков и триггеров.\n");
+	printf(" Нажмите \"ALT + I\" для получения заряда батареи.\n");
+	printf(" Нажмите \"ALT + B\" или \"PS + L1\" для включения или выключения световой панели (только Sony).\n");
+	printf(" Нажмите \"ALT + Escape\" для выхода.\n");
+}
+
+void MainTextUpdate() {
+	system("cls");
+	if (AppStatus.Lang == LANG_RUSSIAN)
+		RussianMainText();
+	else
+		DefaultMainText();
+	//system("cls"); DefaultMainText();
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -725,7 +803,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 1.0.3");
+	SetConsoleTitle("DSAdvance 1.1");
+
+	//LANGID lang = ; // Получаем язык системы
+
+	if (PRIMARYLANGID(GetUserDefaultLangID()) == LANG_RUSSIAN) {
+		AppStatus.Lang = LANG_RUSSIAN;
+		setlocale(LC_ALL, ""); // Output locale
+		system("chcp 65001 > nul"); // Console UTF8 output 
+	}
 
 	WNDCLASS AppWndClass = {};
 	AppWndClass.lpfnWndProc = WindowProc;
@@ -761,10 +847,13 @@ int main(int argc, char **argv)
 	CurGamepad.AutoPressStickValue = IniFile.ReadFloat("Gamepad", "AutoPressStickValue", 99) * 0.01f;
 
 	CurGamepad.DefaultLEDBrightness = std::clamp((int)(255 - IniFile.ReadInteger("Gamepad", "DefaultBrightness", 100) * 2.55), 0, 255);
+	CurGamepad.RumbleStrength = IniFile.ReadInteger("Gamepad", "RumbleStrength", 100);
 	AppStatus.LockedChangeBrightness = IniFile.ReadBoolean("Gamepad", "LockChangeBrightness", false);
-	AppStatus.ChangeModesWithoutPress = IniFile.ReadBoolean("Gamepad", "ChangeModesWithoutPress", false);
+	AppStatus.ChangeModesWithClick = IniFile.ReadBoolean("Gamepad", "ChangeModesWithClick", true);
 
 	AppStatus.AimMode = IniFile.ReadBoolean("Motion", "AimMode", AimMouseMode);
+	AppStatus.AimingWithL2 = IniFile.ReadBoolean("Motion", "AimingWithL2", true);
+
 	CurGamepad.Motion.WheelAngle = IniFile.ReadFloat("Motion", "WheelAngle", 150) / 2.0f;
 	CurGamepad.Motion.WheelPitch = IniFile.ReadBoolean("Motion", "WheelPitch", false);
 	CurGamepad.Motion.WheelRoll = IniFile.ReadBoolean("Motion", "WheelRoll", true);
@@ -777,11 +866,15 @@ int main(int argc, char **argv)
 	CurGamepad.KMEmu.StickValuePressKey = IniFile.ReadFloat("KeyboardMouse", "StickValuePressKey", 0.2f);
 	CurGamepad.KMEmu.TriggerValuePressKey = IniFile.ReadFloat("KeyboardMouse", "TriggerValuePressKey", 0.2f);
 
-	AppStatus.MicCustomKey = KeyNameToKeyCode(IniFile.ReadString("Gamepad", "MicCustomKey", "NONE"));
+	AppStatus.MicCustomKeyName = IniFile.ReadString("Gamepad", "MicCustomKey", "NONE");
+	AppStatus.MicCustomKey = KeyNameToKeyCode(AppStatus.MicCustomKeyName);
 	if (AppStatus.MicCustomKey == 0)
 		AppStatus.ScreenshotMode = ScreenShotXboxGameBarMode; // If not set, then hide this mode
 	else
 		AppStatus.ScreenShotKey = AppStatus.MicCustomKey;
+
+	AppStatus.SteamScrKeyName = IniFile.ReadString("Gamepad", "SteamScrKey", "NONE");
+	AppStatus.SteamScrKey = KeyNameToKeyCode(AppStatus.SteamScrKeyName);
 
 	// External pedals
 	AppStatus.ExternalPedalsDInputSearch = IniFile.ReadBoolean("ExternalPedals", "DInput", false);
@@ -850,7 +943,8 @@ int main(int argc, char **argv)
 	bool PSOnlyPressed = false;
 	int BackOutStateCounter = 0;
 	unsigned char LastLEDBrightness = 0; // For battery show
-	int GamepadActionMode = 0; int LastAIMProCtrlMode = 2;
+	int GamepadActionMode = 0;
+	int LastMotionAIMMode = MotionAimingMode;
 	EulerAngles MotionAngles, AnglesOffset;
 
 	AppStatus.ControllerCount = JslConnectDevices();
@@ -950,16 +1044,25 @@ int main(int argc, char **argv)
 		if (SkipPollCount == 0 && IsKeyPressed(VK_MENU) && IsKeyPressed(VK_F9) != 0)
 		{
 			AppStatus.DeadZoneMode = !AppStatus.DeadZoneMode;
-			if (AppStatus.DeadZoneMode == false) MainTextUpdate();
+			if (AppStatus.DeadZoneMode == false) MainTextUpdate(); else { system("cls"); printf("\n"); }
 			SkipPollCount = SkipPollTimeOut;
 		}
 		if (AppStatus.DeadZoneMode) {
-			printf(" Left stick X=%6.2f, ", abs(InputState.stickLX));
-			printf("Y=%6.2f\t", abs(InputState.stickLY));
-			printf("Right stick X=%6.2f ", abs(InputState.stickRX));
-			printf("Y=%6.2f\t", abs(InputState.stickRY));
-			printf("Left trigger=%6.2f\t", abs(InputState.lTrigger));
-			printf("Right trigger=%6.2f\n", abs(InputState.rTrigger));
+			if (AppStatus.Lang == LANG_RUSSIAN) {
+				printf(" Левый стик X=%6.2f, ", abs(InputState.stickLX));
+				printf("Y=%6.2f\t", abs(InputState.stickLY));
+				printf("Правый стик X=%6.2f ", abs(InputState.stickRX));
+				printf("Y=%6.2f\t", abs(InputState.stickRY));
+				printf("Левый триггер=%6.2f\t", abs(InputState.lTrigger));
+				printf("Правый триггер=%6.2f\n", abs(InputState.rTrigger));
+			} else {
+				printf(" Left stick X=%6.2f, ", abs(InputState.stickLX));
+				printf("Y=%6.2f\t", abs(InputState.stickLY));
+				printf("Right stick X=%6.2f ", abs(InputState.stickRX));
+				printf("Y=%6.2f\t", abs(InputState.stickRY));
+				printf("Left trigger=%6.2f\t", abs(InputState.lTrigger));
+				printf("Right trigger=%6.2f\n", abs(InputState.rTrigger));
+			}
 		}
 
 		// Switch emulation mode
@@ -1007,9 +1110,11 @@ int main(int argc, char **argv)
 		}
 
 		// Switch modes by pressing or touching
-		if (SkipPollCount == 0 && (IsKeyPressed(VK_MENU) && IsKeyPressed('W')) || (InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_SHARE) )
+		if (SkipPollCount == 0 && (( IsKeyPressed(VK_MENU) && IsKeyPressed('W') ) || 
+			((JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS4) && 
+			(InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_SHARE))) )
 		{
-			AppStatus.ChangeModesWithoutPress = !AppStatus.ChangeModesWithoutPress;
+			AppStatus.ChangeModesWithClick = !AppStatus.ChangeModesWithClick;
 			MainTextUpdate();
 			SkipPollCount = SkipPollTimeOut;
 		}
@@ -1060,6 +1165,33 @@ int main(int argc, char **argv)
 				PlaySound(ChangeEmuModeWav, NULL, SND_ASYNC);
 			}
 
+		// Changing the Rumble strength
+		if (SkipPollCount == 0 && IsKeyPressed(VK_MENU) && (IsKeyPressed(VK_OEM_COMMA) || IsKeyPressed(VK_OEM_PERIOD)))
+		{
+			if (IsKeyPressed(VK_OEM_COMMA) && CurGamepad.RumbleStrength > 0)
+				CurGamepad.RumbleStrength -= 10;
+			if (IsKeyPressed(VK_OEM_PERIOD) && CurGamepad.RumbleStrength < 100)
+				CurGamepad.RumbleStrength += 10;
+			MainTextUpdate();
+			SkipPollCount = SkipPollTimeOut;
+		}
+
+		bool IsCombinedRumbleChange = false;
+		if ((JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS4) && 
+			(InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_OPTIONS))
+			IsCombinedRumbleChange = true;
+		if ((JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_LEFT || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_RIGHT || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_PRO_CONTROLLER) &&
+			(InputState.buttons & JSMASK_CAPTURE && InputState.buttons & JSMASK_PLUS))
+			IsCombinedRumbleChange = true;
+		if (SkipPollCount == 0 && IsCombinedRumbleChange) {
+			if (CurGamepad.RumbleStrength == 100)
+				CurGamepad.RumbleStrength = 0;
+			else
+				CurGamepad.RumbleStrength += 10;
+			MainTextUpdate();
+			SkipPollCount = SkipPollTimeOut;
+		}
+
 		// Switch modes by touchpad
 		if (JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_DS4) {
 
@@ -1071,8 +1203,8 @@ int main(int argc, char **argv)
 				GamepadSetState(GamepadOutState);
 			}
 
-			if ((InputState.buttons & JSMASK_TOUCHPAD_CLICK) || (TouchState.t0Down && AppStatus.ChangeModesWithoutPress)) {
-				if (SkipPollCount == 0 && TouchState.t0Y <= 0.1) { // Brightness area
+			if ((InputState.buttons & JSMASK_TOUCHPAD_CLICK && AppStatus.ChangeModesWithClick) || (TouchState.t0Down && AppStatus.ChangeModesWithClick == false)) {
+				if (SkipPollCount == 0 && TouchState.t0Y <= 0.1 ) { // Brightness area
 					AppStatus.BrightnessAreaPressed++;
 					if (AppStatus.BrightnessAreaPressed > 1) {
 						if (AppStatus.LockedChangeBrightness) {
@@ -1117,12 +1249,19 @@ int main(int argc, char **argv)
 						}
 
 					} else if (TouchState.t0X > (1 / 3.0) * 2.0 && TouchState.t0X <= 1 && GamepadActionMode != TouchpadSticksMode) { // [--O] Aiming mode
-						if (TouchState.t0Y > 0.1 && TouchState.t0Y < 0.5) { // Motion AIM always
-							GamepadActionMode = MotionAimingMode;
-							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
-						} else { // Motion AIM with L2 trigger
-							GamepadActionMode = MotionAimingModeOnlyPressed;
+						if (SkipPollCount == 0 && TouchState.t0Y > 0.1 && TouchState.t0Y < 0.3) { // Switch motion aiming mode
+							GamepadActionMode = GamepadActionMode != MotionAimingMode ? MotionAimingMode : MotionAimingModeOnlyPressed;
+							LastMotionAIMMode = GamepadActionMode;
+							SkipPollCount = SkipPollTimeOut;
+						} 
+						if (TouchState.t0Y >= 0.3 && TouchState.t0Y <= 1) { // Motion aiming
+							GamepadActionMode = LastMotionAIMMode;
 							GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
+						}
+						if (GamepadActionMode == MotionAimingMode) {
+							GamepadOutState.LEDBlue = 0; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
+						} else {
+							GamepadOutState.LEDBlue = 255; GamepadOutState.LEDRed = 0; GamepadOutState.LEDGreen = 255;
 						}
 					}
 					AppStatus.BrightnessAreaPressed = 0; // Reset lock brightness if clicked in another area
@@ -1204,8 +1343,21 @@ int main(int argc, char **argv)
 
 		// Nintendo controllers buttons: Capture & Home - changing working mode
 		if (JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_PRO_CONTROLLER || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_LEFT || JslGetControllerType(CurGamepad.deviceID[0]) == JS_TYPE_JOYCON_RIGHT) {
-			if (SkipPollCount == 0 && InputState.buttons & JSMASK_CAPTURE) { if (GamepadActionMode == 1) GamepadActionMode = 0; else { GamepadActionMode = 1; AnglesOffset = MotionAngles; } SkipPollCount = SkipPollTimeOut; }
-			if (SkipPollCount == 0 && InputState.buttons & JSMASK_HOME) { if (GamepadActionMode == 0 || GamepadActionMode == 1) GamepadActionMode = LastAIMProCtrlMode; else if (GamepadActionMode == 2) { GamepadActionMode = 3; LastAIMProCtrlMode = 3; } else { GamepadActionMode = 2; LastAIMProCtrlMode = 2; } SkipPollCount = SkipPollTimeOut; }
+			if (SkipPollCount == 0 && InputState.buttons & JSMASK_CAPTURE) {
+				if (GamepadActionMode == 1)
+					GamepadActionMode = GamepadDefaultMode;
+				else { GamepadActionMode = MotionDrivingMode; AnglesOffset = MotionAngles; }
+				SkipPollCount = SkipPollTimeOut; 
+			}
+			
+			if (SkipPollCount == 0 && InputState.buttons & JSMASK_HOME) {
+				if (GamepadActionMode == GamepadDefaultMode || GamepadActionMode == MotionDrivingMode)
+					GamepadActionMode = LastMotionAIMMode;
+				else if (GamepadActionMode == MotionAimingMode)
+					{ GamepadActionMode = MotionAimingModeOnlyPressed; LastMotionAIMMode = MotionAimingModeOnlyPressed; }
+				else { GamepadActionMode = MotionAimingMode; LastMotionAIMMode = MotionAimingMode; }
+				SkipPollCount = SkipPollTimeOut;
+			}
 		
 		// Sony
 		} else {
@@ -1233,7 +1385,7 @@ int main(int argc, char **argv)
 			KeyPress(VK_VOLUME_UP2, InputState.buttons & JSMASK_PS && InputState.buttons & JSMASK_E, &ButtonsStates.VolumeUP);
 		}
 
-		KeyPress(AppStatus.ScreenShotKey, InputState.buttons & JSMASK_MIC || ((InputState.buttons & JSMASK_PS || InputState.buttons & JSMASK_CAPTURE) && InputState.buttons & JSMASK_S), &ButtonsStates.Mic); // + DualShock 4
+		KeyPress(AppStatus.ScreenShotKey, InputState.buttons & JSMASK_MIC || ((InputState.buttons & JSMASK_PS || InputState.buttons & JSMASK_CAPTURE) && InputState.buttons & JSMASK_S), &ButtonsStates.Mic); // + DualShock 4 & Nintendo
 
 		// Custom sens
 		if (SkipPollCount == 0 && (InputState.buttons & JSMASK_PS || InputState.buttons & JSMASK_CAPTURE)  && InputState.buttons & JSMASK_N) {
@@ -1245,8 +1397,8 @@ int main(int argc, char **argv)
 		if ((InputState.buttons & JSMASK_PS || InputState.buttons & JSMASK_CAPTURE) && InputState.buttons & JSMASK_RCLICK) CurGamepad.Motion.CustomMulSens = 1.0f; //printf("%5.2f\n", CustomMulSens);
 
 		// Gamepad modes
-		if (GamepadActionMode == MotionDrivingMode) { // Motion racing  [O--]
-			
+		// Motion racing  [O--]
+		if (GamepadActionMode == MotionDrivingMode) {
 			if (CurGamepad.Motion.WheelRoll)
 				report.sThumbLX = CalcMotionStick(MotionState.gravX, MotionState.gravZ, CurGamepad.Motion.WheelAngle, CurGamepad.Motion.OffsetAxisX);
 			else
@@ -1255,7 +1407,10 @@ int main(int argc, char **argv)
 			if (CurGamepad.Motion.WheelPitch)
 				report.sThumbLY = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch)) * CurGamepad.Motion.WheelInvertPitch, CurGamepad.Motion.WheelAngle); // Not tested, axes swap roles
 		
-		} else if (GamepadActionMode == MotionAimingMode || GamepadActionMode == MotionAimingModeOnlyPressed) { // Motion aiming  [--X}]
+		// Motion aiming  [--X}]
+		} else if (GamepadActionMode == MotionAimingMode || (GamepadActionMode == MotionAimingModeOnlyPressed &&
+					(AppStatus.AimingWithL2 && DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) > 0) || // Classic L2 aiming
+					(AppStatus.AimingWithL2 == false && (InputState.buttons & JSMASK_L)))) { // PS games with emulators
 			
 			// Snippet by JibbSmart https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df
 			float frameTime = 0.0166666666666667f; // 1.f / 60.f;
@@ -1265,15 +1420,15 @@ int main(int argc, char **argv)
 			if (inputSize < _tightening && _tightening > 0)
 				tightenedSensitivity *= inputSize / _tightening;
 			
-			if (GamepadActionMode == MotionAimingMode || (GamepadActionMode == MotionAimingModeOnlyPressed && DeadZoneAxis(InputState.lTrigger, CurGamepad.Triggers.DeadZoneLeft) > 0) )
-				if (AppStatus.AimMode == AimMouseMode) {
-					MouseMove(-velocityY * tightenedSensitivity * frameTime * CurGamepad.Motion.SensX * CurGamepad.Motion.CustomMulSens, -velocityX * tightenedSensitivity * frameTime * CurGamepad.Motion.SensY  * CurGamepad.Motion.CustomMulSens);
-				} else { // Mouse-Joystick
-					report.sThumbRX = std::clamp((int)(ClampFloat(-(velocityY * tightenedSensitivity * frameTime * CurGamepad.Motion.JoySensX * CurGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
-					report.sThumbRY = std::clamp((int)(ClampFloat(velocityX * tightenedSensitivity * frameTime * CurGamepad.Motion.JoySensY * CurGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
-				}
+			if (AppStatus.AimMode == AimMouseMode)
+				MouseMove(-velocityY * tightenedSensitivity * frameTime * CurGamepad.Motion.SensX * CurGamepad.Motion.CustomMulSens, -velocityX * tightenedSensitivity * frameTime * CurGamepad.Motion.SensY  * CurGamepad.Motion.CustomMulSens);
+			else { // Mouse-Joystick
+				report.sThumbRX = std::clamp((int)(ClampFloat(-(velocityY * tightenedSensitivity * frameTime * CurGamepad.Motion.JoySensX * CurGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
+				report.sThumbRY = std::clamp((int)(ClampFloat(velocityX * tightenedSensitivity * frameTime * CurGamepad.Motion.JoySensY * CurGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
+			}
 
-		} else if (GamepadActionMode == TouchpadSticksMode) { // [-_-] Touchpad sticks
+		// [-_-] Touchpad sticks
+		} else if (GamepadActionMode == TouchpadSticksMode) { 
 
 			if (TouchState.t0Down) {
 				if (FirstTouch.Touched == false) {

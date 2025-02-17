@@ -9,35 +9,51 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
 
 # Features
-Several working modes are supported, they are switched by pressing the touchpad for DualSene & DualShock 4 and for Pro controllers & Joy-Cons to the `Capture`, and `Home` buttons.
+✔️ Tilt driving and aiming support (gyroscope, no additional settings required);<br>
+✔️ Easy switching between driving and aiming modes (maximum innovative gameplay);<br>
+✔️ Windows control, volume adjustment, and screenshot creation using a gamepad;<br>
+✔️ Battery level display on the light bar and player indicators (for Sony gamepads);<br>
+✔️ Various emulation modes for games with adaptive triggers;<br>
+✔️ Light bar deactivation for full immersion in the dark;<br>
+✔️ Support for external modified racing pedals;<br>
 
-![](https://user-images.githubusercontent.com/9499881/173076115-3f520a03-41ff-4da9-a7a5-a3de405c779f.png)
+Multiple operating modes are supported, switching is done by tapping the touchpad on DualSense and DualShock 4, or using the `Capture` and `Home` buttons on the Pro Controller and Joy-Cons.
 
-To exit the stick emulation mode on the touchpad, need to switch to the default mode.
+![](https://github.com/user-attachments/assets/e2d21584-dd30-4b36-8eef-cd9b50b54f68)
 
+To exit stick emulation mode, press the default mode button.
 
-By clicking on the default profile on DualSense the white LEDs display the current battery status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%), also on DualSense and DualShock 4 the battery status is shown on the lightbar (green - 100..30%, yellow - 29..10%, red - 9..1%), can be disabled in the config, parameter `ShowBatteryStatusOnLightBar`. For DualSense and DualShock 4 the current charge is displayed in the program itself.
+When pressing the default profile button on the DualSense, white LEDs indicate the current battery charge status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%). On DualSense and DualShock 4, battery status is also shown on the light bar (green - 100..30%, yellow - 29..10%, red - 9..1%). This can be disabled in the config via the `ShowBatteryStatusOnLightBar` parameter. Battery status is also displayed in the program via `ALT + I`.
 
+There are 3 emulation modes:
+* Simple Xbox gamepad emulation with extended functionality;
+* Xbox gamepad emulation only for driving mode and mouse aiming (for certain games with adaptive triggers);
+* Mouse only;
+* Keyboard and mouse emulation for Windows control and some older games;
 
-To change the brightness of Sony controllers, double-click on the brightness area. If the brightness change is blocked, the backlight will turn off by double-clicking.
+Mode switching is done via `ALT + Q` or `PS/Home + ←/→` and `PS/HOME`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.RU.md). Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
 
-
-`PS` or `Capture + Home` button opens "Xbox Game Bar" (press `Win + G`), `PS + □` or `CAPTURE + Y` - decrease volume, `PS + ○` or `PS + A` - increase volume, `PS + △` or `CAPTURE + X` - increases and then decreases aiming sensitivity (reset to `PS + R3` or `CAPTURE + R3`), `PS + X` or `CAPTURE + B` - microphone button (screenshot or pressing configured keyboard button).
-
-
-You can make the stick automatically pressed at a certain stick tilt (value in the configuration file), and also invert the pressing of `ALT + S` or `PS/HOME + LS`.
-
-
-By default, the microphone button takes a screenshot of `Win + Alt + PrtScr` (for DualShock 4 `PS + X`, and for Nintendo controllers `CAPTURE + B`). By changing the `MicCustomKey` parameter to the [desired button value](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md), it will be pressed.
-
-
-To emulate keyboard and mouse, for old games, switch the operating mode to `ALT + Q` or `PS/HOME + ←` and `PS/HOME + →`, and select the desired profile or [create the desired profile](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles are switched to the `ALT + ↑` and `ALT + ↓` keys if the window is active or on a gamepad using `PS + ↑` and `PS + ↓` or `HOME + ↑` and `HOME + ↓`. The default profile allows to work in Windows.
+To connect [external pedals (DInput)](https://github.com/r57zone/XboxExternalPedals#setup-dinput-pedals-mh-et-live-board), change the `DInput` parameter to `1` in the `ExternalPedals` section. To connect [external pedals on Arduino](https://github.com/r57zone/XboxExternalPedals#setup-arduino-pedals), change the COM port number by modifying the `COMPort` parameter.
+[![](https://github.com/r57zone/XboxExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
+[![](https://user-images.githubusercontent.com/9499881/195859587-65cdaca4-5abd-4594-b079-e388721ae25d.gif)](https://youtu.be/liI_7U_R0as)
 
 
-To connect [external pedals (DInput)](https://github.com/r57zone/XboxExternalPedals#setup-dinput-pedals-mh-et-live-board), change the `DInput` parameter to `1`, in the `ExternalPedals` section.  To connect [external pedals on Arduino](https://github.com/r57zone/XboxExternalPedals#setup-arduino-pedals), change the COM port number by changing the `COMPort` parameter.
+To turn off DualSense or DualShock 4, hold the PS button for 10-15 seconds until the controller turns off.
 
-
-To turn off the DualSense or DualShock 4, hold down the PS button for 10-15 seconds until the controller turns off.
+### Hotkeys
+Action | Sony Buttons | Nintendo Buttons | Windows  
+------------ | ------------- | ------------- | -------------  
+Open Xbox Game Bar (`Win + G` press) | `PS` | `Capture + Home` | -  
+Decrease and increase Windows volume | `PS + □` and `PS + ○` | `Capture + Y` and `Capture + A` | -  
+Screenshot (`Win + ALT + PrtScn` press) | Microphone button or `PS + X` | `Capture + B` | -  
+Aiming mode: mouse emulation or right stick offset | `PS + R1` | `Capture + R1` | `ALT + A`  
+Change aiming sensitivity: increase and then decrease | `PS + △` | `Capture + X` | -  
+Reset sensitivity | `PS + RS` | `Capture + RS` | -  
+Change vibration intensity or disable it | `PS + Options` | `Capture + Plus` | `ALT + </>`  
+Enable/disable touchpad press for mode switching | `PS + Share` | - | `ALT + W`  
+Auto-stick press at a certain tilt angle (value set in the config file), as well as inversion | `PS + LS` | `HOME + LS` | `ALT + S`  
+Screenshot modes: Xbox Game Bar, Steam, Xbox Game Bar + Steam, custom-configured button (`MicCustomKey` parameter should be set to [the desired key](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.RU.md)) | - | - | `ALT + X`  
+Turn off Sony light bar | `PS + L1` or double-tap the brightness area of the touchpad and swipe left or right. If brightness adjustment is locked (`LockChangeBrightness`), the light bar will turn off with a double tap. | `HOME + L1` | `ALT + I`  
 
 ## Setup
 1. Install [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases).
@@ -46,7 +62,7 @@ To turn off the DualSense or DualShock 4, hold down the PS button for 10-15 seco
 4. Unzip and launch DSAdvance.
 5. If necessary, change the dead zones of the sticks, triggers or other parameters in the configuration file `Config.ini`.
 6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
-7. It is also recommended to install [HidHide](https://github.com/nefarius/HidHide/releases), then in the "HidHide Configuration Client" add "DSAdvance.exe" and turn on the parameter `Enable device hiding` (If turned off). It is necessary so that the game did not see our controller, and saw only emulated Xbox 360 gamepad.
+7. It is also recommended to install [HidHide](https://github.com/nefarius/HidHide/releases), then in the `HidHide Configuration Client` add `DSAdvance.exe` and turn on the parameter `Enable device hiding` (If turned off). It is necessary so that the game did not see our controller, and saw only emulated Xbox 360 gamepad.
 8. (Optional) To launch from the notification area (tray), by double-clicking, you can add a shortcut to `Launcher.exe` to Windows startup `%AppData%\Microsoft\Windows\Start Menu\Programs\Startup`.
 9. (Optional) To run third-party utilities via Launcher, specify the title and path to the application in the configuration file.
 
@@ -62,17 +78,17 @@ If the game supports a modern gamepad you can turn off the emulation of the Xbox
 
 
 • **Permanently changing keyboard and gamepad icons**<br>
-You can change the aiming mode to "mouse-joystick", in the program, or use aiming by left trigger.
+You can change the aiming mode to `Mouse-Joystick`, in the program, or use aiming by left trigger.
 
 
 
 • **Adaptive triggers or light bar don't work in the game**<br>
-Add the game to the "HidHide" exceptions list and change the "DSAdvance" mode to "Only mouse".
+Add the game to the "HidHide" exceptions list and change the DSAdvance mode to `Only mouse` or `Xbox gamepad (only driving) & mouse aiming.`.
 
 
 
 • **Driving don't work in games with DualSense support (without HidHide)**<br>
-Launch DSAdvance first, and only then the game itself, the game can give priority to the emulated Xbox controller and driving will work. You can also enable "Only driving & aiming" emulation mode so that the controller will only turn on in driving mode.
+Launch DSAdvance first, and only then the game itself, the game can give priority to the emulated Xbox controller and driving will work. You can also enable `Only driving & aiming` emulation mode so that the controller will only turn on in driving mode.
 
 
 

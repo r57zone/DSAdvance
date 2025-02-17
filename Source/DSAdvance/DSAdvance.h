@@ -126,6 +126,7 @@ struct Gamepad {
 	wchar_t *serial_number;
 	float AutoPressStickValue = 0;
 	unsigned char DefaultLEDBrightness = 0;
+	unsigned char RumbleStrength = 0;
 	unsigned char PacketCounter = 0;
 	unsigned char RumbleOffCounter = 0;
 
@@ -190,12 +191,13 @@ struct Gamepad {
 Gamepad CurGamepad;
 
 struct _AppStatus {
+	unsigned short Lang = 0x00; // LANG_NEUTRAL
 	int ControllerCount;
 	int GamepadEmulationMode = EmuGamepadEnabled;
 	bool XboxGamepadAttached = true;
 	bool AimMode = false;
 	int LeftStickMode = 0;
-	bool ChangeModesWithoutPress = false;
+	bool ChangeModesWithClick = false;
 	bool ShowBatteryStatus = false;
 	bool ShowBatteryStatusOnLightBar = false;
 	int ScreenshotMode = 0;
@@ -210,7 +212,11 @@ struct _AppStatus {
 	bool LockedChangeBrightness = false;
 	bool LockChangeBrightness = true;
 	int BrightnessAreaPressed = 0;
+	std::string MicCustomKeyName = "NONE";
 	int MicCustomKey = 0;
+	std::string SteamScrKeyName = "NONE";
+	int SteamScrKey = 0;
+	bool AimingWithL2 = true;
 	struct _Gamepad
 	{
 		bool BTReset = true;
@@ -367,7 +373,7 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 					keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
 				} else if (KeyCode == VK_STEAM_SCREENSHOT) {
-					keybd_event(VK_F12, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
 				} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
 					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
@@ -417,10 +423,10 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				if (KeyCode == VK_MULTI_SCREENSHOT) { keybd_event(VK_F12, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event(VK_F12, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);  } // Steam
+				if (KeyCode == VK_MULTI_SCREENSHOT) { keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);  } // Steam
 
 			} else if (KeyCode == VK_STEAM_SCREENSHOT) {
-				keybd_event(VK_F12, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 
 			} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
 				keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
