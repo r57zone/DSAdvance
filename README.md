@@ -21,6 +21,8 @@ Multiple operating modes are supported, switching is done by tapping the touchpa
 
 ![](https://github.com/user-attachments/assets/d85b36b3-050d-4bc0-a81c-d979d7be13e3)
 
+To enable aiming with the `L1` button, change the `AimingWithL2` parameter to `0` in the config.
+
 To exit stick emulation mode, press the default mode button.
 
 When pressing the default profile button on the DualSense, white LEDs indicate the current battery charge status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%). On DualSense and DualShock 4, battery status is also shown on the light bar (green - 100..30%, yellow - 29..10%, red - 9..1%). This can be disabled in the config via the `ShowBatteryStatusOnLightBar` parameter. Battery status is also displayed in the program via `ALT + I`.
@@ -51,10 +53,10 @@ Aiming mode: mouse emulation or right stick offset | `PS + R1` | `Capture + R1` 
 Change aiming sensitivity: increase and then decrease | `PS + △` | `Capture + X` | -  
 Reset aiming sensitivity | `PS + RS` | `Capture + RS` | -  
 Change rumble strength or disable it | `PS + Options` | `Capture + Plus` | `ALT + </>`  
-Enable/disable touchpad press for mode switching | `PS + Share` | - | `ALT + W`  
+Enable/disable touchpad press for mode switching (Sony) | `PS + Share` | - | `ALT + W`  
 Auto-stick press at a certain tilt angle (value set in the config file), as well as inversion | `PS + LS` | `HOME + LS` | `ALT + S`  
 Screenshot modes: Xbox Game Bar, Steam, Xbox Game Bar + Steam, custom-configured button (`MicCustomKey` parameter should be set to [the desired key](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md)) | - | - | `ALT + X`  
-Turn off Sony light bar | `PS + L1` or double-tap the brightness area of the touchpad and swipe left or right. If brightness adjustment is locked (`LockChangeBrightness`), the light bar will turn off with a double tap. | `HOME + L1` | `ALT + I`  
+Turn off light bar (Sony) | `PS + L1` or double-tap the brightness area of the touchpad and swipe left or right. If brightness adjustment is locked (`LockChangeBrightness`), the light bar will turn off with a double tap. | `HOME + L1` | `ALT + I`  
 
 ## Setup
 1. Install [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases).
