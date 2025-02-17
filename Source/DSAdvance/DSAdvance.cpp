@@ -810,6 +810,7 @@ int main(int argc, char **argv)
 	if (PRIMARYLANGID(GetUserDefaultLangID()) == LANG_RUSSIAN) {
 		AppStatus.Lang = LANG_RUSSIAN;
 		setlocale(LC_ALL, ""); // Output locale
+		setlocale(LC_NUMERIC, "C"); // Numbers with a dot
 		system("chcp 65001 > nul"); // Console UTF8 output 
 	}
 
@@ -839,10 +840,10 @@ int main(int argc, char **argv)
 	CurGamepad.Triggers.DeadZoneLeft = IniFile.ReadFloat("Gamepad", "DeadZoneLeftTrigger", 0);
 	CurGamepad.Triggers.DeadZoneRight = IniFile.ReadFloat("Gamepad", "DeadZoneRightTrigger", 0);
 
-	CurGamepad.TouchSticks.LeftX = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensX", 4);
-	CurGamepad.TouchSticks.LeftY = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensY", 4);
-	CurGamepad.TouchSticks.RightX = IniFile.ReadFloat("Gamepad", "TouchRightStickSensX", 4);
-	CurGamepad.TouchSticks.RightY = IniFile.ReadFloat("Gamepad", "TouchRightStickSensY", 4);
+	CurGamepad.TouchSticks.LeftX = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensX", 5);
+	CurGamepad.TouchSticks.LeftY = IniFile.ReadFloat("Gamepad", "TouchLeftStickSensY", 5);
+	CurGamepad.TouchSticks.RightX = IniFile.ReadFloat("Gamepad", "TouchRightStickSensX", 1);
+	CurGamepad.TouchSticks.RightY = IniFile.ReadFloat("Gamepad", "TouchRightStickSensY", 1);
 
 	CurGamepad.AutoPressStickValue = IniFile.ReadFloat("Gamepad", "AutoPressStickValue", 99) * 0.01f;
 
@@ -1477,7 +1478,7 @@ int main(int argc, char **argv)
 				SecondTouch.AxisY = 0;
 				SecondTouch.Touched = false;
 			}
-		
+
 		}
 
 		// Keyboard and mouse mode
