@@ -10,16 +10,16 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 
 # Features
 ✔️ Tilt driving and aiming support (gyroscope, no additional settings required);<br>
-✔️ Easy switching between driving and aiming modes (maximum innovative gameplay);<br>
+✔️ Easy switching between driving and aiming modes (maximum innovative motion gameplay);<br>
 ✔️ Windows control, volume adjustment, and screenshot creation using a gamepad;<br>
 ✔️ Battery level display on the light bar and player indicators (for Sony gamepads);<br>
 ✔️ Various emulation modes for games with adaptive triggers;<br>
-✔️ Light bar deactivation for full immersion in the dark;<br>
+✔️ Turning off the light bar for full immersion in the dark;<br>
 ✔️ Support for external modified racing pedals;<br>
 
 Multiple operating modes are supported, switching is done by tapping the touchpad on DualSense and DualShock 4, or using the `Capture` and `Home` buttons on the Pro Controller and Joy-Cons.
 
-![](https://github.com/user-attachments/assets/e2d21584-dd30-4b36-8eef-cd9b50b54f68)
+![](https://github.com/user-attachments/assets/d85b36b3-050d-4bc0-a81c-d979d7be13e3)
 
 To exit stick emulation mode, press the default mode button.
 
@@ -31,7 +31,7 @@ There are 3 emulation modes:
 * Mouse only;
 * Keyboard and mouse emulation for Windows control and some older games;
 
-Mode switching is done via `ALT + Q` or `PS/Home + ←/→` and `PS/HOME`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.RU.md). Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
+Mode switching is done via `ALT + Q` or `PS/Home + ←/→` and `PS/HOME`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
 
 To connect [external pedals (DInput)](https://github.com/r57zone/XboxExternalPedals#setup-dinput-pedals-mh-et-live-board), change the `DInput` parameter to `1` in the `ExternalPedals` section. To connect [external pedals on Arduino](https://github.com/r57zone/XboxExternalPedals#setup-arduino-pedals), change the COM port number by modifying the `COMPort` parameter.
 [![](https://github.com/r57zone/XboxExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
@@ -48,11 +48,11 @@ Decrease and increase Windows volume | `PS + □` and `PS + ○` | `Capture + Y`
 Screenshot (`Win + ALT + PrtScn` press) | Microphone button or `PS + X` | `Capture + B` | -  
 Aiming mode: mouse emulation or right stick offset | `PS + R1` | `Capture + R1` | `ALT + A`  
 Change aiming sensitivity: increase and then decrease | `PS + △` | `Capture + X` | -  
-Reset sensitivity | `PS + RS` | `Capture + RS` | -  
-Change vibration intensity or disable it | `PS + Options` | `Capture + Plus` | `ALT + </>`  
+Reset aiming sensitivity | `PS + RS` | `Capture + RS` | -  
+Change rumble strength or disable it | `PS + Options` | `Capture + Plus` | `ALT + </>`  
 Enable/disable touchpad press for mode switching | `PS + Share` | - | `ALT + W`  
 Auto-stick press at a certain tilt angle (value set in the config file), as well as inversion | `PS + LS` | `HOME + LS` | `ALT + S`  
-Screenshot modes: Xbox Game Bar, Steam, Xbox Game Bar + Steam, custom-configured button (`MicCustomKey` parameter should be set to [the desired key](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.RU.md)) | - | - | `ALT + X`  
+Screenshot modes: Xbox Game Bar, Steam, Xbox Game Bar + Steam, custom-configured button (`MicCustomKey` parameter should be set to [the desired key](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md)) | - | - | `ALT + X`  
 Turn off Sony light bar | `PS + L1` or double-tap the brightness area of the touchpad and swipe left or right. If brightness adjustment is locked (`LockChangeBrightness`), the light bar will turn off with a double tap. | `HOME + L1` | `ALT + I`  
 
 ## Setup
@@ -61,7 +61,7 @@ Turn off Sony light bar | `PS + L1` or double-tap the brightness area of the tou
 3. Connect the Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-Cons.
 4. Unzip and launch DSAdvance.
 5. If necessary, change the dead zones of the sticks, triggers or other parameters in the configuration file `Config.ini`.
-6. When used with Steam games, in the controller settings, disable "Playstation personal settings".
+6. When used with Steam games, in the controller settings, disable `Playstation personal settings`.
 7. It is also recommended to install [HidHide](https://github.com/nefarius/HidHide/releases), then in the `HidHide Configuration Client` add `DSAdvance.exe` and turn on the parameter `Enable device hiding` (If turned off). It is necessary so that the game did not see our controller, and saw only emulated Xbox 360 gamepad.
 8. (Optional) To launch from the notification area (tray), by double-clicking, you can add a shortcut to `Launcher.exe` to Windows startup `%AppData%\Microsoft\Windows\Start Menu\Programs\Startup`.
 9. (Optional) To run third-party utilities via Launcher, specify the title and path to the application in the configuration file.
@@ -83,7 +83,7 @@ You can change the aiming mode to `Mouse-Joystick`, in the program, or use aimin
 
 
 • **Adaptive triggers or light bar don't work in the game**<br>
-Add the game to the "HidHide" exceptions list and change the DSAdvance mode to `Only mouse` or `Xbox gamepad (only driving) & mouse aiming.`.
+Add the game to the "HidHide" exceptions list and change the DSAdvance mode to `Only mouse` or `Xbox gamepad (only driving) & mouse aiming`.
 
 
 
