@@ -56,7 +56,7 @@ Change rumble strength or disable it | `PS + Options` | `Capture + Plus` | `ALT 
 Enable/disable touchpad press for mode switching (Sony) | `PS + Share` | - | `ALT + W`  
 Auto-stick press at a certain tilt angle (value set in the config file), as well as inversion | `PS + LS` | `HOME + LS` | `ALT + S`  
 Screenshot modes: Xbox Game Bar, Steam, Xbox Game Bar + Steam, custom-configured button (`MicCustomKey` parameter should be set to [the desired key](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md)) | - | - | `ALT + X`  
-Turn off light bar (Sony) | `PS + L1` or double-tap the brightness area of the touchpad and swipe left or right. If brightness adjustment is locked (`LockChangeBrightness`), the light bar will turn off with a double tap. | `HOME + L1` | `ALT + I`  
+Turn off light bar (Sony) | `PS + L1` or double-tap the brightness area of the touchpad and swipe left or right. If brightness adjustment is locked (`LockChangeBrightness`), the light bar will turn off with a double tap. | - | `ALT + B`  
 
 ## Setup
 1. Install [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases).
