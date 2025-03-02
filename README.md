@@ -17,7 +17,7 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 ✔️ Turning off the light bar for full immersion in the dark;<br>
 ✔️ Support for external modified racing pedals;<br>
 
-Multiple operating modes are supported, switching is done by tapping the touchpad on DualSense and DualShock 4, or using the `Capture` and `Home` buttons on the Pro Controller and Joy-Cons.
+Multiple operating modes are supported, switching is done by tapping the touchpad on DualSense and DualShock 4, or using the `Capture` and `Home` buttons on the Pro Controller and Joy-Cons (pressing `Home` again switches the aiming mode - Always/L2).
 
 ![](https://github.com/user-attachments/assets/d85b36b3-050d-4bc0-a81c-d979d7be13e3)
 
