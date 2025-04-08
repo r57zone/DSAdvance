@@ -22,9 +22,11 @@ Multiple operating modes are supported, switching is done by tapping the touchpa
 
 ![](https://github.com/user-attachments/assets/b13153be-0713-4d90-81dd-28798bc17971)
 
+The colors of the areas can be changed in the configuration file.
+
 To enable aiming with the `L1` button, change the `AimingWithL2` parameter to `0` in the config.
 
-To exit stick emulation mode, press the default mode button.
+By default, the computer control area is located at the bottom center. To enable touch sticks, set the `TouchSticksOn` parameter to `1` — the desktop control area will be replaced with the touch stick area. To exit stick emulation mode, press the default mode button.
 
 When pressing the default profile button on the DualSense, white LEDs indicate the current battery charge status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%). On DualSense and DualShock 4, battery status is also shown on the light bar (green - 100..30%, yellow - 29..10%, red - 9..1%). This can be disabled in the config via the `ShowBatteryStatusOnLightBar` parameter. Battery status is also displayed in the program via `ALT + I`.
 

@@ -1023,8 +1023,6 @@ int main(int argc, char **argv)
 				if (AppStatus.GamepadEmulationMode == 0) AppStatus.GamepadEmulationMode = EmuGamepadMaxModes; else AppStatus.GamepadEmulationMode--;
 			} else
 				AppStatus.GamepadEmulationMode++;
-			//if (AppStatus.GamepadEmulationMode != EmuKeyboardAndMouse)
-				//AppStatus.LastGamepadEmulationMode = AppStatus.GamepadEmulationMode;
 
 			if (AppStatus.GamepadEmulationMode > EmuGamepadMaxModes) AppStatus.GamepadEmulationMode = EmuGamepadEnabled;
 			if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled || AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
