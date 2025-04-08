@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+// Controllers
 #define SONY_DUALSHOCK4					27
 #define SONY_DUALSENSE					28
 #define NINTENDO_JOYCONS				29
@@ -27,6 +28,7 @@
 #define DS_BATTERY_MAX					8
 #define DS4_USB_BATTERY_MAX				11
 
+// Xbox
 #define XINPUT_GAMEPAD_DPAD_UP          0x0001
 #define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
 #define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
@@ -43,6 +45,11 @@
 #define XINPUT_GAMEPAD_X                0x4000
 #define XINPUT_GAMEPAD_Y				0x8000
 
+// Custom consts
+#define XINPUT_GAMEPAD_LEFT_TRIGGER     0x10000
+#define XINPUT_GAMEPAD_RIGHT_TRIGGER    0x20000
+
+// Modes
 #define EmuGamepadDisabled				2
 #define EmuGamepadEnabled				0
 #define EmuGamepadOnlyDriving			1
@@ -57,6 +64,10 @@
 #define MotionAimingMode				2
 #define MotionAimingModeOnlyPressed		3
 #define TouchpadSticksMode				4
+#define DesktopMode						5
+
+#define ExPedalsAlwaysRacing			0
+#define ExPedalsDependentMode			1
 
 #define LeftStickDefaultMode			0
 #define LeftStickAutoPressMode			1
@@ -103,6 +114,12 @@
 #define VK_COPY							517
 #define VK_PASTE						518
 
+#define TOUCHPAD_LEFT_AREA				0.33
+#define TOUCHPAD_RIGHT_AREA				0.67
+
+// Aiming
+#define FrameTime						0.0166666666666667f // 1.f / 60.f
+#define Tightening						2.f
 
 bool ExternalPedalsConnected = false;
 HANDLE hSerial;
@@ -111,7 +128,6 @@ float PedalsValues[2];
 
 std::vector <std::string> KMProfiles;
 int ProfileIndex = 0;
-
 
 struct Gamepad {
 	int deviceID[4];
@@ -129,6 +145,23 @@ struct Gamepad {
 	unsigned char RumbleStrength = 0;
 	unsigned char PacketCounter = 0;
 	unsigned char RumbleOffCounter = 0;
+
+	int PSOnlyCheckCount = 0;
+	int PSReleasedCount = 0;
+	bool PSOnlyPressed = false;
+	int BackOutStateCounter = 0;
+	unsigned char LastLEDBrightness = 0; // For battery show
+	int GamepadActionMode = 0;
+	int LastMotionAIMMode = MotionAimingMode;
+	bool TouchSticksOn = false;
+	bool SwitchedToDesktopMode = false;
+
+	unsigned int DefaultModeColor;
+	unsigned int DrivingModeColor;
+	unsigned int AimingModeColor;
+	unsigned int AimingModeL2Color;
+	unsigned int DesktopModeColor;
+	unsigned int TouchSticksModeColor;
 
 	struct _Sticks
 	{
@@ -169,8 +202,10 @@ struct Gamepad {
 
 		float SensX = 0;
 		float SensY = 0;
+		float SensAvg = 0;
 		float JoySensX = 0;
 		float JoySensY = 0;
+		float JoySensAvg = 0;
 		float WheelAngle = 0;
 		bool WheelPitch = false;
 		bool WheelRoll = false;
@@ -194,6 +229,7 @@ struct _AppStatus {
 	unsigned short Lang = 0x00; // LANG_NEUTRAL
 	int ControllerCount;
 	int GamepadEmulationMode = EmuGamepadEnabled;
+	int LastGamepadEmulationMode = EmuGamepadEnabled;
 	bool XboxGamepadAttached = true;
 	bool AimMode = false;
 	int LeftStickMode = 0;
@@ -202,6 +238,13 @@ struct _AppStatus {
 	bool ShowBatteryStatusOnLightBar = false;
 	int ScreenshotMode = 0;
 	int ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
+	int ExternalPedalsMode = ExPedalsAlwaysRacing;
+	int ExternalPedalsXboxModePedal1 = 0;
+	bool ExternalPedalsXboxModePedal1Analog = false;
+	int ExternalPedalsXboxModePedal2 = 0;
+	bool ExternalPedalsXboxModePedal2Analog = false;
+	int ExternalPedalsButtons[16] = { 0 };
+	DWORD ExternalPedalsValuePress = 0;
 	bool ExternalPedalsArduinoConnected = false;
 	int ExternalPedalsCOMPort = 0;
 	bool ExternalPedalsDInputSearch = false;
@@ -231,6 +274,10 @@ struct _AppStatus {
 	_HotKeys HotKeys;
 	bool DeadZoneMode = false;
 
+	unsigned int BatteryFineColor = 65280; // WebColorToRGB("00ff00"); // Green
+	unsigned int BatteryWarningColor = 16776960; // WebColorToRGB("ffff00"); // Yellow 
+	unsigned int BatteryCriticalColor = 16711680; // WebColorToRGB("ff0000"); // Red
+
 	bool XboxGamepadReset = false;
 	bool LastConnectionType = true; // Problems with BlueTooth, on first connection. Reset fixes this problem.
 	int SleepTimeOut = 0;
@@ -242,6 +289,7 @@ struct InputOutState {
 	unsigned char LEDRed;
 	unsigned char LEDGreen;
 	unsigned char LEDBlue;
+	unsigned int LEDColor;
 	unsigned char LEDBrightness;
 	unsigned char LargeMotor;
 	unsigned char SmallMotor;
@@ -624,6 +672,79 @@ int KeyNameToKeyCode(std::string KeyName) {
 		return 0;
 }
 
+int XboxKeyNameToXboxKeyCode(std::string KeyName) {
+	std::transform(KeyName.begin(), KeyName.end(), KeyName.begin(), ::toupper);
+
+	std::unordered_map<std::string, int> KeyMap = {
+		{"NONE", 0},
+		{"DPAD-UP", XINPUT_GAMEPAD_DPAD_UP},
+		{"DPAD-DOWN", XINPUT_GAMEPAD_DPAD_DOWN},
+		{"DPAD-LEFT", XINPUT_GAMEPAD_DPAD_LEFT},
+		{"DPAD-RIGHT", XINPUT_GAMEPAD_DPAD_RIGHT},
+		{"XBOX", XINPUT_GAMEPAD_GUIDE},
+		{"BACK", XINPUT_GAMEPAD_BACK},
+		{"START", XINPUT_GAMEPAD_START},
+		{"LEFT-STICK", XINPUT_GAMEPAD_LEFT_THUMB},
+		{"RIGHT-STICK", XINPUT_GAMEPAD_RIGHT_THUMB},
+		{"LEFT-SHOULDER", XINPUT_GAMEPAD_LEFT_SHOULDER},
+		{"RIGHT-SHOULDER", XINPUT_GAMEPAD_RIGHT_SHOULDER},
+		{"A", XINPUT_GAMEPAD_A},
+		{"B", XINPUT_GAMEPAD_B},
+		{"X", XINPUT_GAMEPAD_X},
+		{"Y", XINPUT_GAMEPAD_Y},
+		{"LEFT-TRIGGER", XINPUT_GAMEPAD_LEFT_TRIGGER},
+		{"RIGHT-TRIGGER", XINPUT_GAMEPAD_RIGHT_TRIGGER}
+	};
+
+	if (KeyMap.find(KeyName) != KeyMap.end())
+		return KeyMap[KeyName];
+	else
+		return 0;
+}
+
+/*int JoyKeyNameToKeyCode(std::string KeyName) {
+	std::unordered_map<std::string, int> KeyMap = {
+		{"0", 0},
+		{"1", JOY_BUTTON1},
+		{"2", JOY_BUTTON2},
+		{"3", JOY_BUTTON3},
+		{"4", JOY_BUTTON4},
+		{"5", JOY_BUTTON5},
+		{"6", JOY_BUTTON6},
+		{"7", JOY_BUTTON7},
+		{"8", JOY_BUTTON8},
+		{"9", JOY_BUTTON9},
+		{"10", JOY_BUTTON10},
+		{"11", JOY_BUTTON11},
+		{"12", JOY_BUTTON12},
+		{"13", JOY_BUTTON13},
+		{"14", JOY_BUTTON14},
+		{"15", JOY_BUTTON15},
+		{"16", JOY_BUTTON16},
+		{"17", JOY_BUTTON17},
+		{"18", JOY_BUTTON18},
+		{"19", JOY_BUTTON19},
+		{"20", JOY_BUTTON20},
+		{"21", JOY_BUTTON21},
+		{"22", JOY_BUTTON22},
+		{"23", JOY_BUTTON23},
+		{"24", JOY_BUTTON24},
+		{"25", JOY_BUTTON25},
+		{"26", JOY_BUTTON26},
+		{"27", JOY_BUTTON27},
+		{"28", JOY_BUTTON28},
+		{"29", JOY_BUTTON29},
+		{"30", JOY_BUTTON30},
+		{"31", JOY_BUTTON31},
+		{"32", JOY_BUTTON32}
+	};
+
+	if (KeyMap.find(KeyName) != KeyMap.end())
+		return KeyMap[KeyName];
+	else
+		return 0;
+}*/
+
 // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp
 uint32_t crc_table[256] = {
 		0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
@@ -701,4 +822,128 @@ uint32_t crc_32(unsigned char* buf, int length) {
 		index++;
 	}
 	return result ^ 0xFFFFFFFF;
+}
+
+bool IsKeyPressed(int KeyCode) {
+	return (GetAsyncKeyState(KeyCode) & 0x8000) != 0;
+}
+
+unsigned int WebColorToRGB(const std::string& webColor) {
+	if (webColor.empty() || webColor[0] == '#' || webColor.length() != 6) return 0;
+
+	unsigned char red, green, blue;
+	char buf[3] = { 0 };
+
+	buf[0] = webColor[0], buf[1] = webColor[1];
+	red = strtol(buf, NULL, 16);
+
+	buf[0] = webColor[2], buf[1] = webColor[3];
+	green = strtol(buf, NULL, 16);
+
+	buf[0] = webColor[4], buf[1] = webColor[5];
+	blue = strtol(buf, NULL, 16);
+
+	return (red << 16) | (green << 8) | blue;
+}
+
+EulerAngles QuaternionToEulerAngle(double qW, double qX, double qY, double qZ) // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+{
+	EulerAngles resAngles;
+	// roll (x-axis rotation)
+	double sinr = +2.0 * (qW * qX + qY * qZ);
+	double cosr = +1.0 - 2.0 * (qX * qX + qY * qY);
+	resAngles.Roll = atan2(sinr, cosr);
+
+	// pitch (y-axis rotation)
+	double sinp = +2.0 * (qW * qY - qZ * qX);
+	if (fabs(sinp) >= 1)
+		resAngles.Pitch = copysign(3.14159265358979323846 / 2, sinp); // use 90 degrees if out of range
+	else
+		resAngles.Pitch = asin(sinp);
+
+	// yaw (z-axis rotation)
+	double siny = +2.0 * (qW * qZ + qX * qY);
+	double cosy = +1.0 - 2.0 * (qY * qY + qZ * qZ);
+	resAngles.Yaw = atan2(siny, cosy);
+
+	return resAngles;
+}
+
+float ClampFloat(float Value, float Min, float Max)
+{
+	if (Value > Max)
+		Value = Max;
+	else if (Value < Min)
+		Value = Min;
+	return Value;
+}
+
+float DeadZoneAxis(float StickAxis, float DeadZoneValue) // Possibly wrong
+{
+	if (StickAxis > 0) {
+		StickAxis -= DeadZoneValue;
+		if (StickAxis < 0)
+			StickAxis = 0.0f;
+	} else if (StickAxis < 0) {
+		StickAxis += DeadZoneValue;
+		if (StickAxis > 0)
+			StickAxis = 0.0f;
+	}
+	return StickAxis * 1 / (1.0f - DeadZoneValue); // 1 - max value of stick
+}
+
+double RadToDeg(double Rad)
+{
+	return Rad / 3.14159265358979323846 * 180.0;
+}
+
+double OffsetYPR(double Angle1, double Angle2) // CalcMotionStick
+{
+	Angle1 -= Angle2;
+	if (Angle1 < -3.14159265358979323846)
+		Angle1 += 2 * 3.14159265358979323846;
+	else if (Angle1 > 3.14159265358979323846)
+		Angle1 -= 2 * 3.14159265358979323846;
+	return Angle1;
+}
+
+SHORT ToLeftStick(double Value, float WheelAngle)
+{
+	int LeftAxisX = trunc((32767 / WheelAngle) * Value);
+	if (LeftAxisX < -32767)
+		LeftAxisX = -32767;
+	else if (LeftAxisX > 32767)
+		LeftAxisX = 32767;
+	return LeftAxisX;
+}
+
+SHORT CalcMotionStick(float gravA, float gravB, float wheelAngle, float offsetAxis) {
+	float angleRadians = wheelAngle * (3.14159f / 180.0f); // To radians
+
+	float normalizedValue = OffsetYPR(atan2f(gravA, gravB), offsetAxis) / angleRadians;
+
+	if (normalizedValue > 1.0f)
+		normalizedValue = 1.0f;
+	else if (normalizedValue < -1.0f)
+		normalizedValue = -1.0f;
+
+	return normalizedValue * 32767;
+}
+
+void WindowToCenter() {
+	HWND hWndConsole = GetConsoleWindow();
+	//if (hWndConsole == NULL) return 1;
+
+	RECT desktop;
+	const HWND hDesktop = GetDesktopWindow();
+	GetWindowRect(hDesktop, &desktop);
+	int screenWidth = desktop.right;
+	int screenHeight = desktop.bottom;
+
+	RECT consoleRect;
+	GetWindowRect(hWndConsole, &consoleRect);
+	int consoleWidth = consoleRect.right - consoleRect.left;
+	int consoleHeight = consoleRect.bottom - consoleRect.top;
+
+	MoveWindow(hWndConsole, (screenWidth - consoleWidth) / 2, (screenHeight - consoleHeight) / 2, consoleWidth, consoleHeight, TRUE);
 }

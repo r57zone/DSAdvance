@@ -2,7 +2,7 @@
 [![RU](https://user-images.githubusercontent.com/9499881/27683795-5b0fbac6-5cd8-11e7-929c-057833e01fb1.png)](https://github.com/r57zone/DSAdvance/blob/master/README.RU.md)
 
 # DSAdvance
-Продвинутая эмуляция Xbox геймпада для Sony DualSense, DualShock 4, Nintendo Pro контроллера или Джойконов. Поддерживается прицеливание и вождение наклонами геймпада, эмуляция стиков на тачпаде, эмуляция клавиатуры и мыши, а также [внешние педали](https://github.com/r57zone/XboxExternalPedals). Работает на базе драйвера [ViGEm](https://github.com/nefarius/ViGEmBus).
+Продвинутая эмуляция Xbox геймпада для Sony DualSense, DualShock 4, Nintendo Pro контроллера или Джойконов. Поддерживается прицеливание и вождение наклонами геймпада, эмуляция стиков на тачпаде, эмуляция клавиатуры и мыши, а также [внешние педали](https://github.com/r57zone/GamepadExternalPedals), с дополнительными кнопками и другие джойстики Digispark. Работает на базе драйвера [ViGEm](https://github.com/nefarius/ViGEmBus).
 
 [![](https://user-images.githubusercontent.com/9499881/164945071-5b9f86dd-c396-45a5-817b-fc7068450f02.gif)](https://youtu.be/gkyqO_HuPnk)
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
@@ -14,11 +14,12 @@
 ✔️ Показ заряда батареи на световой панели и индикаторах игрока (для геймпадов Sony);<br>
 ✔️ Различные режимы эмуляции для игр с адаптивными курками;<br>
 ✔️ Выключение подсветки для полного погружения в темноте;<br>
-✔️ Поддержка внешних модифицированных педалей для гонок;<br>
+✔️ Поддержка внешних модифицированных педалей для гонок с любыми 16 кнопками;<br>
+✔️ Поддержка эмуляции нажатий любых кнопок Xbox-контроллера, с помощью Digispark джойстиков (до 16 кнопок);<br>
 
 Поддерживается несколько режимов работы, переключение нажатиями по тачпада DualSene и DualShock 4 или кнопками `Capture`, и `Home` для Pro контроллера, и Джойконов (повторное нажатие `Home` переключает режим прицеливания - всегда/L2).
 
-![](https://github.com/user-attachments/assets/ad09be05-6744-444c-9f05-1581adf9a521)
+![](https://github.com/user-attachments/assets/c8a02f77-8b66-43bf-b1dd-676b2b84cbca)
 
 Для включения прицеливания по кнопке `L1` измените параметр `AimingWithL2` на `0`, в конфиге.
 
@@ -34,12 +35,19 @@
 
 Переключение режимов происходит на `ALT + Q` или `PS/Home + ←/→` и `PS/HOME`. Эмуляция клавиатуры и мыши поддерживает разные профили, выберите нужный профиль или [создайте новый профиль](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.RU.md). Профили переключаются на клавиши `ALT + ↑/↓`, если окно активно или на геймпаде, с помощью `PS/Home + ↑/↓`. Профиль по умолчанию позволяет работать в Windows. 
 
-Для подключения [внешних педалей (DInput)](https://github.com/r57zone/XboxExternalPedals#setup-dinput-pedals-mh-et-live-board) измените параметр `DInput` на `1`, в разделе `ExternalPedals`.  Для подключения [внешних педалей на Arduino](https://github.com/r57zone/XboxExternalPedals#setup-arduino-pedals) измените номер COM-порта, изменив параметр `COMPort`.
+Для подключения [внешних педалей (DInput)](https://github.com/r57zone/GamepadExternalPedals#setup-dinput-pedals-mh-et-live-board) и устройств на базе Digispark джойстиков, измените параметр `DInput` на `1`, в разделе `ExternalPedals`.  Для подключения [внешних педалей на Arduino](https://github.com/r57zone/GamepadExternalPedals#setup-arduino-pedals) измените номер COM-порта, изменив параметр `COMPort`.
 
-[![](https://github.com/r57zone/XboxExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
+[![](https://github.com/r57zone/GamepadExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
 [![](https://user-images.githubusercontent.com/9499881/195859587-65cdaca4-5abd-4594-b079-e388721ae25d.gif)](https://youtu.be/liI_7U_R0as)
 
-Для выключения DualSense или DualShock 4 удерживайте кнопку PS в течении 10-15 секунд, пока контроллер не выключиться.
+Есть 2 режима:
+1. "Всегда педали" - оси педалей всегда привязаны к триггерам контроллера.
+2. "Зависимый (вождение/прицеливание)" - в режиме вождения оси педалей привязаны к триггерам, в режиме прицеливания можно привязать на оси нажатие кнопок. Степень силы определяется параметром `PedalValuePress`.
+Переключить режимы можно, с помощью клавиш `ALT + E`. Задать режим по умолчанию можно изменив параметр `DefaultMode`.
+
+Также можно задать у педалей или других устройств может быть до 16 кнопок, на которые можно задать любые кнопки Xbox геймпада, изменив параметр `Button1..16`.
+
+Для выключения DualSense или DualShock 4 удерживайте кнопку PS, для выключения Nintendo контроллеров удерживайте кнопку Capture или Home, в течении 10-15 секунд, пока контроллеры не выключиться.
 
 ### Горячие клавиши
 Действие | Кнопки Sony | Кнопки Nintendo | Windows 
@@ -103,7 +111,7 @@
 
 ## Благодарности
 * Sony и Nintendo за самые продвинутые геймпады и инвестирование в инновации, а также за продвижение инноваций в игры.
-* [ViGEm](https://github.com/ViGEm) за возможность эмуляции разных геймпадов.
+* [ViGEm](https://github.com/nefarius/ViGEmBus) за возможность эмуляции разных геймпадов.
 * [HIDAPI library](https://github.com/signal11/hidapi), с [исправлениями](https://github.com/libusb/hidapi), за библиотеку для работы с USB устройства. В проекте используется этот [форк](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) за классную библиотеку геймпадов, позволяющую легко получить вращение контроллера. Также используется некоторый код из этой библиотеки и [пример JibbSmart](https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df) для прицеливания.
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) за уровень заряда батареи.

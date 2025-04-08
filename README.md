@@ -3,7 +3,7 @@
 ← Choose language | Выберите язык
 
 # DSAdvance
-Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, stick emulation on the touchpad, keyboard and mouse emulation, and [external pedals](https://github.com/r57zone/XboxExternalPedals). Works based on the driver [ViGEm](https://github.com/nefarius/ViGEmBus).
+Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, stick emulation on the touchpad, keyboard and mouse emulation, and [external pedals](https://github.com/r57zone/GamepadExternalPedals) with extra buttons, and other Digispark-based joysticks.. Works based on the driver [ViGEm](https://github.com/nefarius/ViGEmBus).
 
 [![](https://user-images.githubusercontent.com/9499881/164945071-5b9f86dd-c396-45a5-817b-fc7068450f02.gif)](https://youtu.be/gkyqO_HuPnk)
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
@@ -15,11 +15,12 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 ✔️ Battery level display on the light bar and player indicators (for Sony gamepads);<br>
 ✔️ Various emulation modes for games with adaptive triggers;<br>
 ✔️ Turning off the light bar for full immersion in the dark;<br>
-✔️ Support for external modified racing pedals;<br>
+✔️ Support for external modified racing pedals with any 16 buttons;<br>
+✔️ Support for emulating any Xbox controller button presses using a Digispark joystick (up to 16 buttons);<br>
 
 Multiple operating modes are supported, switching is done by tapping the touchpad on DualSense and DualShock 4, or using the `Capture` and `Home` buttons on the Pro Controller and Joy-Cons (pressing `Home` again switches the aiming mode - Always/L2).
 
-![](https://github.com/user-attachments/assets/d85b36b3-050d-4bc0-a81c-d979d7be13e3)
+![](https://github.com/user-attachments/assets/b13153be-0713-4d90-81dd-28798bc17971)
 
 To enable aiming with the `L1` button, change the `AimingWithL2` parameter to `0` in the config.
 
@@ -35,13 +36,19 @@ There are 3 emulation modes:
 
 Mode switching is done via `ALT + Q` or `PS/Home + ←/→` and `PS/HOME`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
 
-To connect [external pedals (DInput)](https://github.com/r57zone/XboxExternalPedals#setup-dinput-pedals-mh-et-live-board), change the `DInput` parameter to `1` in the `ExternalPedals` section. To connect [external pedals on Arduino](https://github.com/r57zone/XboxExternalPedals#setup-arduino-pedals), change the COM port number by modifying the `COMPort` parameter.
+To connect [external pedals (DInput)](https://github.com/r57zone/GamepadExternalPedals#setup-dinput-pedals-mh-et-live-board) and Digispark joystick based devices, change the parameter change the `DInput` parameter to `1` in the `ExternalPedals` section. To connect [external pedals on Arduino](https://github.com/r57zone/GamepadExternalPedals#setup-arduino-pedals), change the COM port number by modifying the `COMPort` parameter.
 
-[![](https://github.com/r57zone/XboxExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
+[![](https://github.com/r57zone/GamepadExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
 [![](https://user-images.githubusercontent.com/9499881/195859587-65cdaca4-5abd-4594-b079-e388721ae25d.gif)](https://youtu.be/liI_7U_R0as)
 
+There are 2 modes:
+1. "Always pedals" - the pedal axes are always bound to the controller triggers.
+2. "Dependent (driving/aiming)" - in driving mode, the pedal axes are bound to the triggers, in aiming mode, you can bind button presses to the axes. The degree of force is determined by the `PedalValuePress` parameter.
+You can switch modes using the keys `ALT + E`. You can set the default mode by changing the `DefaultMode` parameter.
 
-To turn off DualSense or DualShock 4, hold the PS button for 10-15 seconds until the controller turns off.
+You can also set pedals or other devices to have up to 16 buttons, which can be assigned to any Xbox gamepad buttons by changing the `Button1..16` parameter.
+
+To turn off DualSense or DualShock 4, hold the PS button, to turn off Nintendo controllers, hold the Capture or Home button for 10-15 seconds until the controllers turn off.
 
 ### Hotkeys
 Action | Sony Buttons | Nintendo Buttons | Windows  
@@ -105,7 +112,7 @@ Not supported yet, solutions are being explored.
 
 ## Credits
 * Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.
-* [ViGEm](https://github.com/ViGEm) for the ability to emulate different gamepads.
+* [ViGEm](https://github.com/nefarius/ViGEmBus) for the ability to emulate different gamepads.
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also uses some code from this library and [JibbSmart snippet](https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df) for aiming.
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) for the battery level.
