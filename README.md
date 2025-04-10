@@ -36,7 +36,7 @@ There are 3 emulation modes:
 * Mouse only;
 * Keyboard and mouse emulation for Windows control and some older games;
 
-Mode switching is done via `ALT + Q` or `PS/Home + ←/→` and `PS/HOME`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
+Mode switching is done via `ALT + Q` or `PS/Home + ←/→` and `Capture/Home`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
 
 To connect [external pedals (DInput)](https://github.com/r57zone/GamepadExternalPedals#setup-dinput-pedals-mh-et-live-board) and Digispark joystick based devices, change the parameter change the `DInput` parameter to `1` in the `ExternalPedals` section. To connect [external pedals on Arduino](https://github.com/r57zone/GamepadExternalPedals#setup-arduino-pedals), change the COM port number by modifying the `COMPort` parameter.
 
