@@ -133,8 +133,9 @@ NUMPAD DEL | `NUMPAD-DEL`
 `HIDE-APPS` | Свернуть все приложения.
 `SWITCH-APP` | Показать все окна.
 `DISPLAY-KEYBOARD` | Вывести / спрятать экранную клавиатуру.
-`GAMEBAR` | Игровая панель.
-`GAMEBAR-SCREENSHOT` | Скриншот игровой панели.
+`GAMEBAR` | Игровая панель Xbox.
+`GAMEBAR-SCREENSHOT` | Скриншот, с помощью игровой панели Xbox.
+`GAMEBAR-RECORD` | Запись видео, с помощью игровой панели Xbox.
 `FULLSCREEN` | Переключиться в полноэкранный режим `ALT + ENTER`.
 `FULLSCREEN-PLUS` | Переключиться в полноэкранный режим `ALT + ENTER` + `F` для сервисов YouTube и Twitch.
 `CHANGE-LANGUAGE` | Переключиться на другой язык.

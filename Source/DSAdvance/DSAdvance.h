@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 // Controllers
+#define EMPTY_CONTROLLER				0
 #define SONY_DUALSHOCK4					27
 #define SONY_DUALSENSE					28
 #define NINTENDO_JOYCONS				29
@@ -105,14 +106,15 @@
 #define VK_DISPLAY_KEYBOARD				508
 #define VK_GAMEBAR						509
 #define VK_GAMEBAR_SCREENSHOT			510
-#define VK_STEAM_SCREENSHOT				511
-#define VK_MULTI_SCREENSHOT				512
-#define VK_FULLSCREEN					513
-#define VK_FULLSCREEN_PLUS				514
-#define VK_CHANGE_LANGUAGE				515
-#define VK_CUT							516
-#define VK_COPY							517
-#define VK_PASTE						518
+#define VK_GAMEBAR_RECORD				511
+#define VK_STEAM_SCREENSHOT				512
+#define VK_MULTI_SCREENSHOT				513
+#define VK_FULLSCREEN					514
+#define VK_FULLSCREEN_PLUS				515
+#define VK_CHANGE_LANGUAGE				516
+#define VK_CUT							517
+#define VK_COPY							518
+#define VK_PASTE						519
 
 #define TOUCHPAD_LEFT_AREA				0.33
 #define TOUCHPAD_RIGHT_AREA				0.67
@@ -120,6 +122,11 @@
 // Aiming
 #define FrameTime						0.0166666666666667f // 1.f / 60.f
 #define Tightening						2.f
+
+// Mic LED status
+#define MIC_LED_ON						0x01
+#define MIC_LED_PULSE					0x02
+#define MIC_LED_OFF						0x00
 
 bool ExternalPedalsConnected = false;
 HANDLE hSerial;
@@ -129,11 +136,15 @@ float PedalsValues[2];
 std::vector <std::string> KMProfiles;
 int ProfileIndex = 0;
 
-struct Gamepad {
-	int deviceID[4];
+int GamepadsID[4];
+
+struct AdvancedGamepad {
 	hid_device *HidHandle;
 	hid_device *HidHandle2;
+	int DeviceIndex = -1;
+	int DeviceIndex2 = -1;
 	WORD ControllerType;
+	int JSMControllerType;
 	bool USBConnection;
 	unsigned char BatteryMode;
 	unsigned char BatteryLevel;
@@ -149,6 +160,13 @@ struct Gamepad {
 	int PSOnlyCheckCount = 0;
 	int PSReleasedCount = 0;
 	bool PSOnlyPressed = false;
+
+	int ShareOnlyCheckCount = 0;
+	bool ShareOnlyPressed = false;
+	bool ShareHandled = false;
+	bool ShareCheckUnpressed = false;
+	//bool ShareIsRecording = false;
+
 	int BackOutStateCounter = 0;
 	unsigned char LastLEDBrightness = 0; // For battery show
 	int GamepadActionMode = 0;
@@ -162,6 +180,8 @@ struct Gamepad {
 	unsigned int AimingModeL2Color;
 	unsigned int DesktopModeColor;
 	unsigned int TouchSticksModeColor;
+
+	JOY_SHOCK_STATE InputState;
 
 	struct _Sticks
 	{
@@ -223,7 +243,52 @@ struct Gamepad {
 	};
 	_TouchSticks TouchSticks;
 };
-Gamepad CurGamepad;
+AdvancedGamepad PrimaryGamepad;
+
+struct SimpleGamepad {
+	int deviceID[4];
+	hid_device *HidHandle;
+	hid_device *HidHandle2;
+	int DeviceIndex = -1;
+	int DeviceIndex2 = -1;
+	WORD ControllerType;
+	int JSMControllerType;
+	bool USBConnection;
+	wchar_t *serial_number;
+	unsigned char DefaultLEDBrightness = 0;
+	unsigned char RumbleOffCounter = 0;
+	unsigned int DefaultModeColor;
+
+	JOY_SHOCK_STATE InputState;
+
+	struct _Sticks
+	{
+		float DeadZoneLeftX = 0;
+		float DeadZoneLeftY = 0;
+		float DeadZoneRightX = 0;
+		float DeadZoneRightY = 0;
+
+		bool InvertLeftX = false;
+		bool InvertLeftY = false;
+		bool InvertRightX = false;
+		bool InvertRightY = false;
+	};
+	_Sticks Sticks;
+
+	struct _Triggers
+	{
+		float DeadZoneLeft = 0;
+		float DeadZoneRight = 0;
+	};
+	_Triggers Triggers;
+
+	unsigned char LEDRed;
+	unsigned char LEDGreen;
+	unsigned char LEDBlue;
+	unsigned int LEDColor;
+	unsigned char LEDBrightness;
+};
+SimpleGamepad SecondaryGamepad;
 
 struct _AppStatus {
 	unsigned short Lang = 0x00; // LANG_NEUTRAL
@@ -234,6 +299,7 @@ struct _AppStatus {
 	bool AimMode = false;
 	int LeftStickMode = 0;
 	bool ChangeModesWithClick = false;
+	bool ChangeModesWithoutAreas = false;
 	bool ShowBatteryStatus = false;
 	bool ShowBatteryStatusOnLightBar = false;
 	int ScreenshotMode = 0;
@@ -294,6 +360,7 @@ struct InputOutState {
 	unsigned char LargeMotor;
 	unsigned char SmallMotor;
 	unsigned char PlayersCount;
+	unsigned char MicLED;
 };
 InputOutState GamepadOutState;
 
@@ -341,7 +408,8 @@ struct _ButtonsState{
 	Button LeftStick;
 	Button RightStick;
 	Button PS;
-	Button Mic;
+	Button Screenshot;
+	Button Record;
 
 	// Multi keys
 	Button VolumeUP;
@@ -420,6 +488,11 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 					keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
+				} else if (KeyCode == VK_GAMEBAR_RECORD) {
+					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
 				} else if (KeyCode == VK_STEAM_SCREENSHOT) {
 					keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
@@ -472,6 +545,11 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 				if (KeyCode == VK_MULTI_SCREENSHOT) { keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);  } // Steam
+			
+			} else if (KeyCode == VK_GAMEBAR_RECORD) {
+				keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 
 			} else if (KeyCode == VK_STEAM_SCREENSHOT) {
 				keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
@@ -636,6 +714,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 		{"DISPLAY-KEYBOARD", VK_DISPLAY_KEYBOARD},
 		{"GAMEBAR", VK_GAMEBAR},
 		{"GAMEBAR-SCREENSHOT", VK_GAMEBAR_SCREENSHOT},
+		{"GAMEBAR-RECORD", VK_GAMEBAR_RECORD},
 		{"FULLSCREEN", VK_FULLSCREEN},
 		{"FULLSCREEN-PLUS", VK_FULLSCREEN_PLUS},
 		{"CHANGE-LANGUAGE", VK_CHANGE_LANGUAGE},

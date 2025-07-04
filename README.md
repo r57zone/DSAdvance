@@ -15,14 +15,15 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 ✔️ Battery level display on the light bar and player indicators (for Sony gamepads);<br>
 ✔️ Various emulation modes for games with adaptive triggers;<br>
 ✔️ Turning off the light bar for full immersion in the dark;<br>
+✔️ Support for two gamepads, the first with full functionality, and the second with simplified features (must be enabled in the config);<br>
 ✔️ Support for external modified racing pedals with any 16 buttons;<br>
 ✔️ Support for emulating any Xbox controller button presses using a Digispark joystick (up to 16 buttons);<br>
 
-Multiple operating modes are supported, switching is done by tapping the touchpad on DualSense and DualShock 4, or using the `Capture` and `Home` buttons on the Pro Controller and Joy-Cons (pressing `Home` again switches the aiming mode - Always/L2).
+Multiple operation modes are supported. You can switch between them by pressing the touchpad on DualSense and DualShock 4, the `Capture` and `Home` buttons on Pro Controllers and Joy-Cons (pressing `Home` again toggles aim mode — always/L2), or by pressing the touchpad on gamepads compatible with DualShock 4 but lacking a touch sensor (if the `ChangeModesWithoutAreas` parameter is set to `1`). You can also change operation modes using `ALT` + `1/2`. You can also switch operation modes using `ALT` + `1/2`. Pressing `ALT + 1` again disables driving mode, and pressing `ALT + 2` again toggles the aim mode (always/L2).
 
 ![](https://github.com/user-attachments/assets/b13153be-0713-4d90-81dd-28798bc17971)
 
-The colors of the areas can be changed in the configuration file.
+The default gamepad color and the area colors can be changed in the configuration file.
 
 To enable aiming with the `L1` button, change the `AimingWithL2` parameter to `0` in the config.
 
@@ -58,7 +59,9 @@ Action | Sony Buttons | Nintendo Buttons | Windows
 Open Xbox Game Bar (`Win + G` press) | `PS` | `Capture + Home` | -  
 Decrease and increase Windows volume | `PS + □` and `PS + ○` | `Capture + Y` and `Capture + A` | -  
 Screenshot (`Win + ALT + PrtScn` press) | Microphone button or `PS + X` | `Capture + B` | -  
+Record video (press `Win + ALT + R`) | Hold the microphone button or `PS + X` | Hold `Capture + B` | -
 Aiming mode: mouse emulation or right stick offset | `PS + R1` | `Capture + R1` | `ALT + A`  
+Operation mode (driving or aiming) | Touchpad areas or touchpad press (for controllers without touch panel, enable in config) | `Capture/Home` (press `Capture` again to reset, press `Home` again to toggle aim mode — always/L2) | `ALT + 1`, `ALT + 2` (press `ALT + 1` again to reset, press `ALT + 2` again to toggle aim mode — always/L2)
 Change aiming sensitivity: increase and then decrease | `PS + △` | `Capture + X` | -  
 Reset aiming sensitivity | `PS + RS` | `Capture + RS` | -  
 Change rumble strength or disable it | `PS + Options` | `Capture + Plus` | `ALT + </>`  
@@ -68,15 +71,17 @@ Screenshot modes: Xbox Game Bar, Steam, Xbox Game Bar + Steam, custom-configured
 Turn off light bar (Sony) | `PS + L1` or double-tap the brightness area of the touchpad and swipe left or right. If brightness adjustment is locked (`LockChangeBrightness`), the light bar will turn off with a double tap. | - | `ALT + B`  
 
 ## Setup
-1. Install [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases).
-2. Install Microsoft Visual C++ Redistributable 2017 or newer.
-3. Connect the Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-Cons.
-4. Unzip and launch DSAdvance.
-5. If necessary, change the dead zones of the sticks, triggers or other parameters in the configuration file `Config.ini`.
-6. When used with Steam games, in the controller settings, disable `Playstation personal settings`.
-7. It is also recommended to install [HidHide](https://github.com/nefarius/HidHide/releases), then in the `HidHide Configuration Client` add `DSAdvance.exe` and turn on the parameter `Enable device hiding` (If turned off). It is necessary so that the game did not see our controller, and saw only emulated Xbox 360 gamepad.
-8. (Optional) To launch from the notification area (tray), by double-clicking, you can add a shortcut to `Launcher.exe` to Windows startup `%AppData%\Microsoft\Windows\Start Menu\Programs\Startup`.
-9. (Optional) To run third-party utilities via Launcher, specify the title and path to the application in the configuration file.
+1. Study the documentation to be aware of all features and specifics.
+2. Install [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases).
+3. Install Microsoft Visual C++ Redistributable 2017 or newer.
+4. Connect the Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-Cons.
+5. Unzip and launch DSAdvance.
+6. If necessary, change the dead zones of the sticks, triggers or other parameters in the configuration file `Config.ini`.
+7. (Optional) To enable operation of two gamepads, change the `Enabled` parameter to `1` in the `SecondaryGamepad` section. You can also adjust dead zones for sticks, triggers, and colors.
+8. When used with Steam games, in the controller settings, disable `Playstation personal settings`.
+9. It is also recommended to install [HidHide](https://github.com/nefarius/HidHide/releases), then in the `HidHide Configuration Client` add `DSAdvance.exe` and turn on the parameter `Enable device hiding` (If turned off). It is necessary so that the game did not see our controller, and saw only emulated Xbox 360 gamepad.
+10. (Optional) To launch from the notification area (tray), by double-clicking, you can add a shortcut to `Launcher.exe` to Windows startup `%AppData%\Microsoft\Windows\Start Menu\Programs\Startup`.
+11. (Optional) To run third-party utilities via Launcher, specify the title and path to the application in the configuration file.
 
 ## Download
 >Version for Windows 10, 11.

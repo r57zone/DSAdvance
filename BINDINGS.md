@@ -132,8 +132,9 @@ Value | Description
 `HIDE-APPS` | Minimize all applications.
 `SWITCH-APP` | Show all windows.
 `DISPLAY-KEYBOARD` | Show / hide the on-screen keyboard.
-`GAMEBAR` | Show / hide the Game Bar.
-`GAMEBAR-SCREENSHOT` | Game bar screenshot.
+`GAMEBAR` | Show / hide the Xbox Game Bar.
+`GAMEBAR-SCREENSHOT` | Screenshot taken using Xbox Game Bar.
+`GAMEBAR-RECORD`     | Video recording using Xbox Game Bar.
 `FULLSCREEN` | Switch to full screen mode `ALT + ENTER`.
 `FULLSCREEN-PLUS` | Switch to full screen mode `ALT + ENTER` + `F` for YouTube and Twitch services.
 `CHANGE-LANGUAGE` | Switch to another language.
