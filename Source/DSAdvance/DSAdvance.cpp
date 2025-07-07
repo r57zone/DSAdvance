@@ -21,9 +21,6 @@
 #pragma comment(lib, "winmm.lib")
 
 void GamepadSearch() {
-	//PrimaryGamepad.ControllerType = EMPTY_CONTROLLER;
-	//SecondaryGamepad.ControllerType = EMPTY_CONTROLLER;
-
 	struct hid_device_info *cur_dev;
 
 	// Sony controllers
@@ -113,12 +110,29 @@ void GamepadSearch() {
 			hid_set_nonblocking(PrimaryGamepad.HidHandle, 1);
 			PrimaryGamepad.USBConnection = true;
 
-			// BT detection
-			unsigned char buf[64];
-			memset(buf, 0, sizeof(buf));
-			int bytesRead = hid_read_timeout(PrimaryGamepad.HidHandle, buf, sizeof(buf), 100);
-			if (bytesRead > 0 && buf[0] == 0x11)
+			// Conflict with JoyShock Library ???
+			unsigned char buf[64] = {};
+			buf[0] = 0x80;
+			buf[1] = 0x01;
+
+			// Some compatible gamepads
+			int written = hid_write(PrimaryGamepad.HidHandle, buf, 2);
+			if (written > 0) {
+				PrimaryGamepad.USBConnection = true;
+
+				unsigned char buf[64];
+				memset(buf, 0, sizeof(buf));
+				int bytesRead = hid_read_timeout(PrimaryGamepad.HidHandle, buf, sizeof(buf), 100);
+				if (bytesRead > 0 && (buf[0] == 0x81 || buf[0] == 0x21 || buf[0] == 0x30))
+					PrimaryGamepad.USBConnection = true;
+			}
+			else
 				PrimaryGamepad.USBConnection = false;
+			//hid_set_nonblocking(PrimaryGamepad.HidHandle, 1);
+
+			//if (PrimaryGamepad.USBConnection) printf("USB\n"); else printf("BT");
+			//PrimaryGamepad.USBConnection = (cur_dev->serial_number != NULL);
+			//hid_set_nonblocking(PrimaryGamepad.HidHandle, 1);
 		}
 		cur_dev = cur_dev->next;
 	}
@@ -260,10 +274,13 @@ void GamepadSetState(InputOutState OutState)
 					hid_write(PrimaryGamepad.HidHandle2, outputReport, 10);
 				}*/
 
+				PrimaryGamepad.PacketCounter++;
+				if (PrimaryGamepad.PacketCounter > 0xf) PrimaryGamepad.PacketCounter = 0;
+
 				// Left JoyCon
 				unsigned char outputReportLeft[64] = { 0 };
 				outputReportLeft[0] = 0x10;
-				outputReportLeft[1] = (++PrimaryGamepad.PacketCounter) & 0xF; if (PrimaryGamepad.PacketCounter > 0xF) PrimaryGamepad.PacketCounter = 0x0;
+				outputReportLeft[1] = PrimaryGamepad.PacketCounter;
 				outputReportLeft[2] = (unsigned int)OutState.SmallMotor * PrimaryGamepad.RumbleStrength * 90 / 10000; // std::clamp(OutState.SmallMotor - 0, 0, 229); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
 				outputReportLeft[3] = 0x00;
 				outputReportLeft[4] = OutState.SmallMotor == 0 ? 0x00 : 0x01;
@@ -275,7 +292,7 @@ void GamepadSetState(InputOutState OutState)
 				if (PrimaryGamepad.HidHandle2 != NULL) {
 					unsigned char outputReportRight[64] = { 0 };
 					outputReportRight[0] = 0x10;
-					outputReportRight[1] = (PrimaryGamepad.PacketCounter) & 0xF;
+					outputReportRight[1] = PrimaryGamepad.PacketCounter;
 					outputReportRight[2] = 0x00;
 					outputReportRight[3] = 0x00;
 					outputReportRight[4] = OutState.LargeMotor == 0 ? 0x00 : 0x01;
@@ -285,46 +302,37 @@ void GamepadSetState(InputOutState OutState)
 					hid_write(PrimaryGamepad.HidHandle2, outputReportRight, 64);
 				}
 			
-				if (OutState.SmallMotor == 0 && OutState.LargeMotor == 0) PrimaryGamepad.RumbleOffCounter = 2; // Looks like Nintendo needs some "0" rumble packets to stop it
+				if (PrimaryGamepad.RumbleOffCounter == 0 && OutState.SmallMotor == 0 && OutState.LargeMotor == 0) PrimaryGamepad.RumbleOffCounter = 2; // Looks like Nintendo needs some "0" rumble packets to stop it
 			}
-		} else if (PrimaryGamepad.ControllerType == NINTENDO_SWITCH_PRO) { // Working only one motor :(
+		}
+		else if (PrimaryGamepad.ControllerType == NINTENDO_SWITCH_PRO && !PrimaryGamepad.USBConnection) { // Working only one motor :(
+			//printf("rumble\n");
 			if (PrimaryGamepad.RumbleStrength != 0) {
 				unsigned char outputReport[64] = { 0 };
-
-				/* // BT ???
-				if (!PrimaryGamepad.USBConnection) {
-					outputReport[0] = 0x80; // Заголовок для Bluetooth
-					outputReport[1] = 0x92; // Команда вибрации для Bluetooth
-					outputReport[3] = 0x31; // Подкоманда для вибрации
-					outputReport[8] = 0x10; // Дополнительные данные для Bluetooth
-				}*/
-
-				outputReport[0] = 0x10;
-				outputReport[1] = (++PrimaryGamepad.PacketCounter) & 0xF; if (PrimaryGamepad.PacketCounter > 0xF) PrimaryGamepad.PacketCounter = 0x0;
 
 				// Amplitudes
 				unsigned char hf = 0x20; // High frequency
 				unsigned char lf = 0x28; // Low frequency
 				unsigned char h_amp = (unsigned int)OutState.SmallMotor * PrimaryGamepad.RumbleStrength * 90 / 10000; // std::clamp(OutState.SmallMotor * 2 / 229, 0, 255); // It seems that it is not recommended to use the Nintendo Switch motors at 100 % , there is a risk of damaging them, so we will limit ourselves to 90%
-				unsigned char l_amp1 = (unsigned int)OutState.LargeMotor * PrimaryGamepad.RumbleStrength * 90 / 10000; // std::clamp(OutState.LargeMotor / 229, 0, 255);
+				//unsigned char l_amp1 = (unsigned int)OutState.LargeMotor * PrimaryGamepad.RumbleStrength * 90 / 10000; // The way is correct, but work only one motor
+				unsigned char l_amp1 = OutState.LargeMotor != 0 ? (unsigned int)OutState.LargeMotor * PrimaryGamepad.RumbleStrength * 90 / 10000 : (unsigned int)OutState.SmallMotor * PrimaryGamepad.RumbleStrength * 90 / 10000; // Wrong way, temporary solution
 				unsigned char l_amp2 = ((l_amp1 % 2) * 128);
 				l_amp1 = (l_amp1 / 2) + 64;
 
+				PrimaryGamepad.PacketCounter++;
+				if (PrimaryGamepad.PacketCounter > 0xf) PrimaryGamepad.PacketCounter = 0;
+
+				// ?????
+				outputReport[0] = 0x10;
+				outputReport[1] = PrimaryGamepad.PacketCounter;
 				outputReport[2] = hf;
 				outputReport[3] = h_amp;
 				outputReport[4] = lf + l_amp2;
 				outputReport[5] = l_amp1;
 
-				if (!PrimaryGamepad.USBConnection) {
-					outputReport[0] = 0x80;
-					outputReport[1] = 0x92;
-					outputReport[3] = 0x31;
-					outputReport[8] = 0x10;
-				} 
-
 				hid_write(PrimaryGamepad.HidHandle, outputReport, 64);
 
-				if (OutState.SmallMotor == 0 && OutState.LargeMotor == 0) PrimaryGamepad.RumbleOffCounter = 2; // Looks like Nintendo needs some "0" rumble packets to stop it
+				if (PrimaryGamepad.RumbleOffCounter == 0 && OutState.SmallMotor == 0 && OutState.LargeMotor == 0) PrimaryGamepad.RumbleOffCounter = 2; // Looks like Nintendo needs some "0" rumble packets to stop it
 			}
 		} else {
 			//if (JslGetControllerType(0) == JS_TYPE_DS || JslGetControllerType(0) == JS_TYPE_DS4)
@@ -378,13 +386,13 @@ void GetBatteryInfo() {
 	}	
 }
 
-void ExternalPedalsDInputSearch() {
+// wMid - Vendor id, wPid - Product id
+void ExternalPedalsDInputSearch() { 
 	ExternalPedalsConnected = false;
 	for (int JoyID = 0; JoyID < 4; ++JoyID) { // JOYSTICKID4 - 3
 		if (joyGetPosEx(JoyID, &AppStatus.ExternalPedalsJoyInfo) == JOYERR_NOERROR && // JoyID - JOYSTICKID1..4
-			joyGetDevCaps(JoyID, &AppStatus.ExternalPedalsJoyCaps, sizeof(AppStatus.ExternalPedalsJoyCaps)) == JOYERR_NOERROR &&
-			(AppStatus.ExternalPedalsJoyCaps.wMid != 1406 ||
-			(AppStatus.ExternalPedalsJoyCaps.wPid != 8198 && AppStatus.ExternalPedalsJoyCaps.wPid != 8199)) && // Exclude Pro Controller и JoyCon
+			joyGetDevCaps(JoyID, &AppStatus.ExternalPedalsJoyCaps, sizeof(AppStatus.ExternalPedalsJoyCaps)) == JOYERR_NOERROR && 
+			(AppStatus.ExternalPedalsJoyCaps.wMid != 1406) && // Exclude Pro Controller и JoyCon
 			AppStatus.ExternalPedalsJoyCaps.wNumButtons == 16) { // DualSense - 15, DigiJoy - 16
 			AppStatus.ExternalPedalsJoyIndex = JoyID;
 			AppStatus.ExternalPedalsDInputConnected = true;
@@ -617,11 +625,11 @@ void DefaultMainText() {
 	printf(" %s touchpad press for mode switching - \"ALT + W\" or \"PS + Share\" (Sony only).\n", AppStatus.ChangeModesWithClick ? "Disable" : "Enable");
 
 	if (AppStatus.LeftStickMode == LeftStickDefaultMode)
-		printf(" Left stick mode: Default");
+		printf(" Left stick mode: default");
 	else if (AppStatus.LeftStickMode == LeftStickAutoPressMode)
-		printf(" Left stick mode: Auto pressing by value");
-	else if (AppStatus.LeftStickMode == LeftStickInvertPressMode)
-		printf(" Left stick mode: Invert pressed");
+		printf(" Left stick mode: auto-press based on value");
+	else if (AppStatus.LeftStickMode == LeftStickPressOnceMode)
+		printf(" Left stick mode: single press based on value");
 	printf(", press \"ALT + S\" or \"PS/Home + LS\" to switch.\n");
 
 	if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
@@ -743,8 +751,8 @@ void RussianMainText() {
 		printf(" Режим левого стика: по умолчанию");
 	else if (AppStatus.LeftStickMode == LeftStickAutoPressMode)
 		printf(" Режим левого стика: автонажатие по значению");
-	else if (AppStatus.LeftStickMode == LeftStickInvertPressMode)
-		printf(" Режим левого стика: инверсия нажатия");
+	else if (AppStatus.LeftStickMode == LeftStickPressOnceMode)
+		printf(" Режим левого стика: разовое нажатие по значению");
 	printf(", нажмите \"ALT + S\" или \"PS/Home + L1\" для переключения.\n");
 
 	if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
@@ -869,7 +877,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 1.3");
+	SetConsoleTitle("DSAdvance 1.4");
 	WindowToCenter();
 
 	// if (false)
@@ -944,6 +952,15 @@ int main(int argc, char **argv)
 	PrimaryGamepad.KMEmu.StickValuePressKey = IniFile.ReadFloat("KeyboardMouse", "StickValuePressKey", 0.2f);
 	PrimaryGamepad.KMEmu.TriggerValuePressKey = IniFile.ReadFloat("KeyboardMouse", "TriggerValuePressKey", 0.2f);
 
+	AppStatus.MicCustomKeyName = IniFile.ReadString("Gamepad", "MicCustomKey", "NONE");
+	AppStatus.MicCustomKey = KeyNameToKeyCode(AppStatus.MicCustomKeyName);
+	if (AppStatus.MicCustomKey == 0)
+		AppStatus.ScreenshotMode = ScreenShotXboxGameBarMode; // If not set, then hide this mode
+	else
+		AppStatus.ScreenShotKey = AppStatus.MicCustomKey;
+	AppStatus.SteamScrKeyName = IniFile.ReadString("Gamepad", "SteamScrKey", "NONE");
+	AppStatus.SteamScrKey = KeyNameToKeyCode(AppStatus.SteamScrKeyName);
+
 	bool SecondaryGamepadEnabled = IniFile.ReadBoolean("SecondaryGamepad", "Enabled", false);
 	SecondaryGamepad.Sticks.DeadZoneLeftX = IniFile.ReadFloat("SecondaryGamepad", "DeadZoneLeftStickX", 0);
 	SecondaryGamepad.Sticks.DeadZoneLeftY = IniFile.ReadFloat("SecondaryGamepad", "DeadZoneLeftStickY", 0);
@@ -955,16 +972,6 @@ int main(int argc, char **argv)
 	SecondaryGamepad.LEDBrightness = SecondaryGamepad.DefaultLEDBrightness;
 	SecondaryGamepad.DefaultModeColor = WebColorToRGB(IniFile.ReadString("SecondaryGamepad", "DefaultModeColor", "00ff00"));
 	SecondaryGamepad.LEDColor = SecondaryGamepad.DefaultModeColor;
-
-	AppStatus.MicCustomKeyName = IniFile.ReadString("Gamepad", "MicCustomKey", "NONE");
-	AppStatus.MicCustomKey = KeyNameToKeyCode(AppStatus.MicCustomKeyName);
-	if (AppStatus.MicCustomKey == 0)
-		AppStatus.ScreenshotMode = ScreenShotXboxGameBarMode; // If not set, then hide this mode
-	else
-		AppStatus.ScreenShotKey = AppStatus.MicCustomKey;
-
-	AppStatus.SteamScrKeyName = IniFile.ReadString("Gamepad", "SteamScrKey", "NONE");
-	AppStatus.SteamScrKey = KeyNameToKeyCode(AppStatus.SteamScrKeyName);
 
 	// External pedals
 	AppStatus.ExternalPedalsDInputSearch = IniFile.ReadBoolean("ExternalPedals", "DInput", false);
@@ -1467,8 +1474,21 @@ int main(int argc, char **argv)
 		report.sThumbRY = PrimaryGamepad.Sticks.InvertRightY == false ? DeadZoneAxis(PrimaryGamepad.InputState.stickRY, PrimaryGamepad.Sticks.DeadZoneRightY) * 32767 : DeadZoneAxis(-PrimaryGamepad.InputState.stickRY, PrimaryGamepad.Sticks.DeadZoneRightY) * 32767;
 
 		// Auto stick pressing when value is exceeded
-		if (AppStatus.LeftStickMode == LeftStickAutoPressMode && ( sqrt(PrimaryGamepad.InputState.stickLX * PrimaryGamepad.InputState.stickLX + PrimaryGamepad.InputState.stickLY * PrimaryGamepad.InputState.stickLY) >= PrimaryGamepad.AutoPressStickValue))
-			report.wButtons |= JSMASK_LCLICK;
+		if (PrimaryGamepad.GamepadActionMode != MotionDrivingMode) { // Exclude driving mode
+			if (AppStatus.LeftStickMode != LeftStickDefaultMode && (sqrt(PrimaryGamepad.InputState.stickLX * PrimaryGamepad.InputState.stickLX + PrimaryGamepad.InputState.stickLY * PrimaryGamepad.InputState.stickLY) >= PrimaryGamepad.AutoPressStickValue)) {
+				if (AppStatus.LeftStickMode == LeftStickAutoPressMode)
+					report.wButtons |= JSMASK_LCLICK;
+				else { // LeftStickPressOnceMode
+					if (AppStatus.LeftStickPressOnce == false) {
+						report.wButtons |= JSMASK_LCLICK;
+						AppStatus.LeftStickPressOnce = true;
+						//printf(" LeftStickPressOnce\n");
+					}
+				}
+			}
+			else
+				AppStatus.LeftStickPressOnce = false;
+		}
 
 		report.bLeftTrigger = DeadZoneAxis(PrimaryGamepad.InputState.lTrigger, PrimaryGamepad.Triggers.DeadZoneLeft) * 255;
 		report.bRightTrigger = DeadZoneAxis(PrimaryGamepad.InputState.rTrigger, PrimaryGamepad.Triggers.DeadZoneRight) * 255;
@@ -1560,10 +1580,7 @@ int main(int argc, char **argv)
 		if (!(PrimaryGamepad.InputState.buttons & JSMASK_PS && PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE && PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE)) { // During special functions, nothing is pressed in the game
 			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_L ? XINPUT_GAMEPAD_LEFT_SHOULDER : 0;
 			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_R ? XINPUT_GAMEPAD_RIGHT_SHOULDER : 0;
-			if (AppStatus.LeftStickMode != LeftStickInvertPressMode) // Invert stick mode
-				report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_LCLICK ? XINPUT_GAMEPAD_LEFT_THUMB : 0;
-			else
-				report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_LCLICK ? 0 : XINPUT_GAMEPAD_LEFT_THUMB;
+			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_LCLICK ? XINPUT_GAMEPAD_LEFT_THUMB : 0;
 			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_RCLICK ? XINPUT_GAMEPAD_RIGHT_THUMB : 0;
 			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_UP ? XINPUT_GAMEPAD_DPAD_UP : 0;
 			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_DOWN ? XINPUT_GAMEPAD_DPAD_DOWN : 0;
@@ -1642,7 +1659,10 @@ int main(int argc, char **argv)
 			}
 
 			if (PrimaryGamepad.ShareOnlyCheckCount > 0) { // Checking start
-				if (IsSharePressed == false) PrimaryGamepad.ShareCheckUnpressed = true;
+				if (IsSharePressed == false) {
+					PrimaryGamepad.ShareCheckUnpressed = true;
+					PrimaryGamepad.ShareOnlyCheckCount = 1; // Skip timeout if button is released
+				}
 
 				if (PrimaryGamepad.ShareOnlyCheckCount == 1) {
 					// Screenshot

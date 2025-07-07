@@ -66,7 +66,7 @@ Change aiming sensitivity: increase and then decrease | `PS + △` | `Capture + 
 Reset aiming sensitivity | `PS + RS` | `Capture + RS` | -  
 Change rumble strength or disable it | `PS + Options` | `Capture + Plus` | `ALT + </>`  
 Enable/disable touchpad press for mode switching (Sony) | `PS + Share` | - | `ALT + W`  
-Auto-stick press at a certain tilt angle (value set in the config file), as well as inversion | `PS + LS` | `HOME + LS` | `ALT + S`  
+Auto stick press when tilted at a certain angle (value set in the configuration file), either once or continuously | `PS + LS` | `HOME + LS` | `ALT + S`  
 Screenshot modes: Xbox Game Bar, Steam, Xbox Game Bar + Steam, custom-configured button (`MicCustomKey` parameter should be set to [the desired key](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md)) | - | - | `ALT + X`  
 Turn off light bar (Sony) | `PS + L1` or double-tap the brightness area of the touchpad and swipe left or right. If brightness adjustment is locked (`LockChangeBrightness`), the light bar will turn off with a double tap. | - | `ALT + B`  
 
@@ -115,7 +115,7 @@ In some games, for example, Max Payne or Crysis 2, unfortunately, this don'n wor
 
 
 • **Rumble don't work on Nintendo Pro controller**<br>
-Not supported yet, solutions are being explored.
+In USB mode, rumble is disabled due to issues, it works in wireless mode on compatible controllers, but hasn't been tested on original ones.
 
 ## Credits
 * Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.

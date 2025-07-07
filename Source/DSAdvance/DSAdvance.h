@@ -71,8 +71,8 @@
 #define ExPedalsDependentMode			1
 
 #define LeftStickDefaultMode			0
-#define LeftStickAutoPressMode			1
-#define LeftStickInvertPressMode		2
+#define LeftStickPressOnceMode			1
+#define LeftStickAutoPressMode			2
 #define LeftStickMaxModes				2
 
 #define ScreenShotCustomKeyMode			0
@@ -298,6 +298,7 @@ struct _AppStatus {
 	bool XboxGamepadAttached = true;
 	bool AimMode = false;
 	int LeftStickMode = 0;
+	bool LeftStickPressOnce = false;
 	bool ChangeModesWithClick = false;
 	bool ChangeModesWithoutAreas = false;
 	bool ShowBatteryStatus = false;
