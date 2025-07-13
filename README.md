@@ -3,7 +3,7 @@
 ← Choose language | Выберите язык
 
 # DSAdvance
-Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, stick emulation on the touchpad, keyboard and mouse emulation, and [external pedals](https://github.com/r57zone/GamepadExternalPedals) with extra buttons, and other Digispark-based joysticks.. Works based on the driver [ViGEm](https://github.com/nefarius/ViGEmBus).
+Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, stick emulation on the touchpad, keyboard and mouse emulation, and [external pedals](https://github.com/r57zone/GamepadExternalPedals) with extra buttons, and other Digispark-based joysticks. Works based on the driver [ViGEm](https://github.com/nefarius/ViGEmBus).
 
 [![](https://user-images.githubusercontent.com/9499881/164945071-5b9f86dd-c396-45a5-817b-fc7068450f02.gif)](https://youtu.be/gkyqO_HuPnk)
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
