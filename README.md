@@ -31,6 +31,8 @@ By default, the computer control area is located at the bottom center. To enable
 
 When pressing the default profile button on the DualSense, white LEDs indicate the current battery charge status (1 - 0..25%, 2 - 26..50%, 3 - 51..75%, 4 - 76..100%). On DualSense and DualShock 4, battery status is also shown on the light bar (green - 100..30%, yellow - 29..10%, red - 9..1%). This can be disabled in the config via the `ShowBatteryStatusOnLightBar` parameter. Battery status is also displayed in the program via `ALT + I`.
 
+Double-tap the brightness area, then swipe left or right to adjust the backlight brightness. Double-tap again to lock it and prevent accidental changes.
+
 There are 3 emulation modes:
 * Simple Xbox gamepad emulation with extended functionality;
 * Xbox gamepad emulation only for driving mode and mouse aiming (for certain games with adaptive triggers);
