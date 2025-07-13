@@ -226,10 +226,11 @@ struct AdvancedGamepad {
 		float JoySensX = 0;
 		float JoySensY = 0;
 		float JoySensAvg = 0;
-		float WheelAngle = 0;
-		bool WheelPitch = false;
-		bool WheelRoll = false;
-		int WheelInvertPitch = 0;
+		float SteeringWheelAngle = 0;
+		bool AircraftEnabled = false;
+		float AircraftPitchAngle = 0;
+		int AircraftPitchInverted = 0;
+		float AircraftRollSens = 0;
 		float CustomMulSens = 1.0f;
 	};
 	_Motion Motion;
@@ -926,29 +927,6 @@ unsigned int WebColorToRGB(const std::string& webColor) {
 	return (red << 16) | (green << 8) | blue;
 }
 
-EulerAngles QuaternionToEulerAngle(double qW, double qX, double qY, double qZ) // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-{
-	EulerAngles resAngles;
-	// roll (x-axis rotation)
-	double sinr = +2.0 * (qW * qX + qY * qZ);
-	double cosr = +1.0 - 2.0 * (qX * qX + qY * qY);
-	resAngles.Roll = atan2(sinr, cosr);
-
-	// pitch (y-axis rotation)
-	double sinp = +2.0 * (qW * qY - qZ * qX);
-	if (fabs(sinp) >= 1)
-		resAngles.Pitch = copysign(3.14159265358979323846 / 2, sinp); // use 90 degrees if out of range
-	else
-		resAngles.Pitch = asin(sinp);
-
-	// yaw (z-axis rotation)
-	double siny = +2.0 * (qW * qZ + qX * qY);
-	double cosy = +1.0 - 2.0 * (qY * qY + qZ * qZ);
-	resAngles.Yaw = atan2(siny, cosy);
-
-	return resAngles;
-}
-
 float ClampFloat(float Value, float Min, float Max)
 {
 	if (Value > Max)
@@ -972,10 +950,10 @@ float DeadZoneAxis(float StickAxis, float DeadZoneValue) // Possibly wrong
 	return StickAxis * 1 / (1.0f - DeadZoneValue); // 1 - max value of stick
 }
 
-double RadToDeg(double Rad)
+/*double RadToDeg(double Rad)
 {
 	return Rad / 3.14159265358979323846 * 180.0;
-}
+}*/
 
 double OffsetYPR(double Angle1, double Angle2) // CalcMotionStick
 {
@@ -987,7 +965,7 @@ double OffsetYPR(double Angle1, double Angle2) // CalcMotionStick
 	return Angle1;
 }
 
-SHORT ToLeftStick(double Value, float WheelAngle)
+/*SHORT ToLeftStick(double Value, float WheelAngle)
 {
 	int LeftAxisX = trunc((32767 / WheelAngle) * Value);
 	if (LeftAxisX < -32767)
@@ -995,7 +973,7 @@ SHORT ToLeftStick(double Value, float WheelAngle)
 	else if (LeftAxisX > 32767)
 		LeftAxisX = 32767;
 	return LeftAxisX;
-}
+}*/
 
 SHORT CalcMotionStick(float gravA, float gravB, float wheelAngle, float offsetAxis) {
 	float angleRadians = wheelAngle * (3.14159f / 180.0f); // To radians

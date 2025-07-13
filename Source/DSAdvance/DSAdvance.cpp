@@ -877,7 +877,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 1.4");
+	SetConsoleTitle("DSAdvance 1.5");
 	WindowToCenter();
 
 	// if (false)
@@ -928,13 +928,14 @@ int main(int argc, char **argv)
 	AppStatus.ChangeModesWithClick = IniFile.ReadBoolean("Gamepad", "ChangeModesWithClick", true);
 	AppStatus.ChangeModesWithoutAreas = IniFile.ReadBoolean("Gamepad", "ChangeModesWithoutAreas", false);
 
-	AppStatus.AimMode = IniFile.ReadBoolean("Motion", "AimMode", AimMouseMode);
+	AppStatus.AimMode = IniFile.ReadBoolean("Motion", "AimingMode", AimMouseMode);
 	AppStatus.AimingWithL2 = IniFile.ReadBoolean("Motion", "AimingWithL2", true);
 
-	PrimaryGamepad.Motion.WheelAngle = IniFile.ReadFloat("Motion", "WheelAngle", 150) / 2.0f;
-	PrimaryGamepad.Motion.WheelPitch = IniFile.ReadBoolean("Motion", "WheelPitch", false);
-	PrimaryGamepad.Motion.WheelRoll = IniFile.ReadBoolean("Motion", "WheelRoll", true);
-	PrimaryGamepad.Motion.WheelInvertPitch = IniFile.ReadBoolean("Motion", "WheelInvertPitch", false) ? 1 : -1;
+	PrimaryGamepad.Motion.SteeringWheelAngle = IniFile.ReadFloat("Motion", "SteeringWheelAngle", 150) / 2.0f;
+	PrimaryGamepad.Motion.AircraftEnabled = IniFile.ReadBoolean("Motion", "AircraftEnabled", false);
+	PrimaryGamepad.Motion.AircraftPitchAngle = IniFile.ReadFloat("Motion", "AircraftPitchAngle", 45) / 2.0f;
+	PrimaryGamepad.Motion.AircraftPitchInverted = IniFile.ReadBoolean("Motion", "AircraftPitchInverted", false) ? -1 : 1;
+	PrimaryGamepad.Motion.AircraftRollSens = IniFile.ReadFloat("Motion", "AircraftRollSens", 100) * 0.11875f;
 	PrimaryGamepad.Motion.SensX = IniFile.ReadFloat("Motion", "MouseSensX", 100) * 0.005f;   // Calibration with Crysis 2, old 0.01
 	PrimaryGamepad.Motion.SensY = IniFile.ReadFloat("Motion", "MouseSensY", 90) * 0.005f;
 	PrimaryGamepad.Motion.SensAvg = (PrimaryGamepad.Motion.SensX + PrimaryGamepad.Motion.SensY) * 0.5f; // Sens Average
@@ -1043,7 +1044,6 @@ int main(int argc, char **argv)
 	GamepadSetState(GamepadOutState);
 
 	int SkipPollCount = 0;
-	EulerAngles MotionAngles, AnglesOffset;
 
 	AppStatus.ControllerCount = JslConnectDevices();
 	JslGetConnectedDeviceHandles(GamepadsID, AppStatus.ControllerCount);
@@ -1138,8 +1138,9 @@ int main(int argc, char **argv)
 			SecondaryGamepad.InputState = JslGetSimpleState(GamepadsID[SecondaryGamepad.DeviceIndex]);
 			//MotionState = JslGetMotionState(GamepadsID[SecondaryGamepad.DeviceIndex]);
 			//JslGetAndFlushAccumulatedGyro(GamepadsID[SecondaryGamepad.DeviceIndex], velocityX, velocityY, velocityZ);
-		}
-		else { // Split contoller (Joycons)
+		
+		// Split contoller (Joycons)
+		} else { 
 			SecondaryGamepad.InputState = JslGetSimpleState(GamepadsID[SecondaryGamepad.DeviceIndex]);
 			JOY_SHOCK_STATE tempState = JslGetSimpleState(GamepadsID[SecondaryGamepad.DeviceIndex2]);
 			//MotionState = JslGetMotionState(GamepadsID[SecondaryGamepad.DeviceIndex2]);
@@ -1149,8 +1150,6 @@ int main(int argc, char **argv)
 			SecondaryGamepad.InputState.buttons |= tempState.buttons;
 			//JslGetAndFlushAccumulatedGyro(GamepadsID[SecondaryGamepad.DeviceIndex2], velocityX, velocityY, velocityZ);
 		}
-		
-		MotionAngles = QuaternionToEulerAngle(MotionState.quatW, MotionState.quatZ, MotionState.quatX, MotionState.quatY);
 
 		// Stick dead zones
 		if (SkipPollCount == 0 && IsKeyPressed(VK_MENU) && IsKeyPressed(VK_F9) != 0)
@@ -1334,8 +1333,7 @@ int main(int argc, char **argv)
 					// [O--] - Driving mode
 					if (TouchState.t0X > 0 && TouchState.t0X <= TOUCHPAD_LEFT_AREA && PrimaryGamepad.GamepadActionMode != TouchpadSticksMode) {
 						PrimaryGamepad.GamepadActionMode = MotionDrivingMode;
-						AnglesOffset = MotionAngles;
-		
+
 						PrimaryGamepad.Motion.OffsetAxisX = atan2f(MotionState.gravX, MotionState.gravZ);
 						PrimaryGamepad.Motion.OffsetAxisY = atan2f(MotionState.gravY, MotionState.gravZ);
 						
@@ -1601,7 +1599,8 @@ int main(int argc, char **argv)
 			if (SkipPollCount == 0 && ( (PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE) || (IsKeyPressed(VK_MENU) && IsKeyPressed('1')) ) ) {
 				if (PrimaryGamepad.GamepadActionMode == 1)
 					PrimaryGamepad.GamepadActionMode = GamepadDefaultMode;
-				else { PrimaryGamepad.GamepadActionMode = MotionDrivingMode; AnglesOffset = MotionAngles; }
+				else
+					PrimaryGamepad.GamepadActionMode = MotionDrivingMode;
 				SkipPollCount = SkipPollTimeOut; 
 			}
 			
@@ -1702,14 +1701,23 @@ int main(int argc, char **argv)
 		// Gamepad modes
 		// Motion racing  [O--]
 		if (PrimaryGamepad.GamepadActionMode == MotionDrivingMode) {
-			if (PrimaryGamepad.Motion.WheelRoll)
-				report.sThumbLX = CalcMotionStick(MotionState.gravX, MotionState.gravZ, PrimaryGamepad.Motion.WheelAngle, PrimaryGamepad.Motion.OffsetAxisX);
-			else
-				report.sThumbLX = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Yaw), RadToDeg(AnglesOffset.Yaw)) * -1, PrimaryGamepad.Motion.WheelAngle); // Not tested, axes swap roles
 
-			if (PrimaryGamepad.Motion.WheelPitch)
-				report.sThumbLY = ToLeftStick(OffsetYPR(RadToDeg(MotionAngles.Pitch), RadToDeg(AnglesOffset.Pitch)) * PrimaryGamepad.Motion.WheelInvertPitch, PrimaryGamepad.Motion.WheelAngle); // Not tested, axes swap roles
-		
+			// Steering wheel
+			if (!PrimaryGamepad.Motion.AircraftEnabled) {
+				report.sThumbLX = CalcMotionStick(MotionState.gravX, MotionState.gravZ, PrimaryGamepad.Motion.SteeringWheelAngle, PrimaryGamepad.Motion.OffsetAxisX);
+
+			// Aircraft
+			} else {
+				const float InputSize = sqrtf(velocityX * velocityX + velocityY * velocityY + velocityZ * velocityZ);
+				float TightenedSensitivity = PrimaryGamepad.Motion.AircraftRollSens;
+				if (InputSize < Tightening && Tightening > 0)
+					TightenedSensitivity *= InputSize / Tightening;
+
+				report.sThumbLX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbLX), -32767, 32767);
+				report.sThumbLY = CalcMotionStick(MotionState.gravY, MotionState.gravZ, PrimaryGamepad.Motion.AircraftPitchAngle, PrimaryGamepad.Motion.OffsetAxisY) * PrimaryGamepad.Motion.AircraftPitchInverted;
+			}
+
+
 		// Motion aiming  [--X}]
 		} else if (PrimaryGamepad.GamepadActionMode == MotionAimingMode || (PrimaryGamepad.GamepadActionMode == MotionAimingModeOnlyPressed &&
 				  (AppStatus.AimingWithL2 && DeadZoneAxis(PrimaryGamepad.InputState.lTrigger, PrimaryGamepad.Triggers.DeadZoneLeft) > 0) || // Classic L2 aiming
