@@ -116,16 +116,6 @@ Add the game to the "HidHide" exceptions list and change the DSAdvance mode to `
 • **Driving don't work in games with DualSense support (without HidHide)**<br>
 Launch DSAdvance first, and only then the game itself, the game can give priority to the emulated Xbox controller and driving will work. You can also enable `Only driving & aiming` emulation mode so that the controller will only turn on in driving mode.
 
-
-
-• **Keyboard emulation don't work in some games**<br>
-In some games, for example, Max Payne or Crysis 2, unfortunately, this don'n work yet.
-
-
-
-• **Rumble don't work on Nintendo Pro controller**<br>
-In USB mode, rumble is disabled due to issues, it works in wireless mode on compatible controllers, but hasn't been tested on original ones.
-
 ## Credits
 * Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.
 * [ViGEm](https://github.com/nefarius/ViGEmBus) for the ability to emulate different gamepads.
