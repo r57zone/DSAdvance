@@ -86,9 +86,10 @@
 
 #define WASDStickMode					0
 #define ArrowsStickMode					1
-#define MouseLookStickMode				2
-#define MouseWheelStickMode				3
-#define NumpadsStickMode				4
+#define ArrowsLeftRightStickMode		2
+#define MouseLookStickMode				3
+#define MouseWheelStickMode				4
+#define NumpadsStickMode				5
 
 #define VK_VOLUME_DOWN2					174 // VK_VOLUME_DOWN - already exists
 #define VK_VOLUME_UP2					175
@@ -128,23 +129,38 @@
 #define MIC_LED_PULSE					0x02
 #define MIC_LED_OFF						0x00
 
+#define ADAPTIVE_TRIGGER_MODE_MAX		5
+
 bool ExternalPedalsConnected = false;
 HANDLE hSerial;
 std::thread *pArduinoReadThread = NULL;
 float PedalsValues[2];
 
 std::vector <std::string> KMProfiles;
-int ProfileIndex = 0;
+int KMProfileIndex = 0;
+std::vector <std::string> XboxProfiles;
+int XboxProfileIndex = 0;
 
-int GamepadsID[4];
+struct InputOutState {
+	unsigned char LEDRed;
+	unsigned char LEDGreen;
+	unsigned char LEDBlue;
+	unsigned int LEDColor;
+	unsigned char LEDBrightness;
+	unsigned char LargeMotor;
+	unsigned char SmallMotor;
+	unsigned char PlayersCount = 0;
+	unsigned char MicLED;
+};
 
 struct AdvancedGamepad {
 	hid_device *HidHandle;
 	hid_device *HidHandle2;
+	std::string DevicePath;
+	std::string DevicePath2;
 	int DeviceIndex = -1;
 	int DeviceIndex2 = -1;
 	WORD ControllerType;
-	int JSMControllerType;
 	bool USBConnection;
 	unsigned char BatteryMode;
 	unsigned char BatteryLevel;
@@ -153,9 +169,9 @@ struct AdvancedGamepad {
 	wchar_t *serial_number;
 	float AutoPressStickValue = 0;
 	unsigned char DefaultLEDBrightness = 0;
-	unsigned char RumbleStrength = 0;
+	unsigned char RumbleStrength = 100;
 	unsigned char PacketCounter = 0;
-	unsigned char RumbleOffCounter = 0;
+	int RumbleSkipCounter = 300; // Nintendo Pro controller conflict with JoyShockLibrary (waiting after initialization)
 
 	int PSOnlyCheckCount = 0;
 	int PSReleasedCount = 0;
@@ -181,7 +197,11 @@ struct AdvancedGamepad {
 	unsigned int DesktopModeColor;
 	unsigned int TouchSticksModeColor;
 
+	int AdaptiveTriggersMode = 0;
+
 	JOY_SHOCK_STATE InputState;
+
+	InputOutState OutState;
 
 	struct _Sticks
 	{
@@ -245,11 +265,14 @@ struct AdvancedGamepad {
 	_TouchSticks TouchSticks;
 };
 AdvancedGamepad PrimaryGamepad;
+AdvancedGamepad SecondaryGamepad;
 
-struct SimpleGamepad {
+/*struct SimpleGamepad {
 	int deviceID[4];
 	hid_device *HidHandle;
 	hid_device *HidHandle2;
+	std::string DevicePath;
+	std::string DevicePath2;
 	int DeviceIndex = -1;
 	int DeviceIndex2 = -1;
 	WORD ControllerType;
@@ -289,11 +312,13 @@ struct SimpleGamepad {
 	unsigned int LEDColor;
 	unsigned char LEDBrightness;
 };
-SimpleGamepad SecondaryGamepad;
+SimpleGamepad SecondaryGamepad;*/
 
 struct _AppStatus {
 	unsigned short Lang = 0x00; // LANG_NEUTRAL
 	int ControllerCount;
+	int SkipPollCount = 0;
+	bool SecondaryGamepadEnabled = false;
 	int GamepadEmulationMode = EmuGamepadEnabled;
 	int LastGamepadEmulationMode = EmuGamepadEnabled;
 	bool XboxGamepadAttached = true;
@@ -328,11 +353,7 @@ struct _AppStatus {
 	std::string SteamScrKeyName = "NONE";
 	int SteamScrKey = 0;
 	bool AimingWithL2 = true;
-	struct _Gamepad
-	{
-		bool BTReset = true;
-	};
-	_Gamepad Gamepad;
+	bool BTReset = true;
 
 	struct _HotKeys
 	{
@@ -344,27 +365,13 @@ struct _AppStatus {
 
 	unsigned int BatteryFineColor = 65280; // WebColorToRGB("00ff00"); // Green
 	unsigned int BatteryWarningColor = 16776960; // WebColorToRGB("ffff00"); // Yellow 
-	unsigned int BatteryCriticalColor = 16711680; // WebColorToRGB("ff0000"); // Red
+	unsigned int BatteryCriticalColor = 16711680; // WebColorToRGB("ff0000"); // RedPrimaryGamepad.RumbleOffCounter
 
 	bool XboxGamepadReset = false;
-	bool LastConnectionType = true; // Problems with BlueTooth, on first connection. Reset fixes this problem.
 	int SleepTimeOut = 0;
 }; _AppStatus AppStatus;
 
 //struct _Settings {}; _Settings Settings;
-
-struct InputOutState {
-	unsigned char LEDRed;
-	unsigned char LEDGreen;
-	unsigned char LEDBlue;
-	unsigned int LEDColor;
-	unsigned char LEDBrightness;
-	unsigned char LargeMotor;
-	unsigned char SmallMotor;
-	unsigned char PlayersCount;
-	unsigned char MicLED;
-};
-InputOutState GamepadOutState;
 
 struct EulerAngles {
 	double Yaw;
@@ -414,7 +421,7 @@ struct _ButtonsState{
 	Button Record;
 
 	// Multi keys
-	Button VolumeUP;
+	Button VolumeUp;
 	Button VolumeDown;
 
 	// Keyboard keys
@@ -424,6 +431,26 @@ struct _ButtonsState{
 	Button Right;
 };
 _ButtonsState ButtonsStates;
+
+struct _CurrentXboxProfile {
+	unsigned int LeftBumper = XINPUT_GAMEPAD_LEFT_SHOULDER;
+	unsigned int RightBumper = XINPUT_GAMEPAD_RIGHT_SHOULDER;
+	//unsigned int LeftTrigger = ;
+	//unsigned int RightTrigger = ;
+	unsigned Back = XINPUT_GAMEPAD_BACK;
+	unsigned Start = XINPUT_GAMEPAD_START;
+	unsigned int DPADUp = XINPUT_GAMEPAD_DPAD_UP;
+	unsigned int DPADDown = XINPUT_GAMEPAD_DPAD_DOWN;
+	unsigned int DPADLeft = XINPUT_GAMEPAD_DPAD_LEFT;
+	unsigned int DPADRight = XINPUT_GAMEPAD_DPAD_RIGHT;
+	unsigned int Y = XINPUT_GAMEPAD_Y;
+	unsigned int X = XINPUT_GAMEPAD_X;
+	unsigned int A = XINPUT_GAMEPAD_A;
+	unsigned int B = XINPUT_GAMEPAD_B;
+	unsigned int LeftStick = XINPUT_GAMEPAD_LEFT_THUMB;
+	unsigned int RightStick = XINPUT_GAMEPAD_RIGHT_THUMB;
+};
+_CurrentXboxProfile CurrentXboxProfile;
 
 void MousePress(int MouseBtn, bool ButtonPressed, Button* ButtonState) {
 	if (ButtonPressed) {
@@ -456,7 +483,189 @@ void MousePress(int MouseBtn, bool ButtonPressed, Button* ButtonState) {
 	}
 }
 
-void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
+void SendKeyScan(WORD scanCode, bool pressed, bool extended = false) {
+	INPUT input = { 0 };
+	input.type = INPUT_KEYBOARD;
+	input.ki.wScan = scanCode;
+	input.ki.dwFlags = KEYEVENTF_SCANCODE | (pressed ? 0 : KEYEVENTF_KEYUP);
+	if (extended) input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
+	SendInput(1, &input, sizeof(INPUT));
+}
+
+// Get scan code via VK / Получить scan-код по VK
+WORD VkToScan(WORD vk) {
+	return (WORD)MapVirtualKey(vk, MAPVK_VK_TO_VSC);
+}
+
+// Check if a key is extended (EXTENDEDKEY flag required) / Проверка, расширенная ли клавиша (нужен флаг EXTENDEDKEY)
+bool IsExtendedKey(WORD vk) {
+	switch (vk) {
+	case VK_UP:
+	case VK_DOWN:
+	case VK_LEFT:
+	case VK_RIGHT:
+	case VK_INSERT:
+	case VK_DELETE:
+	case VK_HOME:
+	case VK_END:
+	case VK_PRIOR: // PageUp
+	case VK_NEXT:  // PageDown
+	case VK_DIVIDE:
+	case VK_NUMLOCK:
+	case VK_RCONTROL:
+	case VK_RMENU: // Right Alt
+		return true;
+	default:
+		return false;
+	}
+}
+
+void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInputAPI) {
+	if (KeyCode == 0) return;
+	else if (KeyCode == VK_MOUSE_LEFT || KeyCode == VK_MOUSE_MIDDLE ||
+		KeyCode == VK_MOUSE_RIGHT || KeyCode == VK_MOUSE_WHEEL_UP ||
+		KeyCode == VK_MOUSE_WHEEL_DOWN) {
+		MousePress(KeyCode, ButtonPressed, ButtonState);
+	} else if (ButtonPressed) {
+		ButtonState->UnpressedOnce = true;
+		if (!ButtonState->PressedOnce) {
+
+			auto Press = [&](WORD vk) {
+				SendKeyScan(VkToScan(vk), true, IsExtendedKey(vk));
+			};
+
+			if (KeyCode < 500) {
+				if (SendInputAPI)
+					Press(KeyCode);
+				else
+					keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+			} else if (KeyCode == VK_HIDE_APPS) {
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			} else if (KeyCode == VK_SWITCH_APP) {
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_CONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event('O', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			} else if (KeyCode == VK_GAMEBAR) {
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || KeyCode == VK_MULTI_SCREENSHOT) {
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			} else if (KeyCode == VK_GAMEBAR_RECORD) {
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			} else if (KeyCode == VK_STEAM_SCREENSHOT) {
+					keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
+				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			} else if (KeyCode == VK_CHANGE_LANGUAGE) {
+				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			} else if (KeyCode == VK_CUT) {
+				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event('X', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+			
+			} else if (KeyCode == VK_COPY) {
+				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event('C', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+			
+			} else if (KeyCode == VK_PASTE) {
+				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event('V', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+			}
+
+			ButtonState->PressedOnce = true;
+			//printf("pressed\n");
+		}
+	}
+	else if (!ButtonPressed && ButtonState->UnpressedOnce) {
+
+		auto Release = [&](WORD vk) {
+			SendKeyScan(VkToScan(vk), false, IsExtendedKey(vk));
+		};
+
+		if (KeyCode < 500) {
+			if (SendInputAPI)
+				Release(KeyCode);
+			else
+				keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+		
+		} else if (KeyCode == VK_HIDE_APPS) {
+			keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+		} else if (KeyCode == VK_SWITCH_APP) {
+			keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+		} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
+			keybd_event('O', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_CONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+		} else if (KeyCode == VK_GAMEBAR) {
+			keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+		} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || (KeyCode == VK_MULTI_SCREENSHOT)) {
+			keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			if (KeyCode == VK_MULTI_SCREENSHOT) { keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); } // Steam
+
+		} else if (KeyCode == VK_GAMEBAR_RECORD) {
+			keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+		}
+		else if (KeyCode == VK_STEAM_SCREENSHOT) {
+			keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+		} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
+			keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			if (KeyCode == VK_FULLSCREEN_PLUS) { keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); } // YouTube / Twitch fullscreen on F
+
+		} else if (KeyCode == VK_CHANGE_LANGUAGE) {
+			keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+		} else if (KeyCode == VK_CUT) {
+			keybd_event('X', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+		
+		} else if (KeyCode == VK_COPY) {
+			keybd_event('C', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+		
+		} else if (KeyCode == VK_PASTE) {
+			keybd_event('V', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+		}
+
+		ButtonState->UnpressedOnce = false;
+		ButtonState->PressedOnce = false;
+	}
+}
+
+/*void KeyPress2(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 	if (KeyCode == 0) exit;
 	else if (KeyCode == VK_MOUSE_LEFT || KeyCode == VK_MOUSE_MIDDLE || KeyCode == VK_MOUSE_RIGHT || 
 		KeyCode == VK_MOUSE_WHEEL_UP || KeyCode == VK_MOUSE_WHEEL_DOWN) // Move to mouse press
@@ -579,7 +788,7 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState) {
 		ButtonState->UnpressedOnce = false;
 		ButtonState->PressedOnce = false;
 	}
-}
+}*/
 
 int KeyNameToKeyCode(std::string KeyName) {
 	std::transform(KeyName.begin(), KeyName.end(), KeyName.begin(), ::toupper);
@@ -727,6 +936,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 		// Special
 		{"WASD", WASDStickMode},
 		{"ARROWS", ArrowsStickMode},
+		{"ARROWS-LEFT-RIGHT", ArrowsLeftRightStickMode},
 		{"NUMPAD-ARROWS", NumpadsStickMode},
 		{"MOUSE-LOOK", MouseLookStickMode},
 		{"MOUSE-WHEEL", MouseWheelStickMode},

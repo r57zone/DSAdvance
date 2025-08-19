@@ -12,8 +12,11 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 ✔️ Tilt driving and aiming support (gyroscope, no additional settings required);<br>
 ✔️ Easy switching between driving and aiming modes (maximum innovative motion gameplay);<br>
 ✔️ Windows control, volume adjustment, and screenshot creation using a gamepad;<br>
-✔️ Battery level display on the light bar and player indicators (for Sony gamepads);<br>
+✔️ Remapping Xbox controller buttons, different profiles;<br>
+✔️ Keyboard and mouse emulation for old games, as well as profiles;<br>
+✔️ Support for adaptive triggers for Sony DualSense in USB connection mode;<br>
 ✔️ Various emulation modes for games with adaptive triggers;<br>
+✔️ Battery level display on the light bar and player indicators (for Sony gamepads);<br>
 ✔️ Turning off the light bar for full immersion in the dark;<br>
 ✔️ Support for two gamepads, the first with full functionality, and the second with simplified features (must be enabled in the config);<br>
 ✔️ Support for external modified racing pedals with any 16 buttons;<br>
@@ -39,7 +42,7 @@ There are 3 emulation modes:
 * Mouse only;
 * Keyboard and mouse emulation for Windows control and some older games;
 
-Mode switching is done via `ALT + Q` or `PS/Home + ←/→` and `Capture/Home`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
+Mode switching is done via `ALT + Q` or `PS/Home + ←/→` and `Capture/Home`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). There are also Xbox profiles for changing the button layout. Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
 
 To connect [external pedals (DInput)](https://github.com/r57zone/GamepadExternalPedals#setup-dinput-pedals-mh-et-live-board) and Digispark joystick based devices, change the parameter change the `DInput` parameter to `1` in the `ExternalPedals` section. To connect [external pedals on Arduino](https://github.com/r57zone/GamepadExternalPedals#setup-arduino-pedals), change the COM port number by modifying the `COMPort` parameter.
 
@@ -58,6 +61,8 @@ To turn off DualSense or DualShock 4, hold the PS button, to turn off Nintendo c
 ### Hotkeys
 Action | Sony Buttons | Nintendo Buttons | Windows  
 ------------ | ------------- | ------------- | -------------  
+Reset/Search Controllers | - | - | `CTRL + R` or `Numpad 0` (default, can be changed)
+Swap first and second controllers | - | - | `ALT + V`
 Open Xbox Game Bar (`Win + G` press) | `PS` | `Capture + Home` | -  
 Decrease and increase Windows volume | `PS + □` and `PS + ○` | `Capture + Y` and `Capture + A` | -  
 Screenshot (`Win + ALT + PrtScn` press) | Microphone button or `PS + X` | `Capture + B` | -  
@@ -125,7 +130,7 @@ In USB mode, rumble is disabled due to issues, it works in wireless mode on comp
 * [HIDAPI library](https://github.com/signal11/hidapi) with [fixes](https://github.com/libusb/hidapi) for the library to work with a USB devices. The project uses this [fork](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also uses some code from this library and [JibbSmart snippet](https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df) for aiming.
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) for the battery level.
-* [JoyCon-Driver](https://github.com/fossephate/JoyCon-Driver/blob/857e4e76e26f05d72400ae5d9f2a22cae88f3548/joycon-driver/include/Joycon.hpp) for Joy-Cons rumble.
+* [JoyCon-Driver](https://github.com/fossephate/JoyCon-Driver/blob/main/joycon-driver/include/Joycon.hpp) for Joy-Cons rumble.
 
 ## Building
 1. Download the sources and unzip them.

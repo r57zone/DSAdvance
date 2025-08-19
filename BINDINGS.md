@@ -1,5 +1,5 @@
 ﻿# Create a profile
-Open the `DSAdvance\Profiles` folder and copy the `FPS.ini` file, rename it and paste the necessary keys to press.
+Open the `DSAdvance\KMProfiles` folder and copy the `FPS.ini` file, rename it and paste the necessary keys to press.
 
 ## Stick modes
 Mode | Value
