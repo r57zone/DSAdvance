@@ -43,6 +43,8 @@
 
 Переключение режимов происходит на `ALT + Q` или `PS/Home + ←/→` и `Capture/Home`. Эмуляция клавиатуры и мыши поддерживает разные профили, выберите нужный профиль или [создайте новый профиль](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.RU.md). Также имеются Xbox профили, для изменения раскладки кнопок. Профили переключаются на клавиши `ALT + ↑/↓`, если окно активно или на геймпаде, с помощью `PS/Home + ↑/↓`. Профиль по умолчанию позволяет работать в Windows. 
 
+Поддержаются адаптивные триггеры для Sony DualSense в режиме USB, переключаться между различными режимами можно на `ALT + 3/4`.
+
 Для подключения [внешних педалей (DInput)](https://github.com/r57zone/GamepadExternalPedals#setup-dinput-pedals-mh-et-live-board) и устройств на базе Digispark джойстиков, измените параметр `DInput` на `1`, в разделе `ExternalPedals`.  Для подключения [внешних педалей на Arduino](https://github.com/r57zone/GamepadExternalPedals#setup-arduino-pedals) измените номер COM-порта, изменив параметр `COMPort`.
 
 [![](https://github.com/r57zone/GamepadExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
