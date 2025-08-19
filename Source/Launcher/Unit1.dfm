@@ -39,9 +39,13 @@ object Main: TMain
       object N4: TMenuItem
         Caption = '-'
       end
-      object ProfilesBtn: TMenuItem
-        Caption = #1055#1088#1086#1092#1080#1083#1080
-        OnClick = ProfilesBtnClick
+      object XboxProfilesBtn: TMenuItem
+        Caption = #1055#1088#1086#1092#1080#1083#1080' Xbox '#1075#1077#1081#1084#1087#1072#1076#1072
+        OnClick = XboxProfilesBtnClick
+      end
+      object KMProfilesBtn: TMenuItem
+        Caption = #1055#1088#1086#1092#1080#1083#1080' '#1082#1083#1072#1074'. '#1080' '#1084#1099#1096#1080
+        OnClick = KMProfilesBtnClick
       end
       object N5: TMenuItem
         Caption = '-'
@@ -60,6 +64,10 @@ object Main: TMain
       object RunInBgBtn: TMenuItem
         Caption = #1047#1072#1087#1091#1089#1082#1072#1090#1100' '#1074' '#1092#1086#1085#1077
         OnClick = RunInBgBtnClick
+      end
+      object AutostartBtn: TMenuItem
+        Caption = #1040#1074#1090#1086#1079#1072#1087#1091#1089#1082
+        OnClick = AutostartBtnClick
       end
     end
     object N2: TMenuItem
@@ -87,6 +95,30 @@ object Main: TMain
         Caption = #1059#1090#1080#1083#1080#1090#1072' 4'
         Visible = False
         OnClick = Utility4BtnClick
+      end
+      object Utility5Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 5'
+        OnClick = Utility5BtnClick
+      end
+      object Utility6Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 6'
+        OnClick = Utility6BtnClick
+      end
+      object Utility7Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 7'
+        OnClick = Utility7BtnClick
+      end
+      object Utility8Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 8'
+        OnClick = Utility8BtnClick
+      end
+      object Utility9Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 9'
+        OnClick = Utility9BtnClick
+      end
+      object Utility10Btn: TMenuItem
+        Caption = #1059#1090#1080#1083#1080#1090#1072' 10'
+        OnClick = Utility10BtnClick
       end
     end
     object N3: TMenuItem

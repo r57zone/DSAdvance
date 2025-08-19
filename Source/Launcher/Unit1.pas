@@ -23,7 +23,7 @@ type
     CheckAppClosedTimer: TTimer;
     XPManifest1: TXPManifest;
     N4: TMenuItem;
-    ProfilesBtn: TMenuItem;
+    KMProfilesBtn: TMenuItem;
     HidHideBtn: TMenuItem;
     N3: TMenuItem;
     UtilitiesBtn: TMenuItem;
@@ -31,6 +31,14 @@ type
     Utility2Btn: TMenuItem;
     Utility3Btn: TMenuItem;
     Utility4Btn: TMenuItem;
+    Utility5Btn: TMenuItem;
+    Utility6Btn: TMenuItem;
+    Utility7Btn: TMenuItem;
+    Utility8Btn: TMenuItem;
+    Utility9Btn: TMenuItem;
+    Utility10Btn: TMenuItem;
+    AutostartBtn: TMenuItem;
+    XboxProfilesBtn: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure CloseBtnClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -40,15 +48,23 @@ type
     procedure GamepadTestBtnClick(Sender: TObject);
     procedure ShowHideAppBtnClick(Sender: TObject);
     procedure CheckAppClosedTimerTimer(Sender: TObject);
-    procedure ProfilesBtnClick(Sender: TObject);
+    procedure KMProfilesBtnClick(Sender: TObject);
     procedure HidHideBtnClick(Sender: TObject);
     procedure Utility1BtnClick(Sender: TObject);
     procedure Utility2BtnClick(Sender: TObject);
     procedure Utility3BtnClick(Sender: TObject);
     procedure Utility4BtnClick(Sender: TObject);
+    procedure Utility5BtnClick(Sender: TObject);
+    procedure Utility6BtnClick(Sender: TObject);
+    procedure Utility7BtnClick(Sender: TObject);
+    procedure Utility8BtnClick(Sender: TObject);
+    procedure Utility9BtnClick(Sender: TObject);
+    procedure Utility10BtnClick(Sender: TObject);
+    procedure AutostartBtnClick(Sender: TObject);
+    procedure XboxProfilesBtnClick(Sender: TObject);
   private
     procedure DefaultHandler(var Message); override;
-    procedure OpenUtility(FileName: string);
+    procedure OpenUtilityOrFolder(FilePath: string);
   protected
     procedure IconMouse(var Msg: TMessage); message WM_USER + 1;
     { Private declarations }
@@ -67,9 +83,10 @@ var
   SleepTimeOut: integer;
   DSAdvanceApp: HWND;
 
-  IDS_RUN, IDS_STOP, IDS_SHOW, IDS_HIDE, IDS_UTILITY_NOT_FOUND, IDS_LAST_UPDATE: string;
+  IDS_RUN, IDS_STOP, IDS_SHOW, IDS_HIDE, IDS_UTILITY_OR_FOLDER_NOT_FOUND, IDS_LAST_UPDATE: string;
 
-  Utility1Path, Utility2Path, Utility3Path, Utility4Path: string;
+  Utility1Path, Utility2Path, Utility3Path, Utility4Path, Utility5Path,
+  Utility6Path, Utility7Path, Utility8Path, Utility9Path, Utility10Path: string;
 
 implementation
 
@@ -121,7 +138,8 @@ var
   Ini: TIniFile;
 begin
   Ini:=TIniFile.Create(ExtractFilePath(ParamStr(0)) + 'Config.ini');
-  if Ini.ReadBool('Launcher', 'RunInBackground', false) then RunInBgBtn.Click;
+  RunInBgBtn.Checked:=Ini.ReadBool('Launcher', 'RunInBackground', false);
+  AutostartBtn.Checked:=Ini.ReadBool('Launcher', 'Autostart', false);
   DSAdvanceTitle:=Ini.ReadString('Launcher', 'DSAdvanceTitle', 'DSAdvance');
   HidHidePath:=Ini.ReadString('Launcher', 'HidHidePath', '');
   if not FileExists(HidHidePath) then
@@ -136,13 +154,32 @@ begin
   Utility3Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle3', '');
   Utility4Path:=Ini.ReadString('Launcher', 'UtilityPath4', '');
   Utility4Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle4', '');
+  Utility5Path:=Ini.ReadString('Launcher', 'UtilityPath5', '');
+  Utility5Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle5', '');
+  Utility6Path:=Ini.ReadString('Launcher', 'UtilityPath6', '');
+  Utility6Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle6', '');
+  Utility7Path:=Ini.ReadString('Launcher', 'UtilityPath7', '');
+  Utility7Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle7', '');
+  Utility8Path:=Ini.ReadString('Launcher', 'UtilityPath8', '');
+  Utility8Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle8', '');
+  Utility9Path:=Ini.ReadString('Launcher', 'UtilityPath9', '');
+  Utility9Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle9', '');
+  Utility10Path:=Ini.ReadString('Launcher', 'UtilityPath10', '');
+  Utility10Btn.Caption:=Ini.ReadString('Launcher', 'UtilityTitle10', '');
 
-  UtilitiesBtn.Visible:=(Utility1Path <> '') or (Utility2Path <> '') or (Utility3Path <> '') or (Utility4Path <> '');
+  UtilitiesBtn.Visible:=(Utility1Path <> '') or (Utility2Path <> '') or (Utility3Path <> '') or (Utility4Path <> '')  or (Utility5Path <> '') or
+                        (Utility6Path <> '') or (Utility7Path <> '') or (Utility8Path <> '') or (Utility9Path <> '')  or (Utility10Path <> '');
   N3.Visible:=UtilitiesBtn.Visible;
   Utility1Btn.Visible:=Utility1Path <> '';
   Utility2Btn.Visible:=Utility2Path <> '';
   Utility3Btn.Visible:=Utility3Path <> '';
   Utility4Btn.Visible:=Utility4Path <> '';
+  Utility5Btn.Visible:=Utility5Path <> '';
+  Utility6Btn.Visible:=Utility6Path <> '';
+  Utility7Btn.Visible:=Utility7Path <> '';
+  Utility8Btn.Visible:=Utility8Path <> '';
+  Utility9Btn.Visible:=Utility9Path <> '';
+  Utility10Btn.Visible:=Utility10Path <> '';
   Ini.Free;
 
   Application.Title:=Caption;
@@ -160,7 +197,7 @@ begin
     IDS_STOP:='Остановить';
     IDS_SHOW:='Показать';
     IDS_HIDE:='Скрыть';
-    IDS_UTILITY_NOT_FOUND:='Утилита не найдена. Измените путь в конфигурационном файле.';
+    IDS_UTILITY_OR_FOLDER_NOT_FOUND:='Утилита или папка не найдена. Измените путь в конфигурационном файле.';
     if Utility1Btn.Caption = '' then
       Utility1Btn.Caption:='Утилита 1';
     if Utility2Btn.Caption = '' then
@@ -169,18 +206,33 @@ begin
       Utility3Btn.Caption:='Утилита 3';
     if Utility4Btn.Caption = '' then
       Utility4Btn.Caption:='Утилита 4';
+    if Utility5Btn.Caption = '' then
+      Utility5Btn.Caption:='Утилита 5';
+    if Utility6Btn.Caption = '' then
+      Utility6Btn.Caption:='Утилита 6';
+    if Utility7Btn.Caption = '' then
+      Utility7Btn.Caption:='Утилита 7';
+    if Utility8Btn.Caption = '' then
+      Utility8Btn.Caption:='Утилита 8';
+    if Utility9Btn.Caption = '' then
+      Utility9Btn.Caption:='Утилита 9';
+    if Utility10Btn.Caption = '' then
+      Utility10Btn.Caption:='Утилита 10';
   end else begin
     IDS_RUN:='Run';
     IDS_STOP:='Stop';
     RunStopBtn.Caption:=IDS_RUN;
     IDS_SHOW:='Show';
     IDS_HIDE:='Hide';
-    IDS_UTILITY_NOT_FOUND:='The utility was not found. Change the path in the configuration file.';
+    IDS_UTILITY_OR_FOLDER_NOT_FOUND:='The utility or folder was not found. Change the path in the configuration file.';
     SetupBtn.Caption:='Setup';
     ConfigBtn.Caption:='Options';
-    ProfilesBtn.Caption:='Profiles';
+    KMProfilesBtn.Caption:='Keyboard && Mouse Profiles';
+    XboxProfilesBtn.Caption:='Xbox Gamepad Profiles';
     RunInBgBtn.Caption:='Run in background';
     GamepadTestBtn.Caption:='Gamepad test';
+    AutostartBtn.Caption:='Autostart';
+    CloseBtn.Caption:='Exit';
     UtilitiesBtn.Caption:='Utilities';
     if Utility1Btn.Caption = '' then
       Utility1Btn.Caption:='Utility 1';
@@ -190,8 +242,22 @@ begin
       Utility3Btn.Caption:='Utility 3';
     if Utility4Btn.Caption = '' then
       Utility4Btn.Caption:='Utility 4';
-    CloseBtn.Caption:='Exit';
+    if Utility5Btn.Caption = '' then
+      Utility5Btn.Caption:='Utility 5';
+    if Utility6Btn.Caption = '' then
+      Utility6Btn.Caption:='Utility 6';
+    if Utility7Btn.Caption = '' then
+      Utility7Btn.Caption:='Utility 7';
+    if Utility8Btn.Caption = '' then
+      Utility8Btn.Caption:='Utility 8';
+    if Utility9Btn.Caption = '' then
+      Utility9Btn.Caption:='Utility 9';
+    if Utility10Btn.Caption = '' then
+      Utility10Btn.Caption:='Utility 10';
   end;
+
+  if AutostartBtn.Checked then
+    RunStopBtn.Click;
 end;
 
 procedure TMain.IconMouse(var Msg: TMessage);
@@ -303,43 +369,87 @@ begin
   end;
 end;
 
-procedure TMain.ProfilesBtnClick(Sender: TObject);
+procedure TMain.KMProfilesBtnClick(Sender: TObject);
 begin
-  ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'Profiles\'), nil, nil, SW_SHOWNORMAL);
+  ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'KMProfiles\'), nil, nil, SW_SHOWNORMAL);
 end;
 
 procedure TMain.HidHideBtnClick(Sender: TObject);
 begin
-  OpenUtility(HidHidePath);
+  OpenUtilityOrFolder(HidHidePath);
 end;
 
-procedure TMain.OpenUtility(FileName: string);
+procedure TMain.OpenUtilityOrFolder(FilePath: string);
 begin
-  if (FileName = '') or (FileExists(FileName) = false) then begin
-    Application.MessageBox(PChar(IDS_UTILITY_NOT_FOUND), PChar(Caption), MB_ICONWARNING);
-    Exit;
-  end;
-  ShellExecute(Handle, 'open', PChar(FileName), nil, nil, SW_SHOWNORMAL);
+  if (FilePath = '') or (not (FileExists(FilePath) or DirectoryExists(FilePath))) then
+    Application.MessageBox(PChar(IDS_UTILITY_OR_FOLDER_NOT_FOUND), PChar(Caption), MB_ICONWARNING)
+  else
+    ShellExecute(Handle, 'open', PChar(FilePath), nil, nil, SW_SHOWNORMAL);
 end;
 
 procedure TMain.Utility1BtnClick(Sender: TObject);
 begin
-  OpenUtility(Utility1Path);
+  OpenUtilityOrFolder(Utility1Path);
 end;
 
 procedure TMain.Utility2BtnClick(Sender: TObject);
 begin
-  OpenUtility(Utility2Path);
+  OpenUtilityOrFolder(Utility2Path);
 end;
 
 procedure TMain.Utility3BtnClick(Sender: TObject);
 begin
-  OpenUtility(Utility3Path);
+  OpenUtilityOrFolder(Utility3Path);
 end;
 
 procedure TMain.Utility4BtnClick(Sender: TObject);
 begin
-  OpenUtility(Utility4Path);
+  OpenUtilityOrFolder(Utility4Path);
+end;
+
+procedure TMain.Utility5BtnClick(Sender: TObject);
+begin
+  OpenUtilityOrFolder(Utility5Path);
+end;
+
+procedure TMain.Utility6BtnClick(Sender: TObject);
+begin
+  OpenUtilityOrFolder(Utility6Path);
+end;
+
+procedure TMain.Utility7BtnClick(Sender: TObject);
+begin
+  OpenUtilityOrFolder(Utility7Path);
+end;
+
+procedure TMain.Utility8BtnClick(Sender: TObject);
+begin
+  OpenUtilityOrFolder(Utility8Path);
+end;
+
+procedure TMain.Utility9BtnClick(Sender: TObject);
+begin
+  OpenUtilityOrFolder(Utility9Path);
+end;
+
+procedure TMain.Utility10BtnClick(Sender: TObject);
+begin
+  OpenUtilityOrFolder(Utility10Path);
+end;
+
+procedure TMain.AutostartBtnClick(Sender: TObject);
+var
+  Ini: TIniFile;
+begin
+  AutostartBtn.Checked:=not AutostartBtn.Checked;
+  Ini:=TIniFile.Create(ExtractFilePath(ParamStr(0)) + 'Config.ini');
+  Ini.WriteBool('Launcher', 'Autostart', AutostartBtn.Checked);
+  Ini.Free;
+end;
+
+procedure TMain.XboxProfilesBtnClick(Sender: TObject);
+begin
+  ShellExecute(Handle, 'open', PChar(ExtractFilePath(ParamStr(0)) + 'XboxProfiles\'), nil, nil, SW_SHOWNORMAL);
 end;
 
 end.
