@@ -115,7 +115,7 @@ void GamepadSearch(AdvancedGamepad &Gamepad, std::string SkipDevPath) {
 			Gamepad.DevicePath = cur_dev->path;
 			Gamepad.ControllerType = NINTENDO_SWITCH_PRO;
 			hid_set_nonblocking(Gamepad.HidHandle, 1);
-			Gamepad.USBConnection = true;
+			//Gamepad.USBConnection = true;
 			Gamepad.RumbleSkipCounter = 300;
 
 			// Conflict with JoyShock Library ???
@@ -123,22 +123,18 @@ void GamepadSearch(AdvancedGamepad &Gamepad, std::string SkipDevPath) {
 			buf[0] = 0x80;
 			buf[1] = 0x01;
 
-			// Some compatible gamepads
 			int written = hid_write(Gamepad.HidHandle, buf, 2);
 			if (written > 0) {
 				Gamepad.USBConnection = true;
-				unsigned char buf[64];
+				/*unsigned char buf[64];
 				memset(buf, 0, sizeof(buf));
 				int bytesRead = hid_read_timeout(Gamepad.HidHandle, buf, sizeof(buf), 100);
 				if (bytesRead > 0 && (buf[0] == 0x81 || buf[0] == 0x21 || buf[0] == 0x30))
-					Gamepad.USBConnection = true;
+					Gamepad.USBConnection = true;*/
 			} else
 				Gamepad.USBConnection = false;
-			//hid_set_nonblocking(Gamepad.HidHandle, 1);
 
-			//if (Gamepad.USBConnection) printf("USB\n"); else printf("BT");
 			//Gamepad.USBConnection = (cur_dev->serial_number != NULL);
-			//hid_set_nonblocking(Gamepad.HidHandle, 1);
 		}
 		cur_dev = cur_dev->next;
 	}
