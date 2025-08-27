@@ -132,6 +132,7 @@ NUMPAD DEL | `NUMPAD-DEL`
 `VOLUME-MUTE` | Включить / выключить звук.
 `HIDE-APPS` | Свернуть все приложения.
 `SWITCH-APP` | Показать все окна.
+`CLOSE-APP` | Закрыть текущее окно.
 `DISPLAY-KEYBOARD` | Вывести / спрятать экранную клавиатуру.
 `GAMEBAR` | Игровая панель Xbox.
 `GAMEBAR-SCREENSHOT` | Скриншот, с помощью игровой панели Xbox.

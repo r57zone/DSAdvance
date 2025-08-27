@@ -84,12 +84,12 @@
 #define	SkipPollTimeOut					15
 #define	PSReleasedTimeOut				30
 
-#define WASDStickMode					0
-#define ArrowsStickMode					1
-#define ArrowsLeftRightStickMode		2
-#define MouseLookStickMode				3
-#define MouseWheelStickMode				4
-#define NumpadsStickMode				5
+#define WASDStickMode					1
+#define ArrowsStickMode					2
+#define ArrowsLeftRightStickMode		3
+#define MouseLookStickMode				4
+#define MouseWheelStickMode				5
+#define NumpadsStickMode				6
 
 #define VK_VOLUME_DOWN2					174 // VK_VOLUME_DOWN - already exists
 #define VK_VOLUME_UP2					175
@@ -101,21 +101,23 @@
 #define VK_MOUSE_WHEEL_UP				504
 #define VK_MOUSE_WHEEL_DOWN				505
 
+
+#define VK_START_MENU					521
 #define VK_HIDE_APPS					506
 #define VK_SWITCH_APP					507
-#define VK_SWITCH_APP					507
-#define VK_DISPLAY_KEYBOARD				508
-#define VK_GAMEBAR						509
-#define VK_GAMEBAR_SCREENSHOT			510
-#define VK_GAMEBAR_RECORD				511
-#define VK_STEAM_SCREENSHOT				512
-#define VK_MULTI_SCREENSHOT				513
-#define VK_FULLSCREEN					514
-#define VK_FULLSCREEN_PLUS				515
-#define VK_CHANGE_LANGUAGE				516
-#define VK_CUT							517
-#define VK_COPY							518
-#define VK_PASTE						519
+#define VK_CLOSE_APP					508
+#define VK_DISPLAY_KEYBOARD				509
+#define VK_GAMEBAR						510
+#define VK_GAMEBAR_SCREENSHOT			511
+#define VK_GAMEBAR_RECORD				512
+#define VK_STEAM_SCREENSHOT				513
+#define VK_MULTI_SCREENSHOT				514
+#define VK_FULLSCREEN					515
+#define VK_FULLSCREEN_PLUS				516
+#define VK_CHANGE_LANGUAGE				517
+#define VK_CUT							518
+#define VK_COPY							519
+#define VK_PASTE						520
 
 #define TOUCHPAD_LEFT_AREA				0.33
 #define TOUCHPAD_RIGHT_AREA				0.67
@@ -129,7 +131,16 @@
 #define MIC_LED_PULSE					0x02
 #define MIC_LED_OFF						0x00
 
-#define ADAPTIVE_TRIGGER_MODE_MAX		5
+#define ADAPTIVE_TRIGGERS_MODE_MAX			8
+#define ADAPTIVE_TRIGGERS_DEPENDENT_MODE_1	1
+#define ADAPTIVE_TRIGGERS_DEPENDENT_MODE_2	2
+#define ADAPTIVE_TRIGGERS_DEPENDENT_MODE_3	3
+
+#define ADAPTIVE_TRIGGERS_RUMBLE_MODE		1
+#define ADAPTIVE_TRIGGERS_PISTOL_MODE		2
+#define ADAPTIVE_TRIGGERS_AUTOMATIC_MODE	3
+#define ADAPTIVE_TRIGGERS_RIFLE_MODE		4
+#define ADAPTIVE_TRIGGERS_BOW_CAR_MODE		5
 
 bool ExternalPedalsConnected = false;
 HANDLE hSerial;
@@ -151,6 +162,51 @@ struct InputOutState {
 	unsigned char SmallMotor;
 	unsigned char PlayersCount = 0;
 	unsigned char MicLED;
+};
+
+struct Button {
+	bool PressedOnce = false;
+	bool UnpressedOnce;
+	int KeyCode = 0;
+};
+
+struct _ButtonsState {
+	Button LeftBumper;
+	Button RightBumper;
+	Button LeftTrigger;
+	Button RightTrigger;
+	Button Back;
+	Button Start;
+	Button Y;
+	Button X;
+	Button A;
+	Button B;
+	Button DPADUp;
+	Button DPADDown;
+	Button DPADLeft;
+
+	bool DPADAdvancedMode;
+	Button DPADRight;
+	Button DPADUpLeft;
+	Button DPADUpRight;
+	Button DPADDownLeft;
+	Button DPADDownRight;
+
+	Button LeftStick;
+	Button RightStick;
+	Button PS;
+	Button Screenshot;
+	Button Record;
+
+	// Multi keys
+	Button VolumeUp;
+	Button VolumeDown;
+
+	// Keyboard keys
+	Button Up;
+	Button Down;
+	Button Left;
+	Button Right;
 };
 
 struct AdvancedGamepad {
@@ -183,7 +239,6 @@ struct AdvancedGamepad {
 	bool ShareCheckUnpressed = false;
 	//bool ShareIsRecording = false;
 
-	int BackOutStateCounter = 0;
 	unsigned char LastLEDBrightness = 0; // For battery show
 	int GamepadActionMode = 0;
 	int LastMotionAIMMode = MotionAimingMode;
@@ -197,6 +252,7 @@ struct AdvancedGamepad {
 	unsigned int DesktopModeColor;
 	unsigned int TouchSticksModeColor;
 
+	int AdaptiveTriggersOutputMode = 0;
 	int AdaptiveTriggersMode = 0;
 
 	JOY_SHOCK_STATE InputState;
@@ -263,6 +319,8 @@ struct AdvancedGamepad {
 		float RightY = 0;
 	};
 	_TouchSticks TouchSticks;
+
+	_ButtonsState ButtonsStates;
 };
 AdvancedGamepad PrimaryGamepad;
 AdvancedGamepad SecondaryGamepad;
@@ -328,6 +386,7 @@ struct _AppStatus {
 	bool ChangeModesWithClick = false;
 	bool ChangeModesWithoutAreas = false;
 	bool ShowBatteryStatus = false;
+	int BackOutStateCounter = 0;
 	bool ShowBatteryStatusOnLightBar = false;
 	int ScreenshotMode = 0;
 	int ScreenShotKey = VK_GAMEBAR_SCREENSHOT;
@@ -385,52 +444,6 @@ struct TouchpadTouch {
 	float AxisX, AxisY;
 	float LastAxisX = 0, LastAxisY = 0;
 };
-
-struct Button {
-	bool PressedOnce = false;
-	bool UnpressedOnce;
-	int KeyCode = 0;
-};
-
-struct _ButtonsState{
-	Button LeftBumper;
-	Button RightBumper;
-	Button LeftTrigger;
-	Button RightTrigger;
-	Button Back;
-	Button Start;
-	Button Y;
-	Button X;
-	Button A;
-	Button B;
-	Button DPADUp;
-	Button DPADDown;
-	Button DPADLeft;
-
-	bool DPADAdvancedMode;
-	Button DPADRight;
-	Button DPADUpLeft;
-	Button DPADUpRight;
-	Button DPADDownLeft;
-	Button DPADDownRight;
-
-	Button LeftStick;
-	Button RightStick;
-	Button PS;
-	Button Screenshot;
-	Button Record;
-
-	// Multi keys
-	Button VolumeUp;
-	Button VolumeDown;
-
-	// Keyboard keys
-	Button Up;
-	Button Down;
-	Button Left;
-	Button Right;
-};
-_ButtonsState ButtonsStates;
 
 struct _CurrentXboxProfile {
 	unsigned int LeftBumper = XINPUT_GAMEPAD_LEFT_SHOULDER;
@@ -539,6 +552,10 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInp
 					Press(KeyCode);
 				else
 					keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+			}
+			else if (KeyCode == VK_START_MENU) {
+				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
 			} else if (KeyCode == VK_HIDE_APPS) {
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 				keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
@@ -546,6 +563,11 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInp
 			} else if (KeyCode == VK_SWITCH_APP) {
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 				keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+
+			}
+			else if (KeyCode == VK_CLOSE_APP) {
+				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_F4, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
 			} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
@@ -558,19 +580,19 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInp
 
 			} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || KeyCode == VK_MULTI_SCREENSHOT) {
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
 			} else if (KeyCode == VK_GAMEBAR_RECORD) {
 				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 				keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
 			} else if (KeyCode == VK_STEAM_SCREENSHOT) {
 					keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
 			} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
-				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 				keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
 
 			} else if (KeyCode == VK_CHANGE_LANGUAGE) {
@@ -606,6 +628,9 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInp
 			else
 				keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 		
+		} else if (KeyCode == VK_START_MENU) {
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
 		} else if (KeyCode == VK_HIDE_APPS) {
 			keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
@@ -613,6 +638,11 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInp
 		} else if (KeyCode == VK_SWITCH_APP) {
 			keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
+		}
+		else if (KeyCode == VK_CLOSE_APP) {
+			keybd_event(VK_F4, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 
 		} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
 			keybd_event('O', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
@@ -625,13 +655,13 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInp
 
 		} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || (KeyCode == VK_MULTI_SCREENSHOT)) {
 			keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			if (KeyCode == VK_MULTI_SCREENSHOT) { keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); } // Steam
 
 		} else if (KeyCode == VK_GAMEBAR_RECORD) {
 			keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 
 		}
@@ -640,7 +670,7 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInp
 
 		} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
 			keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
 			if (KeyCode == VK_FULLSCREEN_PLUS) { keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); } // YouTube / Twitch fullscreen on F
 
 		} else if (KeyCode == VK_CHANGE_LANGUAGE) {
@@ -840,7 +870,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 		{"LCTRL", VK_LCONTROL},
 		{"RCTRL", VK_RCONTROL},
 
-		{"WIN", VK_LWIN},
+		{"WIN", VK_START_MENU},
 		{"ALT", VK_MENU},
 		{"LALT", VK_LMENU},
 		{"RALT", VK_RMENU},
@@ -888,10 +918,10 @@ int KeyNameToKeyCode(std::string KeyName) {
 		{"PAUSE", VK_PAUSE},
 		{"INSERT", VK_INSERT},
 		{"HOME", VK_HOME},
-		{"PAGE-UP", VK_NEXT},
 		{"DELETE", VK_DELETE},
 		{"END", VK_END},
-		{"PAGE-DOWN", VK_PRIOR},
+		{"PAGE-UP", VK_PRIOR},
+		{"PAGE-DOWN", VK_NEXT},
 
 		{"UP", VK_UP},
 		{"DOWN", VK_DOWN},
@@ -922,6 +952,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 		{"VOLUME-MUTE", VK_VOLUME_MUTE2},
 		{"HIDE-APPS", VK_HIDE_APPS},
 		{"SWITCH-APP", VK_SWITCH_APP},
+		{"CLOSE-APP", VK_CLOSE_APP},
 		{"DISPLAY-KEYBOARD", VK_DISPLAY_KEYBOARD},
 		{"GAMEBAR", VK_GAMEBAR},
 		{"GAMEBAR-SCREENSHOT", VK_GAMEBAR_SCREENSHOT},

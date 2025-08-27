@@ -131,6 +131,7 @@ Value | Description
 `VOLUME-MUTE` | Enable / disable sound.
 `HIDE-APPS` | Minimize all applications.
 `SWITCH-APP` | Show all windows.
+`CLOSE-APP` | Close current window.
 `DISPLAY-KEYBOARD` | Show / hide the on-screen keyboard.
 `GAMEBAR` | Show / hide the Xbox Game Bar.
 `GAMEBAR-SCREENSHOT` | Screenshot taken using Xbox Game Bar.
