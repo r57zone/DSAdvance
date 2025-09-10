@@ -8,8 +8,24 @@
 Нажатие WASD | `WASD`
 Нажатие стрелок | `ARROWS`
 Нажатие стрелок NUMPAD | `NUMPAD-ARROWS`
+Нажатие стрелок NUMPAD | `CUSTOM-BUTTONS`
 Движение мыши | `MOUSE-LOOK`
 Прокрутка колесика мыши | `MOUSE-WHEEL`
+
+Для режима стика `CUSTOM-BUTTONS` измените добавьте следующие параметры:
+```ini
+# Левый стик
+LEFT-STICK-UP     = NONE
+LEFT-STICK-LEFT   = NONE
+LEFT-STICK-RIGHT  = NONE
+LEFT-STICK-DOWN   = NONE
+
+# Правый стик
+RIGHT-STICK-UP    = NONE
+RIGHT-STICK-LEFT  = NONE
+RIGHT-STICK-RIGHT = NONE
+RIGHT-STICK-DOWN  = NONE
+```
 
 ## Клавиатура и мышь
 Название клавиши | Значение
@@ -122,6 +138,7 @@ NUMPAD / | `NUMPAD-DIVIDE`
 NUMPAD \* | `NUMPAD-MULTIPLY`
 NUMPAD - | `NUMPAD-MINUS`
 NUMPAD + | `NUMPAD-PLUS`
+NUMPAD ENTER | `NUMPAD-ENTER`
 NUMPAD DEL | `NUMPAD-DEL`
 
 ## Дополнительные кнопки

@@ -4,11 +4,28 @@ Open the `DSAdvance\KMProfiles` folder and copy the `FPS.ini` file, rename it an
 ## Stick modes
 Mode | Value
 ------------ | -------------
-Pressing WASD | WASD
-Pressing arrows | ARROWS
-Pressing NUMPADs arrows | NUMPAD-ARROWS
-Mouse movement | MOUSE-LOOK
-Mouse wheel scrolling | MOUSE-WHEEL
+Pressing WASD | `WASD`
+Pressing arrows | `ARROWS`
+Pressing NUMPADs arrows | `NUMPAD-ARROWS`
+Pressing NUMPADs arrows | `CUSTOM-BUTTONS`
+Mouse movement | `MOUSE-LOOK`
+Mouse wheel scrolling | `MOUSE-WHEEL`
+
+For the `CUSTOM-BUTTONS` stick mode, add the following parameters:
+
+```ini
+# Left Stick
+LEFT-STICK-UP = NONE
+LEFT-STICK-LEFT = NONE
+LEFT-STICK-RIGHT = NONE
+LEFT-STICK-DOWN = NONE
+
+# Right Stick
+RIGHT-STICK-UP = NONE
+RIGHT-STICK-LEFT = NONE
+RIGHT-STICK-RIGHT = NONE
+RIGHT-STICK-DOWN = NONE
+```
 
 ## Keyboard and mouse
 Key name | Value
@@ -121,6 +138,7 @@ NUMPAD / | `NUMPAD-DIVIDE`
 NUMPAD \* | `NUMPAD-MULTIPLY`
 NUMPAD - | `NUMPAD-MINUS`
 NUMPAD + | `NUMPAD-PLUS`
+NUMPAD ENTER | `NUMPAD-ENTER`
 NUMPAD DEL | `NUMPAD-DEL`
 
 ## Additional action buttons
