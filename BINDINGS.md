@@ -27,6 +27,12 @@ RIGHT-STICK-RIGHT = NONE
 RIGHT-STICK-DOWN = NONE
 ```
 
+To enable support for a second player, duplicate the `[FIRST-GAMEPAD]` section along with all its buttons at the end of the file and rename it to `[SECOND-GAMEPAD]`:
+```ini
+[SECOND-GAMEPAD]
+...
+```
+
 ## Keyboard and mouse
 Key name | Value
 ------------ | -------------
