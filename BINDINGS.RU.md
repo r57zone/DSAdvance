@@ -15,10 +15,10 @@
 Для режима стика `CUSTOM-BUTTONS` измените добавьте следующие параметры:
 ```ini
 # Левый стик
-LEFT-STICK-UP     = NONE
-LEFT-STICK-LEFT   = NONE
-LEFT-STICK-RIGHT  = NONE
-LEFT-STICK-DOWN   = NONE
+LEFT-STICK-UP = NONE
+LEFT-STICK-LEFT = NONE
+LEFT-STICK-RIGHT = NONE
+LEFT-STICK-DOWN = NONE
 
 # Правый стик
 RIGHT-STICK-UP    = NONE
