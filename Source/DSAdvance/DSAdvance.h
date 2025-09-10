@@ -86,10 +86,10 @@
 
 #define WASDStickMode					1
 #define ArrowsStickMode					2
-#define ArrowsLeftRightStickMode		3
-#define MouseLookStickMode				4
-#define MouseWheelStickMode				5
-#define NumpadsStickMode				6
+#define MouseLookStickMode				3
+#define MouseWheelStickMode				4
+#define NumpadsStickMode				5
+#define CustomStickMode					6
 
 #define VK_VOLUME_DOWN2					174 // VK_VOLUME_DOWN - already exists
 #define VK_VOLUME_UP2					175
@@ -102,6 +102,7 @@
 #define VK_MOUSE_WHEEL_DOWN				505
 
 
+#define VK_NUMPAD_ENTER					522
 #define VK_START_MENU					521
 #define VK_HIDE_APPS					506
 #define VK_SWITCH_APP					507
@@ -166,7 +167,7 @@ struct InputOutState {
 
 struct Button {
 	bool PressedOnce = false;
-	bool UnpressedOnce;
+	bool UnpressedOnce = false;
 	int KeyCode = 0;
 };
 
@@ -184,16 +185,24 @@ struct _ButtonsState {
 	Button DPADUp;
 	Button DPADDown;
 	Button DPADLeft;
+	Button DPADRight;
 
 	bool DPADAdvancedMode;
-	Button DPADRight;
 	Button DPADUpLeft;
 	Button DPADUpRight;
 	Button DPADDownLeft;
 	Button DPADDownRight;
 
 	Button LeftStick;
+	Button LeftStickUp;
+	Button LeftStickLeft;
+	Button LeftStickRight;
+	Button LeftStickDown;
 	Button RightStick;
+	Button RightStickUp;
+	Button RightStickLeft;
+	Button RightStickRight;
+	Button RightStickDown;
 	Button PS;
 	Button Screenshot;
 	Button Record;
@@ -526,7 +535,7 @@ bool IsExtendedKey(WORD vk) {
 	case VK_DIVIDE:
 	case VK_NUMLOCK:
 	case VK_RCONTROL:
-	case VK_RMENU: // Right Alt
+	case VK_RMENU:   // Right Alt
 		return true;
 	default:
 		return false;
@@ -551,65 +560,70 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInp
 				if (SendInputAPI)
 					Press(KeyCode);
 				else
-					keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(KeyCode, MapVirtualKey(KeyCode, MAPVK_VK_TO_VSC), 0, 0);
 			}
-			else if (KeyCode == VK_START_MENU) {
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+			else if (KeyCode == VK_NUMPAD_ENTER) {
+				if (SendInputAPI)
+					SendKeyScan(VkToScan(VK_RETURN), true, true);
+				else
+					keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+			} else if (KeyCode == VK_START_MENU) {
+				keybd_event(VK_LWIN, 0x45, 0, 0);
 
 			} else if (KeyCode == VK_HIDE_APPS) {
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LWIN, 0x45, 0, 0);
+				keybd_event('D', 0x45, 0, 0);
 
 			} else if (KeyCode == VK_SWITCH_APP) {
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LWIN, 0x45, 0, 0);
+				keybd_event(VK_TAB, 0x45, 0, 0);
 
 			}
 			else if (KeyCode == VK_CLOSE_APP) {
-				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_F4, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LMENU, 0x45, 0, 0);
+				keybd_event(VK_F4, 0x45, 0, 0);
 
 			} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_CONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event('O', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LWIN, 0x45, 0, 0);
+				keybd_event(VK_CONTROL, 0x45, 0, 0);
+				keybd_event('O', 0x45, 0, 0);
 
 			} else if (KeyCode == VK_GAMEBAR) {
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LWIN, 0x45, 0, 0);
+				keybd_event('G', 0x45, 0, 0);
 
 			} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || KeyCode == VK_MULTI_SCREENSHOT) {
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LWIN, 0x45, 0, 0);
+				keybd_event(VK_LMENU, 0x45, 0, 0);
+				keybd_event(VK_SNAPSHOT, 0x45, 0, 0);
 
 			} else if (KeyCode == VK_GAMEBAR_RECORD) {
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LWIN, 0x45, 0, 0);
+				keybd_event(VK_LMENU, 0x45, 0, 0);
+				keybd_event('R', 0x45, 0, 0);
 
 			} else if (KeyCode == VK_STEAM_SCREENSHOT) {
-					keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					keybd_event(AppStatus.SteamScrKey, 0x45, 0, 0);
 
 			} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
-				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LMENU, 0x45, 0, 0);
+				keybd_event(VK_RETURN, 0x45, 0, 0);
 
 			} else if (KeyCode == VK_CHANGE_LANGUAGE) {
-				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LMENU, 0x45, 0, 0);
+				keybd_event(VK_LSHIFT, 0x45, 0, 0);
 
 			} else if (KeyCode == VK_CUT) {
-				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event('X', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LCONTROL, 0x45, 0, 0);
+				keybd_event('X', 0x45, 0, 0);
 			
 			} else if (KeyCode == VK_COPY) {
-				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event('C', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LCONTROL, 0x45, 0, 0);
+				keybd_event('C', 0x45, 0, 0);
 			
 			} else if (KeyCode == VK_PASTE) {
-				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				keybd_event('V', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+				keybd_event(VK_LCONTROL, 0x45, 0, 0);
+				keybd_event('V', 0x45, 0, 0);
 			}
 
 			ButtonState->PressedOnce = true;
@@ -626,199 +640,81 @@ void KeyPress(int KeyCode, bool ButtonPressed, Button* ButtonState, bool SendInp
 			if (SendInputAPI)
 				Release(KeyCode);
 			else
-				keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+				keybd_event(KeyCode, MapVirtualKey(KeyCode, MAPVK_VK_TO_VSC), KEYEVENTF_KEYUP, 0);
 		
+		}
+		else if (KeyCode == VK_NUMPAD_ENTER) {
+			if (SendInputAPI)
+				SendKeyScan(VkToScan(VK_RETURN), false, true);
+			else
+				keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+
 		} else if (KeyCode == VK_START_MENU) {
-			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_KEYUP, 0);
 
 		} else if (KeyCode == VK_HIDE_APPS) {
-			keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event('D', 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_KEYUP, 0);
 
 		} else if (KeyCode == VK_SWITCH_APP) {
-			keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_TAB, 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_KEYUP, 0);
 
 		}
 		else if (KeyCode == VK_CLOSE_APP) {
-			keybd_event(VK_F4, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_F4, 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45, KEYEVENTF_KEYUP, 0);
 
 		} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
-			keybd_event('O', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_CONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event('O', 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_CONTROL, 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_KEYUP, 0);
 
 		} else if (KeyCode == VK_GAMEBAR) {
-			keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event('G', 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_KEYUP, 0);
 
 		} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || (KeyCode == VK_MULTI_SCREENSHOT)) {
-			keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			if (KeyCode == VK_MULTI_SCREENSHOT) { keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); } // Steam
+			keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45,KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_KEYUP, 0);
+			if (KeyCode == VK_MULTI_SCREENSHOT) { keybd_event(AppStatus.SteamScrKey, 0x45, 0, 0);  keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_KEYUP, 0); } // Steam
 
 		} else if (KeyCode == VK_GAMEBAR_RECORD) {
-			keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event('R', 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LWIN, 0x45, KEYEVENTF_KEYUP, 0);
 
 		}
 		else if (KeyCode == VK_STEAM_SCREENSHOT) {
-			keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_KEYUP, 0);
 
 		} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
-			keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			if (KeyCode == VK_FULLSCREEN_PLUS) { keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); } // YouTube / Twitch fullscreen on F
+			keybd_event(VK_RETURN, 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45, KEYEVENTF_KEYUP, 0);
+			if (KeyCode == VK_FULLSCREEN_PLUS) { keybd_event('F', 0x45,  0, 0);  keybd_event('F', 0x45, KEYEVENTF_KEYUP, 0); } // YouTube / Twitch fullscreen on F
 
 		} else if (KeyCode == VK_CHANGE_LANGUAGE) {
-			keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LSHIFT, 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LMENU, 0x45, KEYEVENTF_KEYUP, 0);
 
 		} else if (KeyCode == VK_CUT) {
-			keybd_event('X', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event('X', 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_KEYUP, 0);
 		
 		} else if (KeyCode == VK_COPY) {
-			keybd_event('C', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event('C', 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_KEYUP, 0);
 		
 		} else if (KeyCode == VK_PASTE) {
-			keybd_event('V', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+			keybd_event('V', 0x45, KEYEVENTF_KEYUP, 0);
+			keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_KEYUP, 0);
 		}
 
 		ButtonState->UnpressedOnce = false;
 		ButtonState->PressedOnce = false;
 	}
 }
-
-/*void KeyPress2(int KeyCode, bool ButtonPressed, Button* ButtonState) {
-	if (KeyCode == 0) exit;
-	else if (KeyCode == VK_MOUSE_LEFT || KeyCode == VK_MOUSE_MIDDLE || KeyCode == VK_MOUSE_RIGHT || 
-		KeyCode == VK_MOUSE_WHEEL_UP || KeyCode == VK_MOUSE_WHEEL_DOWN) // Move to mouse press
-		MousePress(KeyCode, ButtonPressed, ButtonState);
-	else if (ButtonPressed) {
-		ButtonState->UnpressedOnce = true;
-		if (ButtonState->PressedOnce == false) {
-
-			if (KeyCode < 500)
-				keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-			else
-				if (KeyCode == VK_HIDE_APPS) {
-					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-
-				} else if (KeyCode == VK_SWITCH_APP) {
-					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-
-				} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
-					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event(VK_CONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event('O', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				
-				} else if (KeyCode == VK_GAMEBAR) {
-					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				
-				} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || KeyCode == VK_MULTI_SCREENSHOT) {
-					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-
-				} else if (KeyCode == VK_GAMEBAR_RECORD) {
-					keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-
-				} else if (KeyCode == VK_STEAM_SCREENSHOT) {
-					keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-
-				} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
-					keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-
-				} else if (KeyCode == VK_CHANGE_LANGUAGE) {
-					keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-
-				}  else if (KeyCode == VK_CUT) {
-					keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event('X', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				} else if (KeyCode == VK_COPY) {
-					keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event('C', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				} else if (KeyCode == VK_PASTE) {
-					keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-					keybd_event('V', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-				}
-			
-			ButtonState->PressedOnce = true;
-			//printf("pressed\n");
-		}
-	} else if (ButtonPressed == false && ButtonState->UnpressedOnce) {
-		//printf("unpressed\n");
-		if (KeyCode < 500)
-			keybd_event(KeyCode, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-		else
-			if (KeyCode == VK_HIDE_APPS) {
-				keybd_event('D', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-
-			} else if (KeyCode == VK_SWITCH_APP) {
-				keybd_event(VK_TAB, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			
-			} else if (KeyCode == VK_DISPLAY_KEYBOARD) {
-				keybd_event('O', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_CONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			
-			} else if (KeyCode == VK_GAMEBAR) {
-				keybd_event('G', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			
-			} else if (KeyCode == VK_GAMEBAR_SCREENSHOT || (KeyCode == VK_MULTI_SCREENSHOT)) {
-				keybd_event(VK_SNAPSHOT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				if (KeyCode == VK_MULTI_SCREENSHOT) { keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);  } // Steam
-			
-			} else if (KeyCode == VK_GAMEBAR_RECORD) {
-				keybd_event('R', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LWIN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-
-			} else if (KeyCode == VK_STEAM_SCREENSHOT) {
-				keybd_event(AppStatus.SteamScrKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-
-			} else if (KeyCode == VK_FULLSCREEN || KeyCode == VK_FULLSCREEN_PLUS) {
-				keybd_event(VK_RETURN, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_MENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				if (KeyCode == VK_FULLSCREEN_PLUS) { keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);  keybd_event('F', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); } // YouTube / Twitch fullscreen on F
-			
-			} else if (KeyCode == VK_CHANGE_LANGUAGE) {
-				keybd_event(VK_SHIFT, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LMENU, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			
-			} else if (KeyCode == VK_CUT) {
-				keybd_event('X', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			} else if (KeyCode == VK_COPY) {
-				keybd_event('C', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			} else if (KeyCode == VK_PASTE) {
-				keybd_event('V', 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-			}
-
-		ButtonState->UnpressedOnce = false;
-		ButtonState->PressedOnce = false;
-	}
-}*/
 
 int KeyNameToKeyCode(std::string KeyName) {
 	std::transform(KeyName.begin(), KeyName.end(), KeyName.begin(), ::toupper);
@@ -945,6 +841,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 		{"NUMPAD-MINUS", VK_SUBTRACT},
 		{"NUMPAD-PLUS", VK_ADD},
 		{"NUMPAD-DEL", VK_DECIMAL},
+		{"NUMPAD-ENTER", VK_NUMPAD_ENTER },
 
 		// Additional
 		{"VOLUME-UP", VK_VOLUME_UP2},
@@ -967,7 +864,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 		// Special
 		{"WASD", WASDStickMode},
 		{"ARROWS", ArrowsStickMode},
-		{"ARROWS-LEFT-RIGHT", ArrowsLeftRightStickMode},
+		{"CUSTOM-BUTTONS", CustomStickMode},
 		{"NUMPAD-ARROWS", NumpadsStickMode},
 		{"MOUSE-LOOK", MouseLookStickMode},
 		{"MOUSE-WHEEL", MouseWheelStickMode},
