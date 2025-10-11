@@ -1251,7 +1251,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 1.8");
+	SetConsoleTitle("DSAdvance 1.8.1");
 	WindowToCenter();
 
 	// if (false)
@@ -2278,17 +2278,17 @@ int main(int argc, char **argv)
 
 			KMStickMode(PrimaryGamepad, DontResetInputState, true, DeadZoneAxis(PrimaryGamepad.InputState.stickLX, PrimaryGamepad.Sticks.DeadZoneLeftX), DeadZoneAxis(PrimaryGamepad.InputState.stickLY, PrimaryGamepad.Sticks.DeadZoneLeftY), PrimaryGamepad.KMEmu.LeftStickMode);
 			KMStickMode(PrimaryGamepad, DontResetInputState, false, DeadZoneAxis(PrimaryGamepad.InputState.stickRX, PrimaryGamepad.Sticks.DeadZoneRightX), DeadZoneAxis(PrimaryGamepad.InputState.stickRY, PrimaryGamepad.Sticks.DeadZoneRightY), PrimaryGamepad.KMEmu.RightStickMode);
-		
-			// Microphone (custom key)
-			if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
-				KeyPress(AppStatus.ScreenShotKey, IsSharePressed, &PrimaryGamepad.ButtonsStates.Screenshot, false);
+		}
 
-			// Microphone (screenshots / record)
-			else {
-				KeyPress(AppStatus.ScreenShotKey, IsScreenshotPressed, &PrimaryGamepad.ButtonsStates.Screenshot, false);
-				KeyPress(VK_GAMEBAR_RECORD, IsRecordPressed, &PrimaryGamepad.ButtonsStates.Record, false);
-			}
+		// After releasing all the buttons you can click on screenshots, so it's here / После отпускания всех кнопок можно нажимать скриншоты, поэтому это здесь
+		// Microphone (custom key)
+		if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
+			KeyPress(AppStatus.ScreenShotKey, IsSharePressed, &PrimaryGamepad.ButtonsStates.Screenshot, false);
 
+		// Microphone (screenshots / record)
+		else {
+			KeyPress(AppStatus.ScreenShotKey, IsScreenshotPressed, &PrimaryGamepad.ButtonsStates.Screenshot, false);
+			KeyPress(VK_GAMEBAR_RECORD, IsRecordPressed, &PrimaryGamepad.ButtonsStates.Record, false);
 		}
 
 		if (AppStatus.SecondaryGamepadEnabled && SecondaryGamepad.DeviceIndex != -1) {
