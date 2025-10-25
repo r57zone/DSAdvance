@@ -116,6 +116,11 @@ Add the game to the "HidHide" exceptions list and change the DSAdvance mode to `
 • **Driving don't work in games with DualSense support (without HidHide)**<br>
 Launch DSAdvance first, and only then the game itself, the game can give priority to the emulated Xbox controller and driving will work. You can also enable `Only driving & aiming` emulation mode so that the controller will only turn on in driving mode.
 
+
+
+• **Nintendo Pro controller or Joy-Cons rumble constantly after starting the program**<br>
+Unfortunately, rumble may not work correctly on some gamepads. Turn off the gamepad and disable rumble in the configuration file by changing the `RumbleStrength` parameter to `0`.
+
 ## Credits
 * Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.
 * [ViGEm](https://github.com/nefarius/ViGEmBus) for the ability to emulate different gamepads.
