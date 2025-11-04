@@ -320,6 +320,7 @@ begin
       Utility9Btn.Caption:='Utility 9';
     if Utility10Btn.Caption = '' then
       Utility10Btn.Caption:='Utility 10';
+    OpenDialog.Filter:='Apps|*.exe';
   end;
 
   if AutostartBtn.Checked then
