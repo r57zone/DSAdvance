@@ -713,6 +713,9 @@ void LoadKMProfile(std::string ProfileFile) {
 	PrimaryGamepad.KMEmu.JoySensX = IniFile.ReadFloat("MOUSE", "SensitivityX", 100) * 0.21f; // Crysis 2, Last of Us 2 calibration
 	PrimaryGamepad.KMEmu.JoySensY = IniFile.ReadFloat("MOUSE", "SensitivityY", 100) * 0.21f; // Crysis 2, Last of Us 2 calibration
 
+	PrimaryGamepad.KMEmu.SteeringWheelDeadZone = IniFile.ReadFloat("MOTION", "SteeringWheelDeadZone", 20) * 0.01f;
+	PrimaryGamepad.KMEmu.SteeringWheelReleaseThreshold = IniFile.ReadFloat("MOTION", "SteeringWheelReleaseThreshold", 1) * 0.01f;
+
 	// Secondary gamepad
 	SecondaryGamepad.ButtonsStates.LeftTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LEFT-TRIGGER", "NONE"));
 	SecondaryGamepad.ButtonsStates.RightTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RIGHT-TRIGGER", "NONE"));
@@ -1251,7 +1254,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 1.8.1");
+	SetConsoleTitle("DSAdvance 1.9");
 	WindowToCenter();
 
 	// if (false)
@@ -2135,10 +2138,10 @@ int main(int argc, char **argv)
 
 			// Steering wheel
 			if (!PrimaryGamepad.Motion.AircraftEnabled) {
-				report.sThumbLX = CalcMotionStick(MotionState.gravX, MotionState.gravZ, PrimaryGamepad.Motion.SteeringWheelAngle, PrimaryGamepad.Motion.OffsetAxisX);
+				report.sThumbLX = (SHORT)(CalcMotionStick(MotionState.gravX, MotionState.gravZ, PrimaryGamepad.Motion.SteeringWheelAngle, PrimaryGamepad.Motion.OffsetAxisX) * 32767);
 
-				// Aircraft
-			}
+				
+			} // Aircraft
 			else {
 				const float InputSize = sqrtf(velocityX * velocityX + velocityY * velocityY + velocityZ * velocityZ);
 				float TightenedSensitivity = PrimaryGamepad.Motion.AircraftRollSens;
@@ -2146,7 +2149,7 @@ int main(int argc, char **argv)
 					TightenedSensitivity *= InputSize / Tightening;
 
 				report.sThumbLX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbLX), -32767, 32767);
-				report.sThumbLY = CalcMotionStick(MotionState.gravY, MotionState.gravZ, PrimaryGamepad.Motion.AircraftPitchAngle, PrimaryGamepad.Motion.OffsetAxisY) * PrimaryGamepad.Motion.AircraftPitchInverted;
+				report.sThumbLY = (SHORT)(CalcMotionStick(MotionState.gravY, MotionState.gravZ, PrimaryGamepad.Motion.AircraftPitchAngle, PrimaryGamepad.Motion.OffsetAxisY) * 32767) * PrimaryGamepad.Motion.AircraftPitchInverted;
 			}
 
 
@@ -2240,6 +2243,43 @@ int main(int argc, char **argv)
 			IsRecordPressed);
 
 		if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
+			
+			if (PrimaryGamepad.GamepadActionMode == MotionDrivingMode) {
+
+				float MotionAxisX = CalcMotionStick(MotionState.gravX, MotionState.gravZ, PrimaryGamepad.Motion.SteeringWheelAngle, PrimaryGamepad.Motion.OffsetAxisX);
+				if (PrimaryGamepad.InputState.buttons & JSMASK_LEFT) PrimaryGamepad.InputState.buttons &= ~JSMASK_LEFT;
+				if (PrimaryGamepad.InputState.buttons & JSMASK_RIGHT) PrimaryGamepad.InputState.buttons &= ~JSMASK_RIGHT;
+
+				if (fabs(MotionAxisX) < PrimaryGamepad.KMEmu.SteeringWheelDeadZone) {
+					PrimaryGamepad.KMEmu.MaxLeftAxisX = 0.0f;
+					PrimaryGamepad.KMEmu.MaxRightAxisX = 0.0f;
+				} else {
+
+					// Left
+					if (MotionAxisX < -PrimaryGamepad.KMEmu.SteeringWheelDeadZone) {
+						// Обновляем максимум (отрицательный)
+						if (MotionAxisX < PrimaryGamepad.KMEmu.MaxLeftAxisX) PrimaryGamepad.KMEmu.MaxLeftAxisX = MotionAxisX;
+
+						// Условие удержания: не меньше чем 95% от пика (влево — наоборот)
+						if (MotionAxisX <= PrimaryGamepad.KMEmu.MaxLeftAxisX * (1.0f - PrimaryGamepad.KMEmu.SteeringWheelReleaseThreshold))
+							PrimaryGamepad.InputState.buttons |= JSMASK_LEFT;
+					}
+
+					// Right
+					if (MotionAxisX > PrimaryGamepad.KMEmu.SteeringWheelDeadZone) {
+						// Обновляем максимум
+						if (MotionAxisX > PrimaryGamepad.KMEmu.MaxRightAxisX) PrimaryGamepad.KMEmu.MaxRightAxisX = MotionAxisX;
+
+						// Условие удержания: не меньше чем 95% от пика
+						if (MotionAxisX >= PrimaryGamepad.KMEmu.MaxRightAxisX * (1.0f - PrimaryGamepad.KMEmu.SteeringWheelReleaseThreshold))
+							PrimaryGamepad.InputState.buttons |= JSMASK_RIGHT;
+					}
+				}
+
+
+
+			}
+
 			KeyPress(PrimaryGamepad.ButtonsStates.LeftTrigger.KeyCode, DontResetInputState && PrimaryGamepad.InputState.lTrigger > PrimaryGamepad.KMEmu.TriggerValuePressKey, &PrimaryGamepad.ButtonsStates.LeftTrigger, true);
 			KeyPress(PrimaryGamepad.ButtonsStates.RightTrigger.KeyCode, DontResetInputState && PrimaryGamepad.InputState.rTrigger > PrimaryGamepad.KMEmu.TriggerValuePressKey, &PrimaryGamepad.ButtonsStates.RightTrigger, true);
 
@@ -2427,6 +2467,12 @@ int main(int argc, char **argv)
 
 		if (AppStatus.SkipPollCount > 0) AppStatus.SkipPollCount--;
 		Sleep(AppStatus.SleepTimeOut);
+	}
+
+	// Reset keyboard motion driving
+	if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse && PrimaryGamepad.GamepadActionMode == MotionDrivingMode) {
+		KeyPress(PrimaryGamepad.ButtonsStates.DPADLeft.KeyCode, false, &PrimaryGamepad.ButtonsStates.DPADLeft, true);
+		KeyPress(PrimaryGamepad.ButtonsStates.DPADRight.KeyCode, false, &PrimaryGamepad.ButtonsStates.DPADRight, true);
 	}
 
 	JslDisconnectAndDisposeAll();

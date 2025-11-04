@@ -297,6 +297,11 @@ struct AdvancedGamepad {
 		float JoySensY = 0;
 		float StickValuePressKey = 0;
 		float TriggerValuePressKey = 0;
+		float SteeringWheelDeadZone = 0;
+		float SteeringWheelReleaseThreshold = 0;
+		float PrevAxisX = 0.0f;
+		float MaxLeftAxisX = 0.0f;
+		float MaxRightAxisX = 0.0f;
 	};
 	_KMEmu KMEmu;
 
@@ -1113,7 +1118,7 @@ double OffsetYPR(double Angle1, double Angle2) // CalcMotionStick
 	return LeftAxisX;
 }*/
 
-SHORT CalcMotionStick(float gravA, float gravB, float wheelAngle, float offsetAxis) {
+float CalcMotionStick(float gravA, float gravB, float wheelAngle, float offsetAxis) {
 	float angleRadians = wheelAngle * (3.14159f / 180.0f); // To radians
 
 	float normalizedValue = OffsetYPR(atan2f(gravA, gravB), offsetAxis) / angleRadians;
@@ -1123,7 +1128,7 @@ SHORT CalcMotionStick(float gravA, float gravB, float wheelAngle, float offsetAx
 	else if (normalizedValue < -1.0f)
 		normalizedValue = -1.0f;
 
-	return normalizedValue * 32767;
+	return normalizedValue;
 }
 
 void WindowToCenter() {
