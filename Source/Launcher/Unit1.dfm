@@ -50,9 +50,37 @@ object Main: TMain
       object N5: TMenuItem
         Caption = '-'
       end
-      object HidHideBtn: TMenuItem
-        Caption = 'HidHide'
-        OnClick = HidHideBtnClick
+      object HidHideSubMenu: TMenuItem
+        Caption = #1057#1082#1088#1099#1090#1080#1077' '#1075#1077#1081#1084#1087#1072#1076#1072' (HidHide)'
+        object HideGamepadBtn: TMenuItem
+          Caption = #1057#1082#1088#1099#1090#1100' '#1086#1090' '#1080#1075#1088' '#1080' '#1087#1088#1080#1083#1086#1078#1077#1085#1080#1081
+          OnClick = HideGamepadBtnClick
+        end
+        object N9: TMenuItem
+          Caption = '-'
+        end
+        object HidHideRunBtn: TMenuItem
+          Caption = #1047#1072#1087#1091#1089#1090#1080#1090#1100' HidHide'
+          OnClick = HidHideRunBtnClick
+        end
+        object N10: TMenuItem
+          Caption = '-'
+        end
+        object HidHideAddBtn: TMenuItem
+          Caption = #1044#1086#1073#1072#1074#1080#1090#1100' '#1074' '#1080#1089#1082#1083#1102#1095#1077#1085#1080#1103
+          OnClick = HidHideAddBtnClick
+        end
+        object HidHideRemBtn: TMenuItem
+          Caption = #1059#1076#1072#1083#1080#1090#1100' '#1080#1079' '#1080#1089#1082#1083#1102#1095#1077#1085#1080#1081
+          OnClick = HidHideRemBtnClick
+        end
+        object N7: TMenuItem
+          Caption = '-'
+        end
+        object HideHideClearBtn: TMenuItem
+          Caption = #1054#1095#1080#1089#1090#1080#1090#1100' '#1086#1090#1089#1091#1090#1089#1090#1074#1091#1102#1097#1077#1077
+          OnClick = HideHideClearBtnClick
+        end
       end
       object GamepadTestBtn: TMenuItem
         Caption = #1055#1088#1086#1074#1077#1088#1082#1072' '#1075#1077#1081#1084#1087#1072#1076#1072
@@ -139,6 +167,11 @@ object Main: TMain
   end
   object XPManifest1: TXPManifest
     Left = 40
+    Top = 8
+  end
+  object OpenDialog: TOpenDialog
+    Filter = #1055#1088#1080#1083#1086#1078#1077#1085#1080#1103'|*.exe'
+    Left = 104
     Top = 8
   end
 end
