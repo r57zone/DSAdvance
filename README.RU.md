@@ -130,7 +130,7 @@
 
 ## Благодарности
 * Sony и Nintendo за самые продвинутые геймпады и инвестирование в инновации, а также за продвижение инноваций в игры.
-* [ViGEm](https://github.com/nefarius/ViGEmBus) за возможность эмуляции разных геймпадов.
+* [ViGEm](https://github.com/nefarius/ViGEmBus) за возможность эмуляции разных геймпадов и [HidHide](https://github.com/nefarius/HidHide/) за их скрытие.
 * [HIDAPI library](https://github.com/signal11/hidapi), с [исправлениями](https://github.com/libusb/hidapi), за библиотеку для работы с USB устройства. В проекте используется этот [форк](https://github.com/r57zone/hidapi).
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) за классную библиотеку геймпадов, позволяющую легко получить вращение контроллера. Также используется некоторый код из этой библиотеки и [пример JibbSmart](https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df) для прицеливания.
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) за уровень заряда батареи.
