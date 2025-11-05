@@ -43,7 +43,7 @@ There are 5 emulation modes:
 * Keyboard and mouse emulation for Windows control;
 * Keyboard and mouse emulation for old retro games;
 
-Mode switching is done via `ALT + Q`, `ALT + ←/→` or `PS/Home + ←/→` and `Capture/Home`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). There are also Xbox profiles for changing the button layout. Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
+Emulation Mode switching is done via `ALT + Q`, `ALT + ←/→` or `PS/Home + ←/→`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). There are also Xbox profiles for changing the button layout. Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
 
 Adaptive triggers for Sony DualSense in USB mode are supported, you can switch between different modes with `ALT + 3/4`.
 
@@ -66,7 +66,7 @@ Action | Sony Buttons | Nintendo Buttons | Windows
 ------------ | ------------- | ------------- | -------------  
 Reset/Search Controllers | - | - | `CTRL + R` or `Numpad 0` (default, can be changed)
 Swap first and second controllers | - | - | `ALT + V`
-Mode switching (gamepad, keyboard and mouse, etc.) | `PS/Home + ←/→` | `Capture/Home` | `ALT + Q`, `ALT + ←/→`
+Emulation mode switching (gamepad, keyboard and mouse, etc.) | `PS + ←/→` | `Home + ←/→` | `ALT + Q`, `ALT + ←/→`
 Switching profiles Xbox / Keyboard and mouse | `PS+ ↑/↓` | `Home + ↑/↓` | `ALT + ↑/↓`
 Open Xbox Game Bar (`Win + G` press) | `PS` | `Capture + Home` | -  
 Decrease and increase Windows volume | `PS + □` and `PS + ○` | `Capture + Y` and `Capture + A` | -  
