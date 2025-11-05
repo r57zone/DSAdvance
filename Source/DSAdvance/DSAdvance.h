@@ -132,7 +132,7 @@
 #define MIC_LED_PULSE					0x02
 #define MIC_LED_OFF						0x00
 
-#define ADAPTIVE_TRIGGERS_MODE_MAX			8
+#define ADAPTIVE_TRIGGERS_MODE_MAX			9
 #define ADAPTIVE_TRIGGERS_DEPENDENT_MODE_1	1
 #define ADAPTIVE_TRIGGERS_DEPENDENT_MODE_2	2
 #define ADAPTIVE_TRIGGERS_DEPENDENT_MODE_3	3
@@ -141,7 +141,8 @@
 #define ADAPTIVE_TRIGGERS_PISTOL_MODE		2
 #define ADAPTIVE_TRIGGERS_AUTOMATIC_MODE	3
 #define ADAPTIVE_TRIGGERS_RIFLE_MODE		4
-#define ADAPTIVE_TRIGGERS_BOW_CAR_MODE		5
+#define ADAPTIVE_TRIGGERS_BOW_MODE			5
+#define ADAPTIVE_TRIGGERS_CAR_MODE			6
 
 bool ExternalPedalsConnected = false;
 HANDLE hSerial;
@@ -150,6 +151,7 @@ float PedalsValues[2];
 
 std::vector <std::string> KMProfiles;
 int KMProfileIndex = 0;
+int KMGameProfileIndex = 0;
 std::vector <std::string> XboxProfiles;
 int XboxProfileIndex = 0;
 
@@ -393,6 +395,7 @@ struct _AppStatus {
 	bool SecondaryGamepadEnabled = false;
 	int GamepadEmulationMode = EmuGamepadEnabled;
 	int LastGamepadEmulationMode = EmuGamepadEnabled;
+	bool IsDesktopMode = true;
 	bool XboxGamepadAttached = true;
 	bool AimMode = false;
 	int LeftStickMode = 0;

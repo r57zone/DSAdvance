@@ -14,7 +14,7 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 ✔️ Windows control, volume adjustment, and screenshot creation using a gamepad;<br>
 ✔️ Remapping Xbox controller buttons, different profiles;<br>
 ✔️ Keyboard and mouse emulation for old games, as well as profiles;<br>
-✔️ Support for adaptive triggers for Sony DualSense in USB connection mode;<br>
+✔️ Support for adaptive triggers for Sony DualSense in USB connection mode (pistol, rifle, sniper rifle, bow, car pedal);<br>
 ✔️ Various emulation modes for games with adaptive triggers;<br>
 ✔️ Battery level display on the light bar and player indicators (for Sony gamepads);<br>
 ✔️ Turning off the light bar for full immersion in the dark;<br>
@@ -36,13 +36,14 @@ When pressing the default profile button on the DualSense, white LEDs indicate t
 
 Double-tap the brightness area, then swipe left or right to adjust the backlight brightness. Double-tap again to lock it and prevent accidental changes.
 
-There are 3 emulation modes:
-* Simple Xbox gamepad emulation with extended functionality;
-* Xbox gamepad emulation only for driving mode and mouse aiming (for certain games with adaptive triggers);
-* Mouse only;
-* Keyboard and mouse emulation for Windows control and some older games;
+There are 5 emulation modes:
+* Xbox gamepad emulation with extended features;
+* Xbox gamepad emulation only for driving mode and mouse aiming (for games with adaptive triggers);
+* Mouse only (if you want to use native gamepad support but with more precise aiming);
+* Keyboard and mouse emulation for Windows control;
+* Keyboard and mouse emulation for old retro games;
 
-Mode switching is done via `ALT + Q` or `PS/Home + ←/→` and `Capture/Home`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). There are also Xbox profiles for changing the button layout. Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
+Mode switching is done via `ALT + Q`, `ALT + ←/→` or `PS/Home + ←/→` and `Capture/Home`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). There are also Xbox profiles for changing the button layout. Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
 
 Adaptive triggers for Sony DualSense in USB mode are supported, you can switch between different modes with `ALT + 3/4`.
 
@@ -65,6 +66,8 @@ Action | Sony Buttons | Nintendo Buttons | Windows
 ------------ | ------------- | ------------- | -------------  
 Reset/Search Controllers | - | - | `CTRL + R` or `Numpad 0` (default, can be changed)
 Swap first and second controllers | - | - | `ALT + V`
+Mode switching (gamepad, keyboard and mouse, etc.) | `PS/Home + ←/→` | `Capture/Home` | `ALT + Q`, `ALT + ←/→`
+Switching profiles Xbox / Keyboard and mouse | `PS+ ↑/↓` | `Home + ↑/↓` | `ALT + ↑/↓`
 Open Xbox Game Bar (`Win + G` press) | `PS` | `Capture + Home` | -  
 Decrease and increase Windows volume | `PS + □` and `PS + ○` | `Capture + Y` and `Capture + A` | -  
 Screenshot (`Win + ALT + PrtScn` press) | Microphone button or `PS + X` | `Capture + B` | -  
@@ -88,7 +91,7 @@ Turn off light bar (Sony) | `PS + L1` or double-tap the brightness area of the t
 6. If necessary, change the dead zones of the sticks, triggers or other parameters in the configuration file `Config.ini`.
 7. (Optional) To enable operation of two gamepads, change the `Enabled` parameter to `1` in the `SecondaryGamepad` section. You can also adjust dead zones for sticks, triggers, and colors.
 8. When used with Steam games, in the controller settings, disable `Playstation personal settings`.
-9. It is also recommended to install [HidHide](https://github.com/nefarius/HidHide/releases), then in the `HidHide Configuration Client` add `DSAdvance.exe` and turn on the parameter `Enable device hiding` (If turned off). It is necessary so that the game did not see our controller, and saw only emulated Xbox 360 gamepad.
+9. It is also recommended to hide your controller for modern games so that they detect only the emulated, advanced Xbox 360 controller.   To do this, install [HidHide](https://github.com/nefarius/HidHide/releases). Then, in the `HidHide Configuration Client`, under the `Devices` tab, check your controller (for example, Sony Wireless Controller) and enable the `Enable device hiding` option (if it is disabled). In the `Applications` tab, add the path to `DSAdvance.exe`. You can also check [this guide](https://github.com/user-attachments/assets/13ad8583-4b32-4a0d-b9a6-8e6c5bfcca71) showing exactly where to click. Through the Launcher, you can do the same, except adding the gamepad to the hidden devices list.
 10. (Optional) To launch from the notification area (tray), by double-clicking, you can add a shortcut to `Launcher.exe` to Windows startup `%AppData%\Microsoft\Windows\Start Menu\Programs\Startup`.
 11. (Optional) To run third-party utilities via Launcher, specify the title and path to the application in the configuration file.
 
@@ -120,6 +123,12 @@ Launch DSAdvance first, and only then the game itself, the game can give priorit
 
 • **Nintendo Pro controller or Joy-Cons rumble constantly after starting the program**<br>
 Unfortunately, rumble may not work correctly on some gamepads. Turn off the gamepad and disable rumble in the configuration file by changing the `RumbleStrength` parameter to `0`.
+
+
+
+• **Nintendo controllers don't rumble in wired mode**<br>
+Unfortunately, this feature is not implemented.
+
 
 ## Credits
 * Sony and Nintendo for the most advanced gamepads and investment in innovation, and for driving innovation in games.

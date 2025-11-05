@@ -33,6 +33,15 @@ To enable support for a second player, duplicate the `[FIRST-GAMEPAD]` section a
 ...
 ```
 
+## Steering Wheel (gamepad tilt movement)  
+When switching to driving mode, tilts of the gamepad along the X-axis are used to emulate presses of the D-Pad buttons: left and right.  
+
+If the tilt is within the dead zone, the wheel is considered centered, and no button presses are emulated.  
+
+Parameter `SteeringWheelDeadZone` defines the wheel's dead zone, specified in percent, from 0 to 100.  
+
+Parameter `SteeringWheelReleaseThreshold` determines how far the wheel must return to the center to stop holding the direction, specified in percent, from 0 to 100.
+
 ## Keyboard and mouse
 Key name | Value
 ------------ | -------------

@@ -270,29 +270,72 @@ void GamepadSetState(AdvancedGamepad &Gamepad)
 				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_AUTOMATIC_MODE) // Automatic / Machine Gun — серия коротких импульсов
 				{
 					outputReport[11] = 0x06;   // Pulse mode
-					outputReport[12] = 20;     // Сила каждого импульса (легкая)
+					outputReport[12] = 15;     // Сила каждого импульса (легкая)
 					outputReport[13] = 2;      // Старт почти сразу при лёгком нажатии
 					outputReport[14] = 10;     // Конец короткой серии импульсов
 					outputReport[15] = 0x20;   // Частота импульсов (выше — имитация очереди)
+
 				}
 				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RIFLE_MODE) // Sniper Rifle — винтовка с усилием
 				{
+					/* Более легкий вариант
 					outputReport[11] = 0x26;   // Resistance + лёгкая вибрация
 					outputReport[12] = 120;    // более сильное сопротивление
 					outputReport[13] = 0x00;   // начало
 					outputReport[14] = 0xE0;   // конец почти полной
 					outputReport[15] = 0x05;   // частота вибрации
 					outputReport[16] = 0xF0;   // короткий резкий толчок
-					outputReport[17] = 0x40;   // сила толчка — ощущается реально
+					outputReport[17] = 0x40;   // сила толчка — ощущается реально*/
+
+					outputReport[11] = 0x25;
+					outputReport[12] = 0x04; // low (1<<2)
+					outputReport[13] = 0x01; // high(1<<8)
+					outputReport[14] = 0x06; // strength-1 (7-1)
+					outputReport[15] = 0x00;
+					outputReport[16] = 0x00;
+					outputReport[17] = 0x00;
+					outputReport[18] = 0x00;
+					outputReport[19] = 0x00;
+					outputReport[20] = 0x00;
+					outputReport[21] = 0x00;
 
 				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_BOW_CAR_MODE) // Лук — прогрессивное натяжение / авто
+				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_BOW_MODE) // Лук — прогрессивное натяжение
 				{
+					outputReport[11] = 0x22;
+					outputReport[12] = 0x01; // low (1<<0)
+					outputReport[13] = 0x01; // high(1<<8)
+					outputReport[14] = 0x33; // (strength-1) | ((snap-1)<<3) => (4-1)=3, (7-1)=6 => 0x03 | (0x06<<3)=0x33
+					outputReport[15] = 0x00;
+					outputReport[16] = 0x00;
+					outputReport[17] = 0x00;
+					outputReport[18] = 0x00;
+					outputReport[19] = 0x00;
+					outputReport[20] = 0x00;
+					outputReport[21] = 0x00;
+
+				}
+				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_CAR_MODE) // Педаль авто
+				{
+					/* Слишком сильное
 					outputReport[11] = 0x02;   // Continuous resistance
 					outputReport[12] = 0x10;   // слабое в начале
 					outputReport[13] = 0xFF;   // конец хода
 					outputReport[14] = 0x20;   // начальная сила
 					outputReport[15] = 0xF0;   // максимальная сила — реально чувствуется
+					*/
+
+					outputReport[11] = 0x21;
+					outputReport[12] = 0xFF; // активные зоны 0..9
+					outputReport[13] = 0x03;
+					outputReport[14] = 0x24; // amplitude zones для strength=5 (повтор "100")
+					outputReport[15] = 0x92;
+					outputReport[16] = 0x49;
+					outputReport[17] = 0x24;
+					outputReport[18] = 0x00;
+					outputReport[19] = 0x00;
+					outputReport[20] = 0x00;
+					outputReport[21] = 0x00;
 
 				}
 
@@ -304,6 +347,7 @@ void GamepadSetState(AdvancedGamepad &Gamepad)
 					outputReport[23] = 0x09;   // Начало триггера (почти с нуля)
 					outputReport[24] = 0xFF;   // Конец триггера (100%)
 					outputReport[25] = 0x00;   // Без вибрации
+
 				}
 
 				hid_write(Gamepad.HidHandle, outputReport, 48);
@@ -872,8 +916,12 @@ void DefaultMainText() {
 		printf(" Emulation: Xbox gamepad (only driving) & mouse aiming.\n");
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled)
 		printf(" Emulation: Only mouse (for mouse aiming).\n");
-	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
-		printf_s(" Emulation: Keyboard and mouse, profile: \"%s\".\n Change profiles with \"ALT + Up/Down\" or \"PS/Home + DPAD Up/Down\".\n", KMProfiles[KMProfileIndex].substr(0, KMProfiles[KMProfileIndex].size() - 4).c_str());
+	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
+		if (AppStatus.IsDesktopMode)
+			printf(" Emulation: keyboard and mouse, desktop control, profile: \"Desktop\".\n");
+		else
+			printf_s(" Emulation: Keyboard and mouse, game profile: \"%s\".\n Change profiles with \"ALT + Up/Down\" or \"PS/Home + DPAD Up/Down\".\n", KMProfiles[KMProfileIndex].substr(0, KMProfiles[KMProfileIndex].size() - 4).c_str());
+	}
 	printf(" Press \"ALT + Q/Left/Right\", \"PS/Home + DPAD Left/Right\" to switch emulation.\n");
 	printf(" Press touchpad areas or \"Capture/Home\" buttons to change operating modes.\n");
 	printf(" If there's no touch panel, switch using a touchpad press (enabled in the config) or use \"ALT + 1/2\".\n");
@@ -906,7 +954,10 @@ void DefaultMainText() {
 				printf("rifle");
 				break;
 			case 8:
-				printf("bow/сar pedal");
+				printf("bow");
+				break;
+			case 9:
+				printf("сar pedal");
 				break;
 			default:
 				printf("unknown");
@@ -1053,9 +1104,13 @@ void RussianMainText() {
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving)
 		printf(" Эмуляция: Xbox геймпад (только вождение) и прицеливание мышкой.\n");
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled)
-		printf(" Эмуляция: только мышь (для прицеливанию мышкой).\n");
-	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse)
-		printf_s(" Эмуляция: клавиатура и мышь, профиль: \"%s\".\n Измените профиль, с помощью \"ALT + Up/Down\" или \"PS/Home + DPAD Up/Down\".\n", KMProfiles[KMProfileIndex].substr(0, KMProfiles[KMProfileIndex].size() - 4).c_str());
+		printf(" Эмуляция: только мышь (для прицеливания мышкой).\n");
+	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
+		if (AppStatus.IsDesktopMode)
+			printf(" Эмуляция: клавиатура и мышь, управление рабочим столом, профиль: \"Desktop\".\n");
+		else
+			printf_s(" Эмуляция: клавиатура и мышь, профиль игры: \"%s\".\n Измените профиль, с помощью \"ALT + Up/Down\" или \"PS/Home + DPAD Up/Down\".\n", KMProfiles[KMProfileIndex].substr(0, KMProfiles[KMProfileIndex].size() - 4).c_str());
+	}
 	printf(" Нажмите \"ALT + Q/Влево/Вправо\" или \"PS/Home + DPAD Влево/Вправо\" для переключения режима эмуляции.\n");
 	printf(" Нажмите области на сенсорной панели или кнопки \"Capture/Home\" для переключения режимов работы.\n");
 	printf(" Если сенсорной панели нет, переключайтесь нажатием тачпада (включив в конфиге) или на \"ALT + 1/2\".\n");
@@ -1088,7 +1143,10 @@ void RussianMainText() {
 				printf("винтовка");
 				break;
 			case 8:
-				printf("лук/педаль авто");
+				printf("лук");
+				break;
+			case 9:
+				printf("педаль авто");
 				break;
 			default:
 				printf("неизвестно");
@@ -1559,15 +1617,49 @@ int main(int argc, char **argv)
 		// Switch emulation mode
 		if (AppStatus.SkipPollCount == 0 && ((IsKeyPressed(VK_MENU) && (IsKeyPressed('Q') || IsKeyPressed(VK_LEFT) || IsKeyPressed(VK_RIGHT))) || ((PrimaryGamepad.InputState.buttons & JSMASK_LEFT || PrimaryGamepad.InputState.buttons & JSMASK_RIGHT) && PrimaryGamepad.InputState.buttons & JSMASK_PS))) // Disable Xbox controller emulation for games that support DualSense, DualShock, Nintendo controllers or enable only driving & mouse aiming
 		{
-			AppStatus.SkipPollCount = 30; // 15 is seems not enough to enable or disable Xbox virtual gamepad
+			AppStatus.SkipPollCount = SkipPollTimeOut; // 30 for deatached, 15 is seems not enough to enable or disable Xbox virtual gamepad
 
 			if (PrimaryGamepad.InputState.buttons & JSMASK_LEFT || IsKeyPressed(VK_LEFT)) {
-				if (AppStatus.GamepadEmulationMode == 0) AppStatus.GamepadEmulationMode = EmuGamepadMaxModes; else AppStatus.GamepadEmulationMode--;
-			}
-			else
-				AppStatus.GamepadEmulationMode++;
+				
+				if (AppStatus.GamepadEmulationMode == 0) { // For desktop control mode 
+					AppStatus.GamepadEmulationMode = EmuGamepadMaxModes;
+					KMProfileIndex = 0;
+					LoadKMProfile(KMProfiles[KMProfileIndex]);
+					AppStatus.IsDesktopMode = true;
+				
+				} else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) { // For keyboard and mouse game mode
+					if (AppStatus.IsDesktopMode) {
+						KMProfileIndex = KMGameProfileIndex;
+						LoadKMProfile(KMProfiles[KMProfileIndex]);
+						AppStatus.IsDesktopMode = false;
+					}
+					else
+						AppStatus.GamepadEmulationMode--;
 
-			if (AppStatus.GamepadEmulationMode > EmuGamepadMaxModes) AppStatus.GamepadEmulationMode = EmuGamepadEnabled;
+				} else
+					AppStatus.GamepadEmulationMode--;
+				
+			
+			} else if (PrimaryGamepad.InputState.buttons & JSMASK_RIGHT || IsKeyPressed(VK_RIGHT) || IsKeyPressed('Q')) {
+				
+				if (AppStatus.GamepadEmulationMode == EmuGamepadMaxModes) { // For keyboard and mouse game mode
+					if (!AppStatus.IsDesktopMode) {
+						KMProfileIndex = 0;
+						LoadKMProfile(KMProfiles[KMProfileIndex]);
+						AppStatus.IsDesktopMode = true;
+					} else
+						AppStatus.GamepadEmulationMode = 0;
+
+				} else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled) { // For desktop control mode 
+					AppStatus.IsDesktopMode = false;
+					KMProfileIndex = KMGameProfileIndex;
+					LoadKMProfile(KMProfiles[KMProfileIndex]);
+					AppStatus.GamepadEmulationMode++;
+
+				} else
+					AppStatus.GamepadEmulationMode++;
+			}
+
 			if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled || AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
 				if (AppStatus.XboxGamepadAttached) {
 					//vigem_target_x360_unregister_notification(x360);
@@ -1586,6 +1678,14 @@ int main(int argc, char **argv)
 
 			//if ( ( (LastGamepadEmuMode == EmuGamepadEnabled && AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving) || (LastGamepadEmuMode == EmuGamepadOnlyDriving && AppStatus.GamepadEmulationMode == EmuGamepadEnabled) ) ||
 				 //( (LastGamepadEmuMode == EmuGamepadDisabled && AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) || (LastGamepadEmuMode == EmuKeyboardAndMouse && AppStatus.GamepadEmulationMode == EmuGamepadDisabled) ) )
+			
+			// Return color if Desktop Mode was selected on the touch panel
+			if (!PrimaryGamepad.TouchSticksOn && PrimaryGamepad.SwitchedToDesktopMode) {
+				PrimaryGamepad.SwitchedToDesktopMode = false;
+				PrimaryGamepad.OutState.LEDColor = PrimaryGamepad.DefaultModeColor;
+				GamepadSetState(PrimaryGamepad);
+			}
+			
 			PlaySound(ChangeEmuModeWav, NULL, SND_ASYNC);
 
 			MainTextUpdate();
@@ -1653,12 +1753,15 @@ int main(int argc, char **argv)
 					if (IsKeyPressed(VK_DOWN) || PrimaryGamepad.InputState.buttons & JSMASK_DOWN) if (XboxProfileIndex < XboxProfiles.size() - 1) XboxProfileIndex++; else XboxProfileIndex = 0;
 					LoadXboxProfile(XboxProfiles[XboxProfileIndex]);
 
-				}
-				else { //EmuKeyboardAndMouse
-					if (IsKeyPressed(VK_UP) || PrimaryGamepad.InputState.buttons & JSMASK_UP) if (KMProfileIndex > 0) KMProfileIndex--; else KMProfileIndex = KMProfiles.size() - 1;
-					if (IsKeyPressed(VK_DOWN) || PrimaryGamepad.InputState.buttons & JSMASK_DOWN) if (KMProfileIndex < KMProfiles.size() - 1) KMProfileIndex++; else KMProfileIndex = 0;
+				} else {
+					if (!AppStatus.IsDesktopMode) { // EmuKeyboardAndMouse game mode
+						if (IsKeyPressed(VK_UP) || PrimaryGamepad.InputState.buttons & JSMASK_UP) if (KMProfileIndex > 0) KMProfileIndex--; else KMProfileIndex = KMProfiles.size() - 1;
+						if (IsKeyPressed(VK_DOWN) || PrimaryGamepad.InputState.buttons & JSMASK_DOWN) if (KMProfileIndex < KMProfiles.size() - 1) KMProfileIndex++; else KMProfileIndex = 0;
+					}
 					LoadKMProfile(KMProfiles[KMProfileIndex]);
+					KMGameProfileIndex = KMProfileIndex;
 				}
+				
 				MainTextUpdate();
 				PlaySound(ChangeEmuModeWav, NULL, SND_ASYNC);
 			}
@@ -1711,7 +1814,6 @@ int main(int argc, char **argv)
 			GamepadSetState(PrimaryGamepad);
 			
 			MainTextUpdate();
-			printf("%d\n", PrimaryGamepad.AdaptiveTriggersOutputMode);
 			AppStatus.SkipPollCount = SkipPollTimeOut;
 		}
 
@@ -1757,7 +1859,7 @@ int main(int argc, char **argv)
 						PrimaryGamepad.OutState.LEDColor = PrimaryGamepad.DrivingModeColor;
 
 						if (PrimaryGamepad.AdaptiveTriggersMode == ADAPTIVE_TRIGGERS_DEPENDENT_MODE_1 || PrimaryGamepad.AdaptiveTriggersMode == ADAPTIVE_TRIGGERS_DEPENDENT_MODE_2 || PrimaryGamepad.AdaptiveTriggersMode == ADAPTIVE_TRIGGERS_DEPENDENT_MODE_3)
-							PrimaryGamepad.AdaptiveTriggersOutputMode = ADAPTIVE_TRIGGERS_BOW_CAR_MODE;
+							PrimaryGamepad.AdaptiveTriggersOutputMode = ADAPTIVE_TRIGGERS_CAR_MODE;
 
 					// [-O-] // Default & touch sticks modes
 					} else if (TouchState.t0X > TOUCHPAD_LEFT_AREA && TouchState.t0X < TOUCHPAD_RIGHT_AREA) {
@@ -1805,9 +1907,12 @@ int main(int argc, char **argv)
 								if (AppStatus.GamepadEmulationMode != EmuKeyboardAndMouse)
 									AppStatus.LastGamepadEmulationMode = AppStatus.GamepadEmulationMode;
 								AppStatus.GamepadEmulationMode = EmuKeyboardAndMouse;
+
+								KMProfileIndex = 0;
 								LoadKMProfile(KMProfiles[0]); // First profile Desktop.ini
 								PlaySound(ChangeEmuModeWav, NULL, SND_ASYNC);
 								PrimaryGamepad.SwitchedToDesktopMode = true;
+								AppStatus.IsDesktopMode = true;
 								MainTextUpdate();
 								AppStatus.SkipPollCount = SkipPollTimeOut;
 								//printf("Desktop turn on\n");
@@ -1849,6 +1954,7 @@ int main(int argc, char **argv)
 						MainTextUpdate();
 						PlaySound(ChangeEmuModeWav, NULL, SND_ASYNC);
 						PrimaryGamepad.SwitchedToDesktopMode = false;
+						AppStatus.IsDesktopMode = false;
 						//printf("Desktop turn off\n");
 					}
 
@@ -2257,20 +2363,18 @@ int main(int argc, char **argv)
 
 					// Left
 					if (MotionAxisX < -PrimaryGamepad.KMEmu.SteeringWheelDeadZone) {
-						// Обновляем максимум (отрицательный)
+						// Update the maximum
 						if (MotionAxisX < PrimaryGamepad.KMEmu.MaxLeftAxisX) PrimaryGamepad.KMEmu.MaxLeftAxisX = MotionAxisX;
 
-						// Условие удержания: не меньше чем 95% от пика (влево — наоборот)
+						// Retention of at least 95% of the peak
 						if (MotionAxisX <= PrimaryGamepad.KMEmu.MaxLeftAxisX * (1.0f - PrimaryGamepad.KMEmu.SteeringWheelReleaseThreshold))
 							PrimaryGamepad.InputState.buttons |= JSMASK_LEFT;
 					}
 
 					// Right
 					if (MotionAxisX > PrimaryGamepad.KMEmu.SteeringWheelDeadZone) {
-						// Обновляем максимум
 						if (MotionAxisX > PrimaryGamepad.KMEmu.MaxRightAxisX) PrimaryGamepad.KMEmu.MaxRightAxisX = MotionAxisX;
 
-						// Условие удержания: не меньше чем 95% от пика
 						if (MotionAxisX >= PrimaryGamepad.KMEmu.MaxRightAxisX * (1.0f - PrimaryGamepad.KMEmu.SteeringWheelReleaseThreshold))
 							PrimaryGamepad.InputState.buttons |= JSMASK_RIGHT;
 					}
