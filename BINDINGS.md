@@ -2,6 +2,8 @@
 Open the `DSAdvance\KMProfiles` folder and copy the `FPS.ini` file, rename it and paste the necessary keys to press.
 
 ## Stick modes
+The stick modes are specified in the parameters: `LS-MODE` and `RS-MODE`.
+
 Mode | Value
 ------------ | -------------
 Pressing WASD | `WASD`
@@ -15,16 +17,16 @@ For the `CUSTOM-BUTTONS` stick mode, add the following parameters:
 
 ```ini
 # Left Stick
-LEFT-STICK-UP = NONE
-LEFT-STICK-LEFT = NONE
-LEFT-STICK-RIGHT = NONE
+LS-UP = NONE
+LS-LEFT = NONE
+LS-RIGHT = NONE
 LEFT-STICK-DOWN = NONE
 
 # Right Stick
-RIGHT-STICK-UP = NONE
-RIGHT-STICK-LEFT = NONE
-RIGHT-STICK-RIGHT = NONE
-RIGHT-STICK-DOWN = NONE
+RS-UP = NONE
+RS-LEFT = NONE
+RS-RIGHT = NONE
+RS-DOWN = NONE
 ```
 
 To enable support for a second player, duplicate the `[FIRST-GAMEPAD]` section along with all its buttons at the end of the file and rename it to `[SECOND-GAMEPAD]`:
@@ -41,6 +43,36 @@ If the tilt is within the dead zone, the wheel is considered centered, and no bu
 Parameter `SteeringWheelDeadZone` defines the wheel's dead zone, specified in percent, from 0 to 100.  
 
 Parameter `SteeringWheelReleaseThreshold` determines how far the wheel must return to the center to stop holding the direction, specified in percent, from 0 to 100.
+
+## Motion Wheel Buttons (Multi-Button)
+The motion wheel buttons allows assigning up to 9 emulations of other buttons to a single button. This is done by holding the specified `WHEEL-ACTIVATION` button, then tilting the gamepad in one of 4 or 8 directions to trigger the button emulation. If no tilt occurs, the default assigned button `WHEEL-DEFAULT` is emulated.
+
+To set up a 4-button motion wheel buttons, do the following. In the `WHEEL-ACTIVATION` parameter, specify one of the "Sony" or "Nintendo" button values (see the "Sony and Nintendo Button Mapping" section), in the other parameters, specify the values from the "Keyboard and Mouse" section.
+```ini
+[MOTION]
+WHEEL-ACTIVATION=TRIANGLE
+WHEEL-DEFAULT=1
+WHEEL-UP=2
+WHEEL-LEFT=1
+WHEEL-RIGHT=3
+WHEEL-DOWN=4
+...
+```
+To set up an 8-button motion wheel buttons, do the following.
+```ini
+[MOTION]
+WHEEL-ACTIVATION=TRIANGLE
+WHEEL-DEFAULT=0
+WHEEL-UP=3
+WHEEL-UP-LEFT=2
+WHEEL-LEFT=1
+WHEEL-UP-RIGHT=4
+WHEEL-RIGHT=5
+WHEEL-DOWN=7
+WHEEL-DOWN-LEFT=8
+WHEEL-DOWN-RIGHT=6
+...
+```
 
 ## Keyboard and mouse
 Key name | Value

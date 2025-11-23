@@ -49,6 +49,14 @@
 // Custom consts
 #define XINPUT_GAMEPAD_LEFT_TRIGGER     0x10000
 #define XINPUT_GAMEPAD_RIGHT_TRIGGER    0x20000
+#define XINPUT_GAMEPAD_LEFT_STICK_UP     0x40000
+#define XINPUT_GAMEPAD_LEFT_STICK_DOWN   0x80000
+#define XINPUT_GAMEPAD_LEFT_STICK_LEFT   0x100000
+#define XINPUT_GAMEPAD_LEFT_STICK_RIGHT  0x200000
+#define XINPUT_GAMEPAD_RIGHT_STICK_UP    0x400000
+#define XINPUT_GAMEPAD_RIGHT_STICK_DOWN  0x800000
+#define XINPUT_GAMEPAD_RIGHT_STICK_LEFT  0x1000000
+#define XINPUT_GAMEPAD_RIGHT_STICK_RIGHT 0x2000000
 
 // Modes
 #define EmuGamepadDisabled				2
@@ -171,6 +179,7 @@ struct Button {
 	bool PressedOnce = false;
 	bool UnpressedOnce = false;
 	int KeyCode = 0;
+	bool IsPressed = false; // for Motion wheel
 };
 
 struct _ButtonsState {
@@ -189,7 +198,7 @@ struct _ButtonsState {
 	Button DPADLeft;
 	Button DPADRight;
 
-	bool DPADAdvancedMode;
+	bool DPADAdvancedMode = false;
 	Button DPADUpLeft;
 	Button DPADUpRight;
 	Button DPADDownLeft;
@@ -218,6 +227,20 @@ struct _ButtonsState {
 	Button Down;
 	Button Left;
 	Button Right;
+
+	// Motion wheel
+	Button WheelActivationGamepadButton;
+	Button WheelDefault;
+	Button WheelUp;
+	Button WheelDown;
+	Button WheelLeft;
+	Button WheelRight;
+
+	bool WheelAdvancedMode = false;
+	Button WheelUpLeft;
+	Button WheelUpRight;
+	Button WheelDownLeft;
+	Button WheelDownRight;
 };
 
 struct AdvancedGamepad {
@@ -324,6 +347,12 @@ struct AdvancedGamepad {
 		int AircraftPitchInverted = 0;
 		float AircraftRollSens = 0;
 		float CustomMulSens = 1.0f;
+
+		float MotionWheelButtonsDeadZone = 0;
+		int WheelCounter = 0;
+		bool WheelActive = false;
+		float WheelAccumX = 0;
+		float WheelAccumY = 0;
 	};
 	_Motion Motion;
 
@@ -402,6 +431,7 @@ struct _AppStatus {
 	bool LeftStickPressOnce = false;
 	bool ChangeModesWithClick = false;
 	bool ChangeModesWithoutAreas = false;
+	int JoyconChangeModesWithButton = 0;
 	bool ShowBatteryStatus = false;
 	int BackOutStateCounter = 0;
 	bool ShowBatteryStatusOnLightBar = false;
@@ -428,8 +458,9 @@ struct _AppStatus {
 	int MicCustomKey = 0;
 	std::string SteamScrKeyName = "NONE";
 	int SteamScrKey = 0;
-	bool AimingWithL2 = true;
+	int AimingButton = 0;
 	bool BTReset = true;
+	bool JoyconRumbleMerge = false;
 
 	struct _HotKeys
 	{
@@ -479,6 +510,27 @@ struct _CurrentXboxProfile {
 	unsigned int B = XINPUT_GAMEPAD_B;
 	unsigned int LeftStick = XINPUT_GAMEPAD_LEFT_THUMB;
 	unsigned int RightStick = XINPUT_GAMEPAD_RIGHT_THUMB;
+	bool SwapSticksAxis = true;
+	bool SwapTriggers = true;
+	// Motion wheel
+	int WheelActivationButton = 0;
+	unsigned int WheelDefault = 0;
+	unsigned int WheelUp = 0;
+	unsigned int WheelDown = 0;
+	unsigned int WheelLeft = 0;
+	unsigned int WheelRight = 0;
+
+	bool WheelAdvancedMode = false;
+	unsigned int WheelUpLeft = 0;
+	unsigned int WheelUpRight = 0;
+	unsigned int WheelDownLeft = 0;
+	unsigned int WheelDownRight = 0;
+
+	unsigned int JCSL = 0;
+	unsigned int JCSR = 0;
+
+	unsigned int DSEdgeL4 = 0;
+	unsigned int DSEdgeR4 = 0;
 };
 _CurrentXboxProfile CurrentXboxProfile;
 
@@ -904,23 +956,75 @@ int XboxKeyNameToXboxKeyCode(std::string KeyName) {
 
 	std::unordered_map<std::string, int> KeyMap = {
 		{"NONE", 0},
-		{"DPAD-UP", XINPUT_GAMEPAD_DPAD_UP},
-		{"DPAD-DOWN", XINPUT_GAMEPAD_DPAD_DOWN},
-		{"DPAD-LEFT", XINPUT_GAMEPAD_DPAD_LEFT},
-		{"DPAD-RIGHT", XINPUT_GAMEPAD_DPAD_RIGHT},
+		{"UP", XINPUT_GAMEPAD_DPAD_UP},
+		{"DOWN", XINPUT_GAMEPAD_DPAD_DOWN},
+		{"LEFT", XINPUT_GAMEPAD_DPAD_LEFT},
+		{"RIGHT", XINPUT_GAMEPAD_DPAD_RIGHT},
 		{"XBOX", XINPUT_GAMEPAD_GUIDE},
 		{"BACK", XINPUT_GAMEPAD_BACK},
 		{"START", XINPUT_GAMEPAD_START},
-		{"LEFT-STICK", XINPUT_GAMEPAD_LEFT_THUMB},
-		{"RIGHT-STICK", XINPUT_GAMEPAD_RIGHT_THUMB},
-		{"LEFT-SHOULDER", XINPUT_GAMEPAD_LEFT_SHOULDER},
-		{"RIGHT-SHOULDER", XINPUT_GAMEPAD_RIGHT_SHOULDER},
+		{"LS", XINPUT_GAMEPAD_LEFT_THUMB},
+		{"RS", XINPUT_GAMEPAD_RIGHT_THUMB},
+		{"LB", XINPUT_GAMEPAD_LEFT_SHOULDER},
+		{"RB", XINPUT_GAMEPAD_RIGHT_SHOULDER},
 		{"A", XINPUT_GAMEPAD_A},
 		{"B", XINPUT_GAMEPAD_B},
 		{"X", XINPUT_GAMEPAD_X},
 		{"Y", XINPUT_GAMEPAD_Y},
-		{"LEFT-TRIGGER", XINPUT_GAMEPAD_LEFT_TRIGGER},
-		{"RIGHT-TRIGGER", XINPUT_GAMEPAD_RIGHT_TRIGGER}
+		{"LT", XINPUT_GAMEPAD_LEFT_TRIGGER},
+		{"RT", XINPUT_GAMEPAD_RIGHT_TRIGGER},
+		{"LS-UP", XINPUT_GAMEPAD_LEFT_STICK_UP},
+		{"LS-DOWN", XINPUT_GAMEPAD_LEFT_STICK_DOWN},
+		{"LS-LEFT", XINPUT_GAMEPAD_LEFT_STICK_LEFT},
+		{"LS-RIGHT", XINPUT_GAMEPAD_LEFT_STICK_RIGHT},
+		{"RS-UP", XINPUT_GAMEPAD_RIGHT_STICK_UP},
+		{"RS-DOWN", XINPUT_GAMEPAD_RIGHT_STICK_DOWN},
+		{"RS-LEFT", XINPUT_GAMEPAD_RIGHT_STICK_LEFT},
+		{"RS-RIGHT", XINPUT_GAMEPAD_RIGHT_STICK_RIGHT}
+	};
+
+	if (KeyMap.find(KeyName) != KeyMap.end())
+		return KeyMap[KeyName];
+	else
+		return 0;
+}
+
+int SonyNintendoKeyNameToJoyShockKeyCode(std::string KeyName) {
+	std::transform(KeyName.begin(), KeyName.end(), KeyName.begin(), ::toupper);
+
+	std::unordered_map<std::string, int> KeyMap = {
+		{"NONE", 0},
+		{"UP", JSMASK_UP},
+		{"DOWN", JSMASK_DOWN},
+		{"LEFT", JSMASK_LEFT},
+		{"RIGHT", JSMASK_RIGHT},
+		//{"PS", JSMASK_PS},
+		{"SHARE", JSMASK_SHARE},
+		{"OPTIONS", JSMASK_OPTIONS},
+		{"L3", JSMASK_LCLICK},
+		{"R3", JSMASK_RCLICK},
+		{"L1", JSMASK_L},
+		{"R1", JSMASK_R},
+		{"CROSS", JSMASK_S}, // A
+		{"CIRCLE", JSMASK_E}, // B
+		{"SQUARE", JSMASK_W}, // X
+		{"TRIANGLE", JSMASK_N}, // Y
+		{"L2", JSMASK_ZL},
+		{"R2", JSMASK_ZR},
+		{"L4", JSOFFSET_FNL},
+		{"R4", JSOFFSET_FNR},
+		{"ZL", JSMASK_ZL},
+		{"ZR", JSMASK_ZR},
+		{"B", JSMASK_S}, // A
+		{"A", JSMASK_E}, // B
+		{"Y", JSMASK_W}, // X
+		{"X", JSMASK_N}, // Y
+		{"MINUS", JSMASK_MINUS},
+		{"PLUS", JSMASK_PLUS},
+		{"SL", JSMASK_SL},
+		{"SR", JSMASK_SR},
+		{"CAPTURE", JSMASK_CAPTURE},
+		{"HOME", JSMASK_HOME},
 	};
 
 	if (KeyMap.find(KeyName) != KeyMap.end())

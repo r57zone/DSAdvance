@@ -3,7 +3,7 @@
 ← Choose language | Выберите язык
 
 # DSAdvance
-Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, stick emulation on the touchpad, keyboard and mouse emulation, and [external pedals](https://github.com/r57zone/GamepadExternalPedals) with extra buttons, and other Digispark-based joysticks. Works based on the driver [ViGEm](https://github.com/nefarius/ViGEmBus).
+Advanced Xbox gamepad emulation for Sony DualSense, DualSense Edge, DualShock 4, Nintendo Pro controller or Joy-cons. Supports aiming and driving by tilting the gamepad, stick emulation on the touchpad, keyboard and mouse emulation, and [external pedals](https://github.com/r57zone/GamepadExternalPedals) with extra buttons, and other Digispark-based joysticks. Works based on the driver [ViGEm](https://github.com/nefarius/ViGEmBus).
 
 [![](https://user-images.githubusercontent.com/9499881/164945071-5b9f86dd-c396-45a5-817b-fc7068450f02.gif)](https://youtu.be/gkyqO_HuPnk)
 [![](https://user-images.githubusercontent.com/9499881/164945073-cfa1bfb7-cb82-4714-b2ad-7ecd84a5bcfc.gif)](https://youtu.be/gkyqO_HuPnk)
@@ -11,16 +11,18 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualShock 4, Nintendo Pro co
 # Features
 ✔️ Tilt driving and aiming support (gyroscope, no additional settings required);<br>
 ✔️ Easy switching between driving and aiming modes (maximum innovative motion gameplay);<br>
-✔️ Windows control, volume adjustment, and screenshot creation using a gamepad;<br>
-✔️ Remapping Xbox controller buttons, different profiles;<br>
-✔️ Keyboard and mouse emulation for old games, as well as profiles;<br>
-✔️ Support for adaptive triggers for Sony DualSense in USB connection mode (pistol, rifle, sniper rifle, bow, car pedal);<br>
+✔️ Windows control, volume adjustment, taking screenshots and videos using a gamepad;<br>
+✔️ Remapping Xbox controller buttons, different profiles. Supports "Motion Wheel Buttons" and gamepad tilts, and +8 additional buttons;;<br>
+✔️ Keyboard and mouse emulation for old games, as well as profiles. Supports "Motion Wheel Buttons" and gamepad tilts, and +8 additional buttons;<br>
+✔️ Support for adaptive triggers for Sony DualSense (pistol, rifle, sniper rifle, bow, car pedal);<br>
 ✔️ Various emulation modes for games with adaptive triggers;<br>
+✔️ Support for two gamepads, the first with full functionality, and the second with simplified features (must be enabled in the config);<br>
+✔️ Support for playing on a single Joy-Con, with full emulation of all buttons using the "gesture wheel" (gamepad tilts);<br>
 ✔️ Battery level display on the light bar and player indicators (for Sony gamepads);<br>
 ✔️ Turning off the light bar for full immersion in the dark;<br>
-✔️ Support for two gamepads, the first with full functionality, and the second with simplified features (must be enabled in the config);<br>
 ✔️ Support for external modified racing pedals with any 16 buttons;<br>
 ✔️ Support for emulating any Xbox controller button presses using a Digispark joystick (up to 16 buttons);<br>
+✔️ Left-handed mode is supported, where the buttons are mirrored from right to left. Switch the Xbox profile to `Left-Handed`;<br>
 
 Multiple operation modes are supported. You can switch between them by pressing the touchpad on DualSense and DualShock 4, the `Capture` and `Home` buttons on Pro Controllers and Joy-Cons (pressing `Home` again toggles aim mode — always/L2), or by pressing the touchpad on gamepads compatible with DualShock 4 but lacking a touch sensor (if the `ChangeModesWithoutAreas` parameter is set to `1`). You can also change operation modes using `ALT` + `1/2`. You can also switch operation modes using `ALT` + `1/2`. Pressing `ALT + 1` again disables driving mode, and pressing `ALT + 2` again toggles the aim mode (always/L2).
 
@@ -28,7 +30,7 @@ Multiple operation modes are supported. You can switch between them by pressing 
 
 The default gamepad color and the area colors can be changed in the configuration file.
 
-To enable aiming with the `L1` button, change the `AimingWithL2` parameter to `0` in the config.
+To enable aiming with the `L1` button or any other button, change the `AimingButton` parameter to the desired button, for example, `L1`, in the configuration file.
 
 By default, the computer control area is located at the bottom center. To enable touch sticks, set the `TouchSticksOn` parameter to `1` — the desktop control area will be replaced with the touch stick area. To exit stick emulation mode, press the default mode button.
 
@@ -43,9 +45,15 @@ There are 5 emulation modes:
 * Keyboard and mouse emulation for Windows control;
 * Keyboard and mouse emulation for old retro games;
 
-Emulation Mode switching is done via `ALT + Q`, `ALT + ←/→` or `PS/Home + ←/→`. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). There are also Xbox profiles for changing the button layout. Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`. The default profile allows Windows operation.
+Emulation Mode switching is done via `ALT + Q`, `ALT + ←/→` or `PS/Home + ←/→`. The game keyboard and mouse emulation mode can be switched using keyboard keys only when the window is active, to prevent accidental changes. Keyboard and mouse emulation supports different profiles; select the required profile or [create a new one](https://github.com/r57zone/DSAdvance/blob/master/BINDINGS.md). The default profile allows Windows operation. There are also Xbox profiles for changing the button layout. More details about creating Xbox profiles [here](https://github.com/r57zone/DSAdvance/blob/master/XBOX_BINDINGS.md). Profiles can be switched using `ALT + ↑/↓` when the window is active, or on the gamepad using `PS/Home + ↑/↓`.
 
-Adaptive triggers for Sony DualSense in USB mode are supported, you can switch between different modes with `ALT + 3/4`.
+The "Motion Wheel Buttons" is supported, allowing up to 9 buttons to be assigned to a single one. Emulation is done by pressing the special `WHEEL-ACTIVATION` button and tilting into one of 4 or 8 directions (if 4 buttons are assigned, there are 4 directions; if 8, then 8 directions). Gesture wheel settings can be found in the `MOTION` section of the keyboard and mouse or Xbox profile files. The dead zone can be adjusted using the `MotionWheelButtonsDeadZone` parameter.
+
+Adaptive triggers for Sony DualSense, you can switch between different modes with `ALT + 3/4`.
+
+Additional buttons on the Sony DualSense Edge (L4, R4) and Joy-Cons (SL, SR) are supported. They can be changed in the Xbox profile `XboxProfiles\Default.ini`, more details [here](https://github.com/r57zone/DSAdvance/blob/master/XBOX_BINDINGS.md).
+
+Playing with a single Joy-Con is supported, with full button emulation using the "gesture wheel" and gamepad tilts. For proper, averaged vibration on a single Joy-Con, set the `JoyconRumbleMerge` parameter to `1` in the configuration file. Also, switch the Xbox profile to `Joycon Left/Right Only`. To use the option to switch between driving and aiming modes with a single button, set the `JoyconChangeModesWithButton` parameter to `HOME` or `CAPTURE`. When creating Xbox profiles, you can swap the sticks and triggers by setting the `SWAP-STICKS` and `SWAP-TRIGGERS` parameters to `1`.
 
 To connect [external pedals (DInput)](https://github.com/r57zone/GamepadExternalPedals#setup-dinput-pedals-mh-et-live-board) and Digispark joystick based devices, change the parameter change the `DInput` parameter to `1` in the `ExternalPedals` section. To connect [external pedals on Arduino](https://github.com/r57zone/GamepadExternalPedals#setup-arduino-pedals), change the COM port number by modifying the `COMPort` parameter.
 
@@ -137,6 +145,7 @@ Unfortunately, this feature is not implemented.
 * [JoyShockLibrary](https://github.com/JibbSmart/JoyShockLibrary) for a cool gamepad library that makes it easy to get controller rotation. Also uses some code from this library and [JibbSmart snippet](https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df) for aiming.
 * DS4Windows[[1]](https://github.com/Jays2Kings/DS4Windows)[[2]](https://github.com/Ryochan7/DS4Windows) for the battery level.
 * [JoyCon-Driver](https://github.com/fossephate/JoyCon-Driver/blob/main/joycon-driver/include/Joycon.hpp) for Joy-Cons rumble.
+* [Valkirie](https://github.com/Valkirie/JoyShockLibrary/commits/HDRumble) for adaptive triggers over Bluetooth.
 
 ## Building
 1. Download the sources and unzip them.

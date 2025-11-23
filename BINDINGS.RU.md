@@ -3,6 +3,8 @@
 Отройте папку `DSAdvance\KMProfiles` и скопируйте файл `FPS.ini`, переименуйте его и вставьте необходимые клавишы для нажатия.
 
 ## Режимы стиков
+Режимы стиков задаются в параметрах: `LS-MODE` и `RS-MODE`.
+
 Режим | Значение
 ------------ | -------------
 Нажатие WASD | `WASD`
@@ -15,16 +17,16 @@
 Для режима стика `CUSTOM-BUTTONS` измените добавьте следующие параметры:
 ```ini
 # Левый стик
-LEFT-STICK-UP = NONE
-LEFT-STICK-LEFT = NONE
-LEFT-STICK-RIGHT = NONE
-LEFT-STICK-DOWN = NONE
+LS = NONE
+LS = NONE
+LS = NONE
+LS = NONE
 
 # Правый стик
-RIGHT-STICK-UP    = NONE
-RIGHT-STICK-LEFT  = NONE
-RIGHT-STICK-RIGHT = NONE
-RIGHT-STICK-DOWN  = NONE
+RS-UP    = NONE
+RS-LEFT  = NONE
+RS-RIGHT = NONE
+RS-DOWN  = NONE
 ```
 
 Для поддержки второго игрока продублируйте секцию `[FIRST-GAMEPAD]` вместе со всеми кнопками в конец файла и переименуйте её в `[SECOND-GAMEPAD]`:
@@ -41,6 +43,36 @@ RIGHT-STICK-DOWN  = NONE
 Параметр `SteeringWheelDeadZone` отвечает за мертвую зону руля, задается в процентах, от `0` до `100`.  
 
 Параметр `SteeringWheelReleaseThreshold` определяет, насколько сильно руль должен вернуться к центру, чтобы прекратилось удержание направления, задается в процентах, от `0` до `100`.
+
+## Колесо жестов (мульти кнопка)
+Колесо жестов позволяет назначить на одну кнопку до 9 эмуляций других кнопок. Происходят они путем зажатия заданной кнопки `WHEEL-ACTIVATION`, после чего нужно нужно наклонить геймпад в одну из 4 или 8 сторон и произойдет эмуляция кнопки. Если наклона не произошло, то эмулируется стандартная заданная кнопка `WHEEL-DEFAULT`.
+
+Задать колесо жестов для 4 кнопок можно следующим образом. В параметре `WHEEL-ACTIVATION` указывается одно из значений кнопок "Sony" или "Nintendo" (раздел "Обозначение кнопок Sony и Nintendo"), в остальных параметрах указываются значения из раздела "Клавиатура и мышь".
+```ini
+[MOTION]
+WHEEL-ACTIVATION=TRIANGLE
+WHEEL-DEFAULT=Y
+WHEEL-UP=UP
+WHEEL-LEFT=LEFT
+WHEEL-RIGHT=RIGHT
+WHEEL-DOWN=DOWN
+...
+```
+Задать колесо жестов для 8 кнопок можно следующим образом.
+```ini
+[MOTION]
+WHEEL-ACTIVATION=TRIANGLE
+WHEEL-DEFAULT=Y
+WHEEL-UP=UP
+WHEEL-UP-LEFT=LB
+WHEEL-LEFT=LEFT
+WHEEL-UP-RIGHT=RB
+WHEEL-RIGHT=RIGHT
+WHEEL-DOWN=DOWN
+WHEEL-DOWN-LEFT=LT
+WHEEL-DOWN-RIGHT=RT
+...
+```
 
 ## Клавиатура и мышь
 Название клавиши | Значение

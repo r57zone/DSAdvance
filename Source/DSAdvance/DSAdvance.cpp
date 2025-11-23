@@ -352,8 +352,9 @@ void GamepadSetState(AdvancedGamepad &Gamepad)
 
 				hid_write(Gamepad.HidHandle, outputReport, 48);
 
-				// DualSense BT
+				
 			}
+			// DualSense BT
 			else {
 				unsigned char outputReport[79]; // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds5_rumble_light_bt)
 				memset(outputReport, 0, 79);
@@ -376,7 +377,105 @@ void GamepadSetState(AdvancedGamepad &Gamepad)
 				outputReport[48] = std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255);
 				outputReport[49] = std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255);
 
-				// It seems adaptive triggers don't work via bluetooth :(
+				// https://github.com/Valkirie/JoyShockLibrary/commit/f4fffb6faa53f0839130b093690ca292f23f115e
+				if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RUMBLE_MODE) // Rumble translation
+				{
+					// Left trigger (USB: 21..25) -> BT: 24..28
+					outputReport[3] |= 0x08;              // dirty L2
+					outputReport[24] = 0x06;              // Continuous Resistance
+					outputReport[25] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 2300;
+					outputReport[26] = 0x09;              // начало
+					outputReport[27] = 0xFF;              // конец
+					outputReport[28] = 0x00;              // без вибрации
+
+					// Right trigger (USB: 11..15) -> BT: 13..17
+					outputReport[3] |= 0x04;              // dirty R2
+					outputReport[13] = 0x06;              // Pulse mode
+					outputReport[14] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 2300;
+					outputReport[15] = 3;                 // старт чуть позже
+					outputReport[16] = 8;                 // короткая серия
+					outputReport[17] = 0x18;              // частота
+				}
+				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_PISTOL_MODE) // Пистолет
+				{
+					// Только правый, как по USB
+					outputReport[3] |= 0x04;              // dirty R2
+					outputReport[13] = 0x02;              // Continuous Resistance
+					outputReport[14] = 35;                // сила
+					outputReport[15] = 0x09;              // начало
+					outputReport[16] = 0xFF;              // конец
+					outputReport[17] = 0x00;              // без вибрации
+				}
+				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_AUTOMATIC_MODE) // Automatic / очередь
+				{
+					outputReport[3] |= 0x04;              // dirty R2
+					outputReport[13] = 0x06;              // Pulse mode
+					outputReport[14] = 15;                // сила импульса
+					outputReport[15] = 2;                 // старт
+					outputReport[16] = 10;                // конец серии
+					outputReport[17] = 0x20;              // частота
+				}
+				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RIFLE_MODE) // Винтовка
+				{
+					outputReport[3] |= 0x04;              // dirty R2
+					outputReport[13] = 0x25;
+					outputReport[14] = 0x04;
+					outputReport[15] = 0x01;
+					outputReport[16] = 0x06;
+					outputReport[17] = 0x00;
+					outputReport[18] = 0x00;
+					outputReport[19] = 0x00;
+					outputReport[20] = 0x00;
+					outputReport[21] = 0x00;
+					outputReport[22] = 0x00;
+					outputReport[23] = 0x00;
+				}
+				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_BOW_MODE) // Лук
+				{
+					outputReport[3] |= 0x04;              // dirty R2
+					outputReport[13] = 0x22;
+					outputReport[14] = 0x01;              // low
+					outputReport[15] = 0x01;              // high
+					outputReport[16] = 0x33;              // как по USB
+					outputReport[17] = 0x00;
+					outputReport[18] = 0x00;
+					outputReport[19] = 0x00;
+					outputReport[20] = 0x00;
+					outputReport[21] = 0x00;
+					outputReport[22] = 0x00;
+					outputReport[23] = 0x00;
+				}
+				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_CAR_MODE) // Педаль авто
+				{
+					outputReport[3] |= 0x04;              // dirty R2
+					outputReport[13] = 0x21;
+					outputReport[14] = 0xFF;              // активные зоны 0..9
+					outputReport[15] = 0x03;
+					outputReport[16] = 0x24;              // amplitude zones
+					outputReport[17] = 0x92;
+					outputReport[18] = 0x49;
+					outputReport[19] = 0x24;
+					outputReport[20] = 0x00;
+					outputReport[21] = 0x00;
+					outputReport[22] = 0x00;
+					outputReport[23] = 0x00;
+				}
+				else
+				{
+					// режим 0 / неизвестный — сброс обоих триггеров
+					outputReport[3] |= 0x0C;              // dirty R2+L2
+				}
+
+				// Left trigger
+				if (Gamepad.AdaptiveTriggersOutputMode > 1)
+				{
+					outputReport[3] |= 0x08;              // dirty L2
+					outputReport[24] = 0x02;              // Continuous Resistance
+					outputReport[25] = 35;                // Средняя сила
+					outputReport[26] = 0x09;              // Начало
+					outputReport[27] = 0xFF;              // Конец
+					outputReport[28] = 0x00;              // Без вибрации
+				}
 
 				uint32_t crc = crc_32(outputReport, 75);
 				memcpy(&outputReport[75], &crc, 4);
@@ -478,10 +577,9 @@ void GamepadSetState(AdvancedGamepad &Gamepad)
 					hid_write(Gamepad.HidHandle2, outputReportRight, sizeof(outputReportRight));
 				}*/
 
-				JoyConSimpleRumble(Gamepad.HidHandle, true, Gamepad.OutState.LargeMotor);
-				if (Gamepad.HidHandle2) {
-					JoyConSimpleRumble(Gamepad.HidHandle2, false, Gamepad.OutState.SmallMotor);
-				}
+				JoyConSimpleRumble(Gamepad.HidHandle, true, AppStatus.JoyconRumbleMerge == false ? Gamepad.OutState.LargeMotor : (Gamepad.OutState.LargeMotor + Gamepad.OutState.SmallMotor) / 2);
+				if (Gamepad.HidHandle2)
+					JoyConSimpleRumble(Gamepad.HidHandle2, false, AppStatus.JoyconRumbleMerge == false ? Gamepad.OutState.SmallMotor : (Gamepad.OutState.LargeMotor + Gamepad.OutState.SmallMotor) / 2);
 
 			}
 		}
@@ -714,8 +812,8 @@ void LoadKMProfile(std::string ProfileFile) {
 	CIniReader IniFile("KMProfiles\\" + ProfileFile);
 
 	// Primary gamepad
-	PrimaryGamepad.ButtonsStates.LeftTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LEFT-TRIGGER", "RIGHT-MOUSE-CLICK"));
-	PrimaryGamepad.ButtonsStates.RightTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RIGHT-TRIGGER", "LEFT-MOUSE-CLICK"));
+	PrimaryGamepad.ButtonsStates.LeftTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LT", "MOUSE-RIGHT"));
+	PrimaryGamepad.ButtonsStates.RightTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RT", "MOUSE-LEFT"));
 
 	PrimaryGamepad.ButtonsStates.LeftBumper.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "L1-LB", "F"));
 	PrimaryGamepad.ButtonsStates.RightBumper.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "R1-RB", "G"));
@@ -723,15 +821,15 @@ void LoadKMProfile(std::string ProfileFile) {
 	PrimaryGamepad.ButtonsStates.Back.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "BACK", "ESCAPE"));
 	PrimaryGamepad.ButtonsStates.Start.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "START", "ENTER"));
 
-	PrimaryGamepad.ButtonsStates.DPADUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DPAD-UP", "2"));
-	PrimaryGamepad.ButtonsStates.DPADLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DPAD-LEFT", "1"));
-	PrimaryGamepad.ButtonsStates.DPADRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DPAD-RIGHT", "3"));
-	PrimaryGamepad.ButtonsStates.DPADDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DPAD-DOWN", "4"));
+	PrimaryGamepad.ButtonsStates.DPADUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "UP", "2"));
+	PrimaryGamepad.ButtonsStates.DPADLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LEFT", "1"));
+	PrimaryGamepad.ButtonsStates.DPADRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RIGHT", "3"));
+	PrimaryGamepad.ButtonsStates.DPADDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DOWN", "4"));
 
-	PrimaryGamepad.ButtonsStates.DPADUpLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DPAD-UP-LEFT", "NONE"));
-	PrimaryGamepad.ButtonsStates.DPADUpRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DPAD-UP-RIGHT", "NONE"));
-	PrimaryGamepad.ButtonsStates.DPADDownLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DPAD-DOWN-LEFT", "NONE"));
-	PrimaryGamepad.ButtonsStates.DPADDownRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DPAD-DOWN-RIGHT", "NONE"));
+	PrimaryGamepad.ButtonsStates.DPADUpLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "UP-LEFT", "NONE"));
+	PrimaryGamepad.ButtonsStates.DPADUpRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "UP-RIGHT", "NONE"));
+	PrimaryGamepad.ButtonsStates.DPADDownLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DOWN-LEFT", "NONE"));
+	PrimaryGamepad.ButtonsStates.DPADDownRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "DOWN-RIGHT", "NONE"));
 	PrimaryGamepad.ButtonsStates.DPADAdvancedMode = !(PrimaryGamepad.ButtonsStates.DPADUpLeft.KeyCode == 0 && PrimaryGamepad.ButtonsStates.DPADUpRight.KeyCode == 0 && PrimaryGamepad.ButtonsStates.DPADDownLeft.KeyCode == 0 && PrimaryGamepad.ButtonsStates.DPADDownRight.KeyCode == 0);
 
 	PrimaryGamepad.ButtonsStates.Y.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "TRIANGLE-Y", "E"));
@@ -739,30 +837,45 @@ void LoadKMProfile(std::string ProfileFile) {
 	PrimaryGamepad.ButtonsStates.A.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "CROSS-A", "SPACE"));
 	PrimaryGamepad.ButtonsStates.B.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "CIRCLE-B", "CTRL"));
 
-	PrimaryGamepad.ButtonsStates.LeftStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LEFT-STICK-CLICK", "NONE"));
-	PrimaryGamepad.ButtonsStates.LeftStickUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LEFT-STICK-UP", "NONE"));
-	PrimaryGamepad.ButtonsStates.LeftStickLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LEFT-STICK-LEFT", "NONE"));
-	PrimaryGamepad.ButtonsStates.LeftStickRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LEFT-STICK-RIGHT", "NONE"));
-	PrimaryGamepad.ButtonsStates.LeftStickDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LEFT-STICK-DOWN", "NONE"));
+	PrimaryGamepad.ButtonsStates.LeftStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LS", "NONE"));
+	PrimaryGamepad.ButtonsStates.LeftStickUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LS-UP", "NONE"));
+	PrimaryGamepad.ButtonsStates.LeftStickLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LS-LEFT", "NONE"));
+	PrimaryGamepad.ButtonsStates.LeftStickRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LS-RIGHT", "NONE"));
+	PrimaryGamepad.ButtonsStates.LeftStickDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LS-DOWN", "NONE"));
 	
-	PrimaryGamepad.ButtonsStates.RightStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RIGHT-STICK-CLICK", "NONE"));
-	PrimaryGamepad.ButtonsStates.RightStickUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RIGHT-STICK-UP", "NONE"));
-	PrimaryGamepad.ButtonsStates.RightStickLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RIGHT-STICK-LEFT", "NONE"));
-	PrimaryGamepad.ButtonsStates.RightStickRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RIGHT-STICK-RIGHT", "NONE"));
-	PrimaryGamepad.ButtonsStates.RightStickDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RIGHT-STICK-DOWN", "NONE"));
+	PrimaryGamepad.ButtonsStates.RightStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RS", "NONE"));
+	PrimaryGamepad.ButtonsStates.RightStickUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RS-UP", "NONE"));
+	PrimaryGamepad.ButtonsStates.RightStickLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RS-LEFT", "NONE"));
+	PrimaryGamepad.ButtonsStates.RightStickRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RS-RIGHT", "NONE"));
+	PrimaryGamepad.ButtonsStates.RightStickDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RS-DOWN", "NONE"));
 
-	PrimaryGamepad.KMEmu.LeftStickMode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LEFT-STICK", "WASD"));
-	PrimaryGamepad.KMEmu.RightStickMode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RIGHT-STICK", "MOUSE-LOOK"));
+	PrimaryGamepad.KMEmu.LeftStickMode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "LS-MODE", "WASD"));
+	PrimaryGamepad.KMEmu.RightStickMode = KeyNameToKeyCode(IniFile.ReadString("FIRST-GAMEPAD", "RS-MODE", "MOUSE-LOOK"));
 
 	PrimaryGamepad.KMEmu.JoySensX = IniFile.ReadFloat("MOUSE", "SensitivityX", 100) * 0.21f; // Crysis 2, Last of Us 2 calibration
 	PrimaryGamepad.KMEmu.JoySensY = IniFile.ReadFloat("MOUSE", "SensitivityY", 100) * 0.21f; // Crysis 2, Last of Us 2 calibration
 
+	// Steering wheel
 	PrimaryGamepad.KMEmu.SteeringWheelDeadZone = IniFile.ReadFloat("MOTION", "SteeringWheelDeadZone", 20) * 0.01f;
 	PrimaryGamepad.KMEmu.SteeringWheelReleaseThreshold = IniFile.ReadFloat("MOTION", "SteeringWheelReleaseThreshold", 1) * 0.01f;
 
+	// Motion wheel
+	PrimaryGamepad.ButtonsStates.WheelActivationGamepadButton.KeyCode = SonyNintendoKeyNameToJoyShockKeyCode(IniFile.ReadString("MOTION", "WHEEL-ACTIVATION", "L2"));
+	PrimaryGamepad.ButtonsStates.WheelDefault.KeyCode = KeyNameToKeyCode(IniFile.ReadString("MOTION", "WHEEL-DEFAULT", "0"));
+	PrimaryGamepad.ButtonsStates.WheelUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("MOTION", "WHEEL-UP", "2"));
+	PrimaryGamepad.ButtonsStates.WheelLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("MOTION", "WHEEL-LEFT", "1"));
+	PrimaryGamepad.ButtonsStates.WheelRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("MOTION", "WHEEL-RIGHT", "3"));
+	PrimaryGamepad.ButtonsStates.WheelDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("MOTION", "WHEEL-DOWN", "4"));
+
+	PrimaryGamepad.ButtonsStates.WheelUpLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("MOTION", "WHEEL-UP-LEFT", "NONE"));
+	PrimaryGamepad.ButtonsStates.WheelUpRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("MOTION", "WHEEL-UP-RIGHT", "NONE"));
+	PrimaryGamepad.ButtonsStates.WheelDownLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("MOTION", "WHEEL-DOWN-LEFT", "NONE"));
+	PrimaryGamepad.ButtonsStates.WheelDownRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("MOTION", "WHEEL-DOWN-RIGHT", "NONE"));
+	PrimaryGamepad.ButtonsStates.WheelAdvancedMode = !(PrimaryGamepad.ButtonsStates.WheelUpLeft.KeyCode == 0 && PrimaryGamepad.ButtonsStates.WheelUpRight.KeyCode == 0 && PrimaryGamepad.ButtonsStates.WheelDownLeft.KeyCode == 0 && PrimaryGamepad.ButtonsStates.WheelDownRight.KeyCode == 0);
+
 	// Secondary gamepad
-	SecondaryGamepad.ButtonsStates.LeftTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LEFT-TRIGGER", "NONE"));
-	SecondaryGamepad.ButtonsStates.RightTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RIGHT-TRIGGER", "NONE"));
+	SecondaryGamepad.ButtonsStates.LeftTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LT", "NONE"));
+	SecondaryGamepad.ButtonsStates.RightTrigger.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RT", "NONE"));
 
 	SecondaryGamepad.ButtonsStates.LeftBumper.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "L1-LB", "NONE"));
 	SecondaryGamepad.ButtonsStates.RightBumper.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "R1-RB", "NONE"));
@@ -770,15 +883,15 @@ void LoadKMProfile(std::string ProfileFile) {
 	SecondaryGamepad.ButtonsStates.Back.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "BACK", "NONE"));
 	SecondaryGamepad.ButtonsStates.Start.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "START", "NONE"));
 
-	SecondaryGamepad.ButtonsStates.DPADUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DPAD-UP", "NONE"));
-	SecondaryGamepad.ButtonsStates.DPADLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DPAD-LEFT", "NONE"));
-	SecondaryGamepad.ButtonsStates.DPADRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DPAD-RIGHT", "NONE"));
-	SecondaryGamepad.ButtonsStates.DPADDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DPAD-DOWN", "NONE"));
+	SecondaryGamepad.ButtonsStates.DPADUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "UP", "NONE"));
+	SecondaryGamepad.ButtonsStates.DPADLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LEFT", "NONE"));
+	SecondaryGamepad.ButtonsStates.DPADRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RIGHT", "NONE"));
+	SecondaryGamepad.ButtonsStates.DPADDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DOWN", "NONE"));
 
-	SecondaryGamepad.ButtonsStates.DPADUpLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DPAD-UP-LEFT", "NONE"));
-	SecondaryGamepad.ButtonsStates.DPADUpRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DPAD-UP-RIGHT", "NONE"));
-	SecondaryGamepad.ButtonsStates.DPADDownLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DPAD-DOWN-LEFT", "NONE"));
-	SecondaryGamepad.ButtonsStates.DPADDownRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DPAD-DOWN-RIGHT", "NONE"));
+	SecondaryGamepad.ButtonsStates.DPADUpLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "UP-LEFT", "NONE"));
+	SecondaryGamepad.ButtonsStates.DPADUpRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "UP-RIGHT", "NONE"));
+	SecondaryGamepad.ButtonsStates.DPADDownLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DOWN-LEFT", "NONE"));
+	SecondaryGamepad.ButtonsStates.DPADDownRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "DOWN-RIGHT", "NONE"));
 	SecondaryGamepad.ButtonsStates.DPADAdvancedMode = !(SecondaryGamepad.ButtonsStates.DPADUpLeft.KeyCode == 0 && SecondaryGamepad.ButtonsStates.DPADUpRight.KeyCode == 0 && SecondaryGamepad.ButtonsStates.DPADDownLeft.KeyCode == 0 && SecondaryGamepad.ButtonsStates.DPADDownRight.KeyCode == 0);
 
 	SecondaryGamepad.ButtonsStates.Y.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "TRIANGLE-Y", "NONE"));
@@ -786,20 +899,20 @@ void LoadKMProfile(std::string ProfileFile) {
 	SecondaryGamepad.ButtonsStates.A.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "CROSS-A", "NONE"));
 	SecondaryGamepad.ButtonsStates.B.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "CIRCLE-B", "NONE"));
 
-	SecondaryGamepad.ButtonsStates.LeftStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LEFT-STICK-CLICK", "NONE"));
-	SecondaryGamepad.ButtonsStates.LeftStickUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LEFT-STICK-UP", "NONE"));
-	SecondaryGamepad.ButtonsStates.LeftStickLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LEFT-STICK-LEFT", "NONE"));
-	SecondaryGamepad.ButtonsStates.LeftStickRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LEFT-STICK-RIGHT", "NONE"));
-	SecondaryGamepad.ButtonsStates.LeftStickDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LEFT-STICK-DOWN", "NONE"));
+	SecondaryGamepad.ButtonsStates.LeftStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LS", "NONE"));
+	SecondaryGamepad.ButtonsStates.LeftStickUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LS-UP", "NONE"));
+	SecondaryGamepad.ButtonsStates.LeftStickLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LS-LEFT", "NONE"));
+	SecondaryGamepad.ButtonsStates.LeftStickRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LS-RIGHT", "NONE"));
+	SecondaryGamepad.ButtonsStates.LeftStickDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LS-DOWN", "NONE"));
 
-	SecondaryGamepad.ButtonsStates.RightStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RIGHT-STICK-CLICK", "NONE"));
-	SecondaryGamepad.ButtonsStates.RightStickUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RIGHT-STICK-UP", "NONE"));
-	SecondaryGamepad.ButtonsStates.RightStickLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RIGHT-STICK-LEFT", "NONE"));
-	SecondaryGamepad.ButtonsStates.RightStickRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RIGHT-STICK-RIGHT", "NONE"));
-	SecondaryGamepad.ButtonsStates.RightStickDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RIGHT-STICK-DOWN", "NONE"));
+	SecondaryGamepad.ButtonsStates.RightStick.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RS", "NONE"));
+	SecondaryGamepad.ButtonsStates.RightStickUp.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RS-UP", "NONE"));
+	SecondaryGamepad.ButtonsStates.RightStickLeft.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RS-LEFT", "NONE"));
+	SecondaryGamepad.ButtonsStates.RightStickRight.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RS-RIGHT", "NONE"));
+	SecondaryGamepad.ButtonsStates.RightStickDown.KeyCode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RS-DOWN", "NONE"));
 
-	SecondaryGamepad.KMEmu.LeftStickMode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LEFT-STICK", "NONE"));
-	SecondaryGamepad.KMEmu.RightStickMode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RIGHT-STICK", "NONE"));
+	SecondaryGamepad.KMEmu.LeftStickMode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "LS-MODE", "NONE"));
+	SecondaryGamepad.KMEmu.RightStickMode = KeyNameToKeyCode(IniFile.ReadString("SECOND-GAMEPAD", "RS-MODE", "NONE"));
 
 	SecondaryGamepad.KMEmu.JoySensX = PrimaryGamepad.KMEmu.JoySensX;
 	SecondaryGamepad.KMEmu.JoySensY = PrimaryGamepad.KMEmu.JoySensY;
@@ -808,22 +921,44 @@ void LoadKMProfile(std::string ProfileFile) {
 void LoadXboxProfile(std::string ProfileFile) {
 	CIniReader IniFile("XboxProfiles\\" + ProfileFile);
 
-	CurrentXboxProfile.LeftBumper = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "LEFT-SHOULDER", "LEFT-SHOULDER"));
-	CurrentXboxProfile.RightBumper = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "RIGHT-SHOULDER", "RIGHT-SHOULDER"));
-	//CurrentXboxProfile.LeftTrigger = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "", ""));
-	//CurrentXboxProfile.RightTrigger = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "", ""));
-	CurrentXboxProfile.Back = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "BACK", "BACK"));
-	CurrentXboxProfile.Start = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "START", "START"));
-	CurrentXboxProfile.DPADUp = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-UP", "DPAD-UP"));
-	CurrentXboxProfile.DPADDown = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-DOWN", "DPAD-DOWN"));
-	CurrentXboxProfile.DPADLeft = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-LEFT", "DPAD-LEFT"));
-	CurrentXboxProfile.DPADRight = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "DPAD-RIGHT", "DPAD-RIGHT"));
-	CurrentXboxProfile.Y = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "Y", "Y"));
-	CurrentXboxProfile.X = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "X", "X"));
-	CurrentXboxProfile.A = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "A", "A"));
-	CurrentXboxProfile.B = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "B", "B"));
-	CurrentXboxProfile.LeftStick = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "LEFT-STICK", "LEFT-STICK"));
-	CurrentXboxProfile.RightStick = XboxKeyNameToXboxKeyCode(IniFile.ReadString("GAMEPAD", "RIGHT-STICK", "RIGHT-STICK"));
+	CurrentXboxProfile.LeftBumper = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "LB", "LB"));
+	CurrentXboxProfile.RightBumper = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "RB", "RB"));
+	//CurrentXboxProfile.LeftTrigger = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "LT", "LT"));
+	//CurrentXboxProfile.RightTrigger = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "RT", "RT"));
+	CurrentXboxProfile.Back = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "BACK", "BACK"));
+	CurrentXboxProfile.Start = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "START", "START"));
+	CurrentXboxProfile.DPADUp = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "UP", "UP"));
+	CurrentXboxProfile.DPADDown = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "DOWN", "DOWN"));
+	CurrentXboxProfile.DPADLeft = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "LEFT", "LEFT"));
+	CurrentXboxProfile.DPADRight = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "RIGHT", "RIGHT"));
+	CurrentXboxProfile.Y = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "Y", "Y"));
+	CurrentXboxProfile.X = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "X", "X"));
+	CurrentXboxProfile.A = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "A", "A"));
+	CurrentXboxProfile.B = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "B", "B"));
+	CurrentXboxProfile.LeftStick = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "LS", "LS"));
+	CurrentXboxProfile.RightStick = XboxKeyNameToXboxKeyCode(IniFile.ReadString("XBOX", "RS", "RS"));
+	CurrentXboxProfile.SwapSticksAxis = IniFile.ReadBoolean("SETTINGS", "SWAP-STICKS", false);
+	CurrentXboxProfile.SwapTriggers = IniFile.ReadBoolean("SETTINGS", "SWAP-TRIGGERS", false);
+
+	// Motion wheel
+	CurrentXboxProfile.WheelActivationButton = SonyNintendoKeyNameToJoyShockKeyCode(IniFile.ReadString("MOTION", "WHEEL-ACTIVATION", "L2"));
+	CurrentXboxProfile.WheelDefault = XboxKeyNameToXboxKeyCode(IniFile.ReadString("MOTION", "WHEEL-DEFAULT", "0"));
+	CurrentXboxProfile.WheelUp = XboxKeyNameToXboxKeyCode(IniFile.ReadString("MOTION", "WHEEL-UP", "2"));
+	CurrentXboxProfile.WheelLeft = XboxKeyNameToXboxKeyCode(IniFile.ReadString("MOTION", "WHEEL-LEFT", "1"));
+	CurrentXboxProfile.WheelRight = XboxKeyNameToXboxKeyCode(IniFile.ReadString("MOTION", "WHEEL-RIGHT", "3"));
+	CurrentXboxProfile.WheelDown = XboxKeyNameToXboxKeyCode(IniFile.ReadString("MOTION", "WHEEL-DOWN", "4"));
+
+	CurrentXboxProfile.WheelUpLeft = XboxKeyNameToXboxKeyCode(IniFile.ReadString("MOTION", "WHEEL-UP-LEFT", "NONE"));
+	CurrentXboxProfile.WheelUpRight = XboxKeyNameToXboxKeyCode(IniFile.ReadString("MOTION", "WHEEL-UP-RIGHT", "NONE"));
+	CurrentXboxProfile.WheelDownLeft = XboxKeyNameToXboxKeyCode(IniFile.ReadString("MOTION", "WHEEL-DOWN-LEFT", "NONE"));
+	CurrentXboxProfile.WheelDownRight = XboxKeyNameToXboxKeyCode(IniFile.ReadString("MOTION", "WHEEL-DOWN-RIGHT", "NONE"));
+	CurrentXboxProfile.WheelAdvancedMode = !(CurrentXboxProfile.WheelUpLeft == 0 && CurrentXboxProfile.WheelUpRight == 0 && CurrentXboxProfile.WheelDownLeft == 0 && CurrentXboxProfile.WheelDownRight == 0);
+
+	// Additional gamepad buttons
+	CurrentXboxProfile.JCSL = XboxKeyNameToXboxKeyCode(IniFile.ReadString("JOYCONS", "SL", "NONE"));
+	CurrentXboxProfile.JCSR = XboxKeyNameToXboxKeyCode(IniFile.ReadString("JOYCONS", "SR", "NONE"));
+	CurrentXboxProfile.DSEdgeL4 = XboxKeyNameToXboxKeyCode(IniFile.ReadString("DUALSENSE-EDGE", "L4", "NONE"));
+	CurrentXboxProfile.DSEdgeR4 = XboxKeyNameToXboxKeyCode(IniFile.ReadString("DUALSENSE-EDGE", "R4", "NONE"));
 }
 
 void DefaultMainText() {
@@ -864,8 +999,8 @@ void DefaultMainText() {
 				case NINTENDO_JOYCONS:
 					printf("Nintendo Joy-Cons (");
 					if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL) printf("left & right");
-					else if (SecondaryGamepad.HidHandle != NULL) printf("left - not enough");
-					else if (SecondaryGamepad.HidHandle2 != NULL) printf("right - not enough");
+					else if (SecondaryGamepad.HidHandle != NULL) printf("left - limited input");
+					else if (SecondaryGamepad.HidHandle2 != NULL) printf("right - limited input");
 					printf(") (simplified)");
 					break;
 				case NINTENDO_SWITCH_PRO:
@@ -927,7 +1062,7 @@ void DefaultMainText() {
 	printf(" If there's no touch panel, switch using a touchpad press (enabled in the config) or use \"ALT + 1/2\".\n");
 	printf(" Pressing \"Home\" or \"ALT + 2\" again - switches aim mode (always/L2), \"Capture\" - resets.\n");
 	if (PrimaryGamepad.ControllerType == SONY_DUALSENSE) {
-		printf(" Adaptive triggers mode (only USB): ");
+		printf(" Adaptive triggers mode: ");
 		switch (PrimaryGamepad.AdaptiveTriggersMode) {
 			case 0:
 				printf("none");
@@ -1028,8 +1163,8 @@ void RussianMainText() {
 			case NINTENDO_JOYCONS:
 				printf("Nintendo Joy-Cons (");
 				if (PrimaryGamepad.HidHandle != NULL && PrimaryGamepad.HidHandle2 != NULL) printf("левый и правый");
-				else if (PrimaryGamepad.HidHandle != NULL) printf("левый - недостаточно");
-				else if (PrimaryGamepad.HidHandle2 != NULL) printf("правый - недостаточно");
+				else if (PrimaryGamepad.HidHandle != NULL) printf("левый - ограниченный ввод");
+				else if (PrimaryGamepad.HidHandle2 != NULL) printf("правый - ограниченный ввод");
 				printf(") (все функции)");
 				break;
 			case NINTENDO_SWITCH_PRO:
@@ -1116,7 +1251,7 @@ void RussianMainText() {
 	printf(" Если сенсорной панели нет, переключайтесь нажатием тачпада (включив в конфиге) или на \"ALT + 1/2\".\n");
 	printf(" Повторное нажатие \"Home\" или \"ALT + 2\" - переключает режим прицеливания (всегда/L2), \"Capture\" - сброс.\n");
 	if (PrimaryGamepad.ControllerType == SONY_DUALSENSE) {
-		printf(" Режим адаптивных триггеров (только USB): ");
+		printf(" Режим адаптивных триггеров: ");
 		switch (PrimaryGamepad.AdaptiveTriggersMode) {
 			case 0:
 				printf("нет");
@@ -1245,6 +1380,8 @@ void RefreshDevices() {
 
 	AppStatus.ControllerCount = JslConnectDevices();
 
+	bool JoyconLeftFound = false;
+
 	for (int i = 0; i < AppStatus.ControllerCount; i++) {
 		// JslSetGyroSpace(i, 2);
 		JslSetAutomaticCalibration(i, true); // Calibration all controllers
@@ -1258,17 +1395,28 @@ void RefreshDevices() {
 				SecondaryGamepad.DeviceIndex = i;
 			else // Only two controllers
 				break;
+
+			if (ControllerType == JS_TYPE_JOYCON_LEFT)
+				JoyconLeftFound = true;
 		}
 	}
 
-	// Glue right joycon
+	// Right joycon (glue or self)
 	for (int i = 0; i < AppStatus.ControllerCount; i++) {
 		int ControllerType = JslGetControllerType(i);
 		if (ControllerType != JS_TYPE_JOYCON_RIGHT) continue;
-		if (JslGetControllerType(PrimaryGamepad.DeviceIndex) == JS_TYPE_JOYCON_LEFT)
-			PrimaryGamepad.DeviceIndex2 = i;
-		else
-			SecondaryGamepad.DeviceIndex2 = i;
+
+		if (JoyconLeftFound) {
+			if (JslGetControllerType(PrimaryGamepad.DeviceIndex) == JS_TYPE_JOYCON_LEFT)
+				PrimaryGamepad.DeviceIndex2 = i;
+			else
+				SecondaryGamepad.DeviceIndex2 = i;
+		} else {
+			if (PrimaryGamepad.DeviceIndex == -1)
+				PrimaryGamepad.DeviceIndex = i;
+			else if (SecondaryGamepad.DeviceIndex == -1)
+				SecondaryGamepad.DeviceIndex = i;
+		}
 	}
 
 	// Find first gamepad
@@ -1312,7 +1460,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 1.9");
+	SetConsoleTitle("DSAdvance 2.0");
 	WindowToCenter();
 
 	// if (false)
@@ -1363,9 +1511,11 @@ int main(int argc, char **argv)
 	AppStatus.LockedChangeBrightness = IniFile.ReadBoolean("Gamepad", "LockChangeBrightness", false);
 	AppStatus.ChangeModesWithClick = IniFile.ReadBoolean("Gamepad", "ChangeModesWithClick", true);
 	AppStatus.ChangeModesWithoutAreas = IniFile.ReadBoolean("Gamepad", "ChangeModesWithoutAreas", false);
+	AppStatus.JoyconChangeModesWithButton = SonyNintendoKeyNameToJoyShockKeyCode(IniFile.ReadString("Gamepad", "JoyconChangeModesWithButton", "NONE"));
 
 	AppStatus.AimMode = IniFile.ReadBoolean("Motion", "AimingMode", AimMouseMode);
-	AppStatus.AimingWithL2 = IniFile.ReadBoolean("Motion", "AimingWithL2", true);
+	AppStatus.AimingButton = SonyNintendoKeyNameToJoyShockKeyCode(IniFile.ReadString("Motion", "AimingButton", "L2"));
+	AppStatus.JoyconRumbleMerge = IniFile.ReadBoolean("Gamepad", "JoyconRumbleMerge", false);
 
 	PrimaryGamepad.Motion.SteeringWheelAngle = IniFile.ReadFloat("Motion", "SteeringWheelAngle", 150) / 2.0f;
 	PrimaryGamepad.Motion.AircraftEnabled = IniFile.ReadBoolean("Motion", "AircraftEnabled", false);
@@ -1378,6 +1528,7 @@ int main(int argc, char **argv)
 	PrimaryGamepad.Motion.JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 100) * 0.0025f; // Calibration with Crysis 2, old 0.0013;
 	PrimaryGamepad.Motion.JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 90) * 0.0025f;  // Calibration with Crysis 2, old 0.0013;
 	PrimaryGamepad.Motion.JoySensAvg = (PrimaryGamepad.Motion.JoySensX + PrimaryGamepad.Motion.JoySensY) * 0.5f; // Sens Average
+	PrimaryGamepad.Motion.MotionWheelButtonsDeadZone = IniFile.ReadFloat("Motion", "MotionWheelButtonsDeadZone", 12.0f);
 
 	PrimaryGamepad.DefaultModeColor = WebColorToRGB(IniFile.ReadString("Gamepad", "DefaultModeColor", "0000ff"));
 	PrimaryGamepad.OutState.LEDColor = PrimaryGamepad.DefaultModeColor;
@@ -1615,7 +1766,11 @@ int main(int argc, char **argv)
 		}
 
 		// Switch emulation mode
-		if (AppStatus.SkipPollCount == 0 && ((IsKeyPressed(VK_MENU) && (IsKeyPressed('Q') || IsKeyPressed(VK_LEFT) || IsKeyPressed(VK_RIGHT))) || ((PrimaryGamepad.InputState.buttons & JSMASK_LEFT || PrimaryGamepad.InputState.buttons & JSMASK_RIGHT) && PrimaryGamepad.InputState.buttons & JSMASK_PS))) // Disable Xbox controller emulation for games that support DualSense, DualShock, Nintendo controllers or enable only driving & mouse aiming
+		if (AppStatus.SkipPollCount == 0 && (
+			(IsKeyPressed(VK_MENU) && (IsKeyPressed('Q') || IsKeyPressed(VK_LEFT) || IsKeyPressed(VK_RIGHT)) && 
+			(!(GetConsoleWindow() != GetForegroundWindow() && AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse && AppStatus.IsDesktopMode == false)) ) || // Don't switch modes with keys when emulating keyboard and mouse for games (for games that use the ALT + ←/→ keys)
+			((PrimaryGamepad.InputState.buttons & JSMASK_LEFT || PrimaryGamepad.InputState.buttons & JSMASK_RIGHT) && PrimaryGamepad.InputState.buttons & JSMASK_PS) // Switching modes always works on a gamepad.
+			))
 		{
 			AppStatus.SkipPollCount = SkipPollTimeOut; // 30 for deatached, 15 is seems not enough to enable or disable Xbox virtual gamepad
 
@@ -2011,6 +2166,11 @@ int main(int argc, char **argv)
 		report.sThumbRX = PrimaryGamepad.Sticks.InvertRightX == false ? DeadZoneAxis(PrimaryGamepad.InputState.stickRX, PrimaryGamepad.Sticks.DeadZoneRightX) * 32767 : DeadZoneAxis(-PrimaryGamepad.InputState.stickRX, PrimaryGamepad.Sticks.DeadZoneRightX) * 32767;
 		report.sThumbRY = PrimaryGamepad.Sticks.InvertRightY == false ? DeadZoneAxis(PrimaryGamepad.InputState.stickRY, PrimaryGamepad.Sticks.DeadZoneRightY) * 32767 : DeadZoneAxis(-PrimaryGamepad.InputState.stickRY, PrimaryGamepad.Sticks.DeadZoneRightY) * 32767;
 
+		if (CurrentXboxProfile.SwapSticksAxis) {
+			std::swap(report.sThumbLX, report.sThumbRX);
+			std::swap(report.sThumbLY, report.sThumbRY);
+		}
+
 		// Auto stick pressing when value is exceeded
 		if (PrimaryGamepad.GamepadActionMode != MotionDrivingMode) { // Exclude driving mode
 			if (AppStatus.LeftStickMode != LeftStickDefaultMode && (sqrt(PrimaryGamepad.InputState.stickLX * PrimaryGamepad.InputState.stickLX + PrimaryGamepad.InputState.stickLY * PrimaryGamepad.InputState.stickLY) >= PrimaryGamepad.AutoPressStickValue)) {
@@ -2120,18 +2280,128 @@ int main(int argc, char **argv)
 		}
 
 		if (!(PrimaryGamepad.InputState.buttons & JSMASK_PS && PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE && PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE)) { // During special functions, nothing is pressed in the game
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_L ? CurrentXboxProfile.LeftBumper : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_R ? CurrentXboxProfile.RightBumper : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_LCLICK ? CurrentXboxProfile.LeftStick : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_RCLICK ? CurrentXboxProfile.RightStick : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_UP ? CurrentXboxProfile.DPADUp : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_DOWN ? CurrentXboxProfile.DPADDown : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_LEFT ? CurrentXboxProfile.DPADLeft : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_RIGHT ? CurrentXboxProfile.DPADRight : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_N ? CurrentXboxProfile.Y : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_W ? CurrentXboxProfile.X : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_S ? CurrentXboxProfile.A : 0;
-			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_E ? CurrentXboxProfile.B : 0;
+			DWORD XboxButtons = report.wButtons;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_L ? CurrentXboxProfile.LeftBumper : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_R ? CurrentXboxProfile.RightBumper : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_LCLICK ? CurrentXboxProfile.LeftStick : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_RCLICK ? CurrentXboxProfile.RightStick : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_UP ? CurrentXboxProfile.DPADUp : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_DOWN ? CurrentXboxProfile.DPADDown : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_LEFT ? CurrentXboxProfile.DPADLeft : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_RIGHT ? CurrentXboxProfile.DPADRight : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_N ? CurrentXboxProfile.Y : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_W ? CurrentXboxProfile.X : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_S ? CurrentXboxProfile.A : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_E ? CurrentXboxProfile.B : 0;
+
+			// Aditional buttons
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_SL ? CurrentXboxProfile.JCSL : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_SR ? CurrentXboxProfile.JCSR : 0;
+
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_FNL ? CurrentXboxProfile.DSEdgeL4 : 0;
+			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_FNR ? CurrentXboxProfile.DSEdgeR4 : 0;
+
+			// Custom keys
+			if (XboxButtons & XINPUT_GAMEPAD_LEFT_TRIGGER) { XboxButtons &= ~XINPUT_GAMEPAD_LEFT_TRIGGER; report.bLeftTrigger = 255; }
+			if (XboxButtons & XINPUT_GAMEPAD_RIGHT_TRIGGER) { XboxButtons &= ~XINPUT_GAMEPAD_RIGHT_TRIGGER; report.bRightTrigger = 255; }
+
+			if (XboxButtons & XINPUT_GAMEPAD_LEFT_STICK_UP) { XboxButtons &= ~XINPUT_GAMEPAD_LEFT_STICK_UP; report.sThumbLY = 32767; }
+			if (XboxButtons & XINPUT_GAMEPAD_LEFT_STICK_DOWN) { XboxButtons &= ~XINPUT_GAMEPAD_LEFT_STICK_DOWN; report.sThumbLY = -32767; }
+			if (XboxButtons & XINPUT_GAMEPAD_LEFT_STICK_LEFT) { XboxButtons &= ~XINPUT_GAMEPAD_LEFT_STICK_LEFT; report.sThumbLX = -32767; }
+			if (XboxButtons & XINPUT_GAMEPAD_LEFT_STICK_RIGHT) { XboxButtons &= ~XINPUT_GAMEPAD_LEFT_STICK_RIGHT; report.sThumbLX = 32767; }
+
+			if (XboxButtons & XINPUT_GAMEPAD_RIGHT_STICK_UP) { XboxButtons &= ~XINPUT_GAMEPAD_RIGHT_STICK_UP; report.sThumbRY = 32767; }
+			if (XboxButtons & XINPUT_GAMEPAD_RIGHT_STICK_DOWN) { XboxButtons &= ~XINPUT_GAMEPAD_RIGHT_STICK_DOWN; report.sThumbRY = -32767; }
+			if (XboxButtons & XINPUT_GAMEPAD_RIGHT_STICK_LEFT) { XboxButtons &= ~XINPUT_GAMEPAD_RIGHT_STICK_LEFT; report.sThumbRX = -32767; }
+			if (XboxButtons & XINPUT_GAMEPAD_RIGHT_STICK_RIGHT) { XboxButtons &= ~XINPUT_GAMEPAD_RIGHT_STICK_RIGHT; report.sThumbRX = 32767; }
+
+			if (CurrentXboxProfile.SwapTriggers)
+				std::swap(report.bLeftTrigger, report.bRightTrigger);
+
+			report.wButtons = (WORD)XboxButtons;
+		}
+
+
+
+		// Motion wheel
+		if (AppStatus.GamepadEmulationMode != EmuKeyboardAndMouse) {
+			if (CurrentXboxProfile.WheelActivationButton != 0 && PrimaryGamepad.InputState.buttons & CurrentXboxProfile.WheelActivationButton && PrimaryGamepad.Motion.WheelCounter == 0) {
+				if (report.wButtons & CurrentXboxProfile.WheelActivationButton)
+					report.wButtons &= ~CurrentXboxProfile.WheelDefault;
+				//printf("start\n");
+				PrimaryGamepad.Motion.WheelCounter = SkipPollTimeOut;
+				PrimaryGamepad.Motion.WheelActive = true;
+				PrimaryGamepad.Motion.WheelAccumX = 0.0f;
+				PrimaryGamepad.Motion.WheelAccumY = 0.0f;
+			}
+
+			if ((PrimaryGamepad.InputState.buttons & CurrentXboxProfile.WheelActivationButton) == false && PrimaryGamepad.Motion.WheelCounter > 0) {
+
+				if (PrimaryGamepad.Motion.WheelCounter == 1) {
+
+					float MotionLength = sqrtf(PrimaryGamepad.Motion.WheelAccumX * PrimaryGamepad.Motion.WheelAccumX + PrimaryGamepad.Motion.WheelAccumY * PrimaryGamepad.Motion.WheelAccumY);
+
+					if (MotionLength < PrimaryGamepad.Motion.MotionWheelButtonsDeadZone) {
+						report.wButtons |= CurrentXboxProfile.WheelDefault;
+					}
+					else {
+						float MotionWheelAngle = atan2f(PrimaryGamepad.Motion.WheelAccumY, PrimaryGamepad.Motion.WheelAccumX) * 57.29578f;
+
+						if (CurrentXboxProfile.WheelAdvancedMode == false) { // Regular mode  ↑ → ↓ ←
+
+							if (fabs(MotionWheelAngle) < 25.f) {
+								report.wButtons |= CurrentXboxProfile.WheelUp;
+							}
+							else if (MotionWheelAngle > 45.f && MotionWheelAngle < 135.f) {
+								report.wButtons |= CurrentXboxProfile.WheelLeft;
+							}
+							else if (MotionWheelAngle < -45.f && MotionWheelAngle > -135.f) {
+								report.wButtons |= CurrentXboxProfile.WheelRight;
+							}
+							else if (MotionWheelAngle > 165.f || MotionWheelAngle < -165.f) {
+								report.wButtons |= CurrentXboxProfile.WheelDown;
+							}
+
+						}
+						else { // Advanced mode ↑ ↗ → ↘ ↓ ↙ ← ↖
+							if (MotionWheelAngle >= -22.5f && MotionWheelAngle < 22.5f) {
+								report.wButtons |= CurrentXboxProfile.WheelUp;
+							}
+							else if (MotionWheelAngle >= 22.5f && MotionWheelAngle < 67.5f) {
+								report.wButtons |= CurrentXboxProfile.WheelUpLeft;
+							}
+							else if (MotionWheelAngle >= 67.5f && MotionWheelAngle < 112.5f) {
+								report.wButtons |= CurrentXboxProfile.WheelLeft;
+							}
+							else if (MotionWheelAngle >= 112.5f && MotionWheelAngle < 157.5f) {
+								report.wButtons |= CurrentXboxProfile.WheelDownLeft;
+							}
+							else if (MotionWheelAngle >= 157.5f || MotionWheelAngle < -157.5f) {
+								report.wButtons |= CurrentXboxProfile.WheelDown;
+							}
+							else if (MotionWheelAngle >= -157.5f && MotionWheelAngle < -112.5f) {
+								report.wButtons |= CurrentXboxProfile.WheelDownRight;
+							}
+							else if (MotionWheelAngle >= -112.5f && MotionWheelAngle < -67.5f) {
+								report.wButtons |= CurrentXboxProfile.WheelRight;
+							}
+							else if (MotionWheelAngle >= -67.5f && MotionWheelAngle < -22.5f) {
+								report.wButtons |= CurrentXboxProfile.WheelUpRight;
+							}
+						}
+
+					}
+
+					PrimaryGamepad.Motion.WheelActive = false;
+				}
+
+				PrimaryGamepad.Motion.WheelCounter--;
+			}
+
+			if (PrimaryGamepad.Motion.WheelActive) {
+				PrimaryGamepad.Motion.WheelAccumX += velocityX * FrameTime;
+				PrimaryGamepad.Motion.WheelAccumY += velocityY * FrameTime;
+			}
 		}
 
 		// Nintendo controllers buttons: Capture & Home - changing working mode + another controllers (with additional buttons with keyboard emulation)
@@ -2140,7 +2410,7 @@ int main(int argc, char **argv)
 			JslGetControllerType(PrimaryGamepad.DeviceIndex) == JS_TYPE_JOYCON_LEFT ||
 			JslGetControllerType(PrimaryGamepad.DeviceIndex) == JS_TYPE_JOYCON_RIGHT) {
 
-			if (AppStatus.SkipPollCount == 0 && ((PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE) || (IsKeyPressed(VK_MENU) && IsKeyPressed('1')))) {
+			if (AppStatus.SkipPollCount == 0 && ((PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE && AppStatus.JoyconChangeModesWithButton == 0) || (IsKeyPressed(VK_MENU) && IsKeyPressed('1')))) {
 				if (PrimaryGamepad.GamepadActionMode == 1)
 					PrimaryGamepad.GamepadActionMode = GamepadDefaultMode;
 				else
@@ -2148,7 +2418,7 @@ int main(int argc, char **argv)
 				AppStatus.SkipPollCount = SkipPollTimeOut;
 			}
 
-			if (AppStatus.SkipPollCount == 0 && ((PrimaryGamepad.InputState.buttons & JSMASK_HOME) || (IsKeyPressed(VK_MENU) && IsKeyPressed('2')))) {
+			if (AppStatus.SkipPollCount == 0 && ((PrimaryGamepad.InputState.buttons & JSMASK_HOME && AppStatus.JoyconChangeModesWithButton == 0) || (IsKeyPressed(VK_MENU) && IsKeyPressed('2')))) {
 				if (PrimaryGamepad.GamepadActionMode == GamepadDefaultMode || PrimaryGamepad.GamepadActionMode == MotionDrivingMode)
 					PrimaryGamepad.GamepadActionMode = PrimaryGamepad.LastMotionAIMMode;
 				else if (PrimaryGamepad.GamepadActionMode == MotionAimingMode)
@@ -2156,6 +2426,24 @@ int main(int argc, char **argv)
 					PrimaryGamepad.GamepadActionMode = MotionAimingModeOnlyPressed; PrimaryGamepad.LastMotionAIMMode = MotionAimingModeOnlyPressed;
 				}
 				else { PrimaryGamepad.GamepadActionMode = MotionAimingMode; PrimaryGamepad.LastMotionAIMMode = MotionAimingMode; }
+				AppStatus.SkipPollCount = SkipPollTimeOut;
+			}
+
+			// Change modes on one Joycon
+			if (AppStatus.SkipPollCount == 0 && AppStatus.JoyconChangeModesWithButton != 0 && (PrimaryGamepad.InputState.buttons & AppStatus.JoyconChangeModesWithButton)) {
+				if (PrimaryGamepad.GamepadActionMode == MotionDrivingMode) {
+
+					if (PrimaryGamepad.GamepadActionMode == MotionAimingMode)
+					{
+						PrimaryGamepad.GamepadActionMode = MotionAimingModeOnlyPressed; PrimaryGamepad.LastMotionAIMMode = MotionAimingModeOnlyPressed;
+					}
+					else {
+						PrimaryGamepad.GamepadActionMode = MotionAimingMode; PrimaryGamepad.LastMotionAIMMode = MotionAimingMode;
+					}
+
+				} else
+					PrimaryGamepad.GamepadActionMode = MotionDrivingMode;
+
 				AppStatus.SkipPollCount = SkipPollTimeOut;
 			}
 
@@ -2245,9 +2533,8 @@ int main(int argc, char **argv)
 			// Steering wheel
 			if (!PrimaryGamepad.Motion.AircraftEnabled) {
 				report.sThumbLX = (SHORT)(CalcMotionStick(MotionState.gravX, MotionState.gravZ, PrimaryGamepad.Motion.SteeringWheelAngle, PrimaryGamepad.Motion.OffsetAxisX) * 32767);
-
-				
-			} // Aircraft
+			}
+			// Aircraft
 			else {
 				const float InputSize = sqrtf(velocityX * velocityX + velocityY * velocityY + velocityZ * velocityZ);
 				float TightenedSensitivity = PrimaryGamepad.Motion.AircraftRollSens;
@@ -2257,36 +2544,38 @@ int main(int argc, char **argv)
 				report.sThumbLX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbLX), -32767, 32767);
 				report.sThumbLY = (SHORT)(CalcMotionStick(MotionState.gravY, MotionState.gravZ, PrimaryGamepad.Motion.AircraftPitchAngle, PrimaryGamepad.Motion.OffsetAxisY) * 32767) * PrimaryGamepad.Motion.AircraftPitchInverted;
 			}
-
-
-			// Motion aiming  [--X}]
+	
 		}
-		else if (PrimaryGamepad.GamepadActionMode == MotionAimingMode || (PrimaryGamepad.GamepadActionMode == MotionAimingModeOnlyPressed &&
-			(AppStatus.AimingWithL2 && DeadZoneAxis(PrimaryGamepad.InputState.lTrigger, PrimaryGamepad.Triggers.DeadZoneLeft) > 0) || // Classic L2 aiming
-			(AppStatus.AimingWithL2 == false && (PrimaryGamepad.InputState.buttons & JSMASK_L)))) { // PS games with emulators
+		// Motion aiming  [--X}]
+		else if (PrimaryGamepad.GamepadActionMode == MotionAimingMode || (
+					(PrimaryGamepad.GamepadActionMode == MotionAimingModeOnlyPressed) && (	
+						(AppStatus.AimingButton == JSMASK_ZL && DeadZoneAxis(PrimaryGamepad.InputState.lTrigger, PrimaryGamepad.Triggers.DeadZoneLeft) > 0) || // Classic L2 aiming, JSMASK_ZL is L2 - SonyNintendoKeyNameToJoyShockKeyCode()
+						(PrimaryGamepad.InputState.buttons & AppStatus.AimingButton) // PS games with emulators (L1) & one-handed controllers like light guns and gaming accessibility
+					)
+				) ) { 
 
-			//DWORD currentTime = GetTickCount();
-			//float FrameTime = (currentTime - lastTime) / 1000.f; // Some problems with this method, we remain on a static value
-			//lastTime = currentTime;
+				//DWORD currentTime = GetTickCount();
+				//float FrameTime = (currentTime - lastTime) / 1000.f; // Some problems with this method, we remain on a static value
+				//lastTime = currentTime;
 
-			// Snippet by JibbSmart https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df
-			const float InputSize = sqrtf(velocityX * velocityX + velocityY * velocityY + velocityZ * velocityZ);
+				// Snippet by JibbSmart https://gist.github.com/JibbSmart/8cbaba568c1c2e1193771459aa5385df
+				const float InputSize = sqrtf(velocityX * velocityX + velocityY * velocityY + velocityZ * velocityZ);
 
-			float TightenedSensitivity = AppStatus.AimMode == AimMouseMode ? PrimaryGamepad.Motion.SensAvg * PrimaryGamepad.Motion.CustomMulSens * 50.f : PrimaryGamepad.Motion.JoySensAvg * PrimaryGamepad.Motion.CustomMulSens * 50.f;
+				float TightenedSensitivity = AppStatus.AimMode == AimMouseMode ? PrimaryGamepad.Motion.SensAvg * PrimaryGamepad.Motion.CustomMulSens * 50.f : PrimaryGamepad.Motion.JoySensAvg * PrimaryGamepad.Motion.CustomMulSens * 50.f;
 
-			if (InputSize < Tightening && Tightening > 0)
-				TightenedSensitivity *= InputSize / Tightening;
+				if (InputSize < Tightening && Tightening > 0)
+					TightenedSensitivity *= InputSize / Tightening;
 
-			if (AppStatus.AimMode == AimMouseMode) {
-				MouseMove(-velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.SensX * PrimaryGamepad.Motion.CustomMulSens, -velocityX * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.SensY * PrimaryGamepad.Motion.CustomMulSens);
-			}
-			else { // Mouse-Joystick
-				report.sThumbRX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
-				report.sThumbRY = std::clamp((int)(ClampFloat(velocityX * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensY * PrimaryGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
-			}
-
-			// [-_-] Touchpad sticks
+				if (AppStatus.AimMode == AimMouseMode) {
+					MouseMove(-velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.SensX * PrimaryGamepad.Motion.CustomMulSens, -velocityX * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.SensY * PrimaryGamepad.Motion.CustomMulSens);
+				
+				} else { // Mouse-Joystick
+					report.sThumbRX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
+					report.sThumbRY = std::clamp((int)(ClampFloat(velocityX * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensY * PrimaryGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
+				}
+			
 		}
+		// [-_-] Touchpad sticks
 		else if (PrimaryGamepad.GamepadActionMode == TouchpadSticksMode) {
 
 			if (TouchState.t0Down) {
@@ -2380,8 +2669,6 @@ int main(int argc, char **argv)
 					}
 				}
 
-
-
 			}
 
 			KeyPress(PrimaryGamepad.ButtonsStates.LeftTrigger.KeyCode, DontResetInputState && PrimaryGamepad.InputState.lTrigger > PrimaryGamepad.KMEmu.TriggerValuePressKey, &PrimaryGamepad.ButtonsStates.LeftTrigger, true);
@@ -2422,6 +2709,112 @@ int main(int argc, char **argv)
 
 			KMStickMode(PrimaryGamepad, DontResetInputState, true, DeadZoneAxis(PrimaryGamepad.InputState.stickLX, PrimaryGamepad.Sticks.DeadZoneLeftX), DeadZoneAxis(PrimaryGamepad.InputState.stickLY, PrimaryGamepad.Sticks.DeadZoneLeftY), PrimaryGamepad.KMEmu.LeftStickMode);
 			KMStickMode(PrimaryGamepad, DontResetInputState, false, DeadZoneAxis(PrimaryGamepad.InputState.stickRX, PrimaryGamepad.Sticks.DeadZoneRightX), DeadZoneAxis(PrimaryGamepad.InputState.stickRY, PrimaryGamepad.Sticks.DeadZoneRightY), PrimaryGamepad.KMEmu.RightStickMode);
+		
+			// Motion wheel
+			PrimaryGamepad.ButtonsStates.WheelDefault.IsPressed = false;
+			PrimaryGamepad.ButtonsStates.WheelUp.IsPressed = false;
+			PrimaryGamepad.ButtonsStates.WheelDown.IsPressed = false;
+			PrimaryGamepad.ButtonsStates.WheelLeft.IsPressed = false;
+			PrimaryGamepad.ButtonsStates.WheelRight.IsPressed = false;
+			PrimaryGamepad.ButtonsStates.WheelUpLeft.IsPressed = false;
+			PrimaryGamepad.ButtonsStates.WheelUpRight.IsPressed = false;
+			PrimaryGamepad.ButtonsStates.WheelDownLeft.IsPressed = false;
+			PrimaryGamepad.ButtonsStates.WheelDownRight.IsPressed = false;
+			
+			if (PrimaryGamepad.ButtonsStates.WheelActivationGamepadButton.KeyCode != 0 && PrimaryGamepad.InputState.buttons & PrimaryGamepad.ButtonsStates.WheelActivationGamepadButton.KeyCode && PrimaryGamepad.Motion.WheelCounter == 0) {
+				//printf("start\n");
+				PrimaryGamepad.Motion.WheelCounter = SkipPollTimeOut;
+				PrimaryGamepad.Motion.WheelActive = true;
+				PrimaryGamepad.Motion.WheelAccumX = 0.0f;
+				PrimaryGamepad.Motion.WheelAccumY = 0.0f;
+			}
+
+			if ((PrimaryGamepad.InputState.buttons & PrimaryGamepad.ButtonsStates.WheelActivationGamepadButton.KeyCode) == false && PrimaryGamepad.Motion.WheelCounter > 0) {
+				
+				if (PrimaryGamepad.Motion.WheelCounter == 1) {
+
+					//printf("%5.2f %5.2f\n", PrimaryGamepad.GyroWheelAccumX, PrimaryGamepad.GyroWheelAccumY);
+
+					float MotionLength = sqrtf(PrimaryGamepad.Motion.WheelAccumX * PrimaryGamepad.Motion.WheelAccumX + PrimaryGamepad.Motion.WheelAccumY * PrimaryGamepad.Motion.WheelAccumY);
+
+					//printf("%5.2f\n", len);
+
+					if (MotionLength < PrimaryGamepad.Motion.MotionWheelButtonsDeadZone) {
+						//printf("default\n");
+						PrimaryGamepad.ButtonsStates.WheelDefault.IsPressed = true;
+					
+					} else {
+						float MotionWheelAngle = atan2f(PrimaryGamepad.Motion.WheelAccumY, PrimaryGamepad.Motion.WheelAccumX) * 57.29578f;
+
+						if (PrimaryGamepad.ButtonsStates.WheelAdvancedMode == false) { // Regular mode  ↑ → ↓ ←
+
+							if (fabs(MotionWheelAngle) < 25.f) {
+								//printf("up\n");
+								PrimaryGamepad.ButtonsStates.WheelUp.IsPressed = true;
+							}
+							else if (MotionWheelAngle > 45.f && MotionWheelAngle < 135.f) {
+								//printf("left\n");
+								PrimaryGamepad.ButtonsStates.WheelLeft.IsPressed = true;
+							}
+							else if (MotionWheelAngle < -45.f && MotionWheelAngle > -135.f) {
+								//printf("right\n");
+								PrimaryGamepad.ButtonsStates.WheelRight.IsPressed = true;
+							}
+							else if (MotionWheelAngle > 165.f || MotionWheelAngle < -165.f) {
+								//printf("down\n");
+								PrimaryGamepad.ButtonsStates.WheelDown.IsPressed = true;
+							}
+
+						} else { // Advanced mode ↑ ↗ → ↘ ↓ ↙ ← ↖
+							if (MotionWheelAngle >= -22.5f && MotionWheelAngle < 22.5f) {
+								//printf("up\n");
+								PrimaryGamepad.ButtonsStates.WheelUp.IsPressed = true;
+							} else if (MotionWheelAngle >= 22.5f && MotionWheelAngle < 67.5f) {
+								//printf("up-left\n");
+								PrimaryGamepad.ButtonsStates.WheelUpLeft.IsPressed = true;
+							} else if (MotionWheelAngle >= 67.5f && MotionWheelAngle < 112.5f) {
+								//printf("left\n");
+								PrimaryGamepad.ButtonsStates.WheelLeft.IsPressed = true;
+							} else if (MotionWheelAngle >= 112.5f && MotionWheelAngle < 157.5f) {
+								//printf("down-left\n");
+								PrimaryGamepad.ButtonsStates.WheelDownLeft.IsPressed = true;
+							} else if (MotionWheelAngle >= 157.5f || MotionWheelAngle < -157.5f) {
+								//printf("down\n");
+								PrimaryGamepad.ButtonsStates.WheelDown.IsPressed = true;
+							} else if (MotionWheelAngle >= -157.5f && MotionWheelAngle < -112.5f) {
+								//printf("down-right\n");
+								PrimaryGamepad.ButtonsStates.WheelDownRight.IsPressed = true;
+							} else if (MotionWheelAngle >= -112.5f && MotionWheelAngle < -67.5f) {
+								//printf("right\n");
+								PrimaryGamepad.ButtonsStates.WheelRight.IsPressed = true;
+							} else if (MotionWheelAngle >= -67.5f && MotionWheelAngle < -22.5f) {
+								//printf("up-right\n");
+								PrimaryGamepad.ButtonsStates.WheelUpRight.IsPressed = true;
+							}
+						}
+					
+					}
+
+					PrimaryGamepad.Motion.WheelActive = false;
+				}
+
+				PrimaryGamepad.Motion.WheelCounter--;
+			}
+
+			if (PrimaryGamepad.Motion.WheelActive) {
+				PrimaryGamepad.Motion.WheelAccumX += velocityX * FrameTime;
+				PrimaryGamepad.Motion.WheelAccumY += velocityY * FrameTime;
+			}
+
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelDefault.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDefault.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDefault, true);
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelUp.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelUp.IsPressed, &PrimaryGamepad.ButtonsStates.WheelUp, true);
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelUpLeft.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelUpLeft.IsPressed, &PrimaryGamepad.ButtonsStates.WheelUpLeft, true);
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelUpRight.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelUpRight.IsPressed, &PrimaryGamepad.ButtonsStates.WheelRight, true);
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelDown.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDown.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDown, true);
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelDownLeft.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDownLeft.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDownLeft, true);
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelDownRight.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDownRight.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDownRight, true);
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelLeft.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelLeft.IsPressed, &PrimaryGamepad.ButtonsStates.WheelLeft, true);
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelRight.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelRight.IsPressed, &PrimaryGamepad.ButtonsStates.WheelRight, true);
 		}
 
 		// After releasing all the buttons you can click on screenshots, so it's here / После отпускания всех кнопок можно нажимать скриншоты, поэтому это здесь
@@ -2577,6 +2970,12 @@ int main(int argc, char **argv)
 	if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse && PrimaryGamepad.GamepadActionMode == MotionDrivingMode) {
 		KeyPress(PrimaryGamepad.ButtonsStates.DPADLeft.KeyCode, false, &PrimaryGamepad.ButtonsStates.DPADLeft, true);
 		KeyPress(PrimaryGamepad.ButtonsStates.DPADRight.KeyCode, false, &PrimaryGamepad.ButtonsStates.DPADRight, true);
+	}
+
+	// Reset adaptive triggers
+	if (PrimaryGamepad.AdaptiveTriggersMode > 0) {
+		PrimaryGamepad.AdaptiveTriggersOutputMode = 0;
+		GamepadSetState(PrimaryGamepad);
 	}
 
 	JslDisconnectAndDisposeAll();
