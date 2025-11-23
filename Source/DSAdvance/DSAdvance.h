@@ -228,6 +228,13 @@ struct _ButtonsState {
 	Button Left;
 	Button Right;
 
+	// Aditional buttons
+	Button JCSL;
+	Button JCSR;
+
+	Button DSEdgeL4;
+	Button DSEdgeR4;
+
 	// Motion wheel
 	Button WheelActivationGamepadButton;
 	Button WheelDefault;
