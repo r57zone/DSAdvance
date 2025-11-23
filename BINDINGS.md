@@ -47,7 +47,7 @@ Parameter `SteeringWheelReleaseThreshold` determines how far the wheel must retu
 ## Motion Wheel Buttons (Multi-Button)
 The motion wheel buttons allows assigning up to 9 emulations of other buttons to a single button. This is done by holding the specified `WHEEL-ACTIVATION` button, then tilting the gamepad in one of 4 or 8 directions to trigger the button emulation. If no tilt occurs, the default assigned button `WHEEL-DEFAULT` is emulated.
 
-To set up a 4-button motion wheel buttons, do the following. In the `WHEEL-ACTIVATION` parameter, specify one of the "Sony" or "Nintendo" button values (see the "Sony and Nintendo Button Mapping" section), in the other parameters, specify the values from the "Keyboard and Mouse" section.
+To set up a 4-button motion wheel buttons, do the following. In the `WHEEL-ACTIVATION` parameter, specify one of the ["Sony" or "Nintendo" button values](https://github.com/r57zone/DSAdvance/blob/master/XBOX_BINDINGS.md#sony-and-nintendo-button-mapping-for-wheel-activation-aiming-joy-con-mode-switching-etc) (see the "Sony and Nintendo Button Mapping" section), in the other parameters, specify the values from the "Keyboard and Mouse" section.
 ```ini
 [MOTION]
 WHEEL-ACTIVATION=TRIANGLE
