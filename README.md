@@ -149,7 +149,7 @@ Unfortunately, this feature is not implemented.
 
 ## Building
 1. Download the sources and unzip them.
-2. [Download](https://code.visualstudio.com/download) and [install](https://github.com/r57zone/RE4ExtendedControl/assets/9499881/69dafce6-fd57-4768-83eb-c1bb69901f07) Microsoft Visual Studio Code 2017+.
+2. [Download](https://visualstudio.microsoft.com/) and [install](https://github.com/r57zone/RE4ExtendedControl/assets/9499881/69dafce6-fd57-4768-83eb-c1bb69901f07) Microsoft Visual Studio Code 2017+.
 3. Update the project properties with your tools and SDK.
 4. Choose the `Release` build type (if `Debug` is installed) and `x86`, then compile the project.
 

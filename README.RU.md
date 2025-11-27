@@ -147,7 +147,7 @@
 
 ## Сборка
 1. Загрузите исходники и распакуйте.
-2. [Загрузите Microsoft Visual Studio Code 2017+](https://code.visualstudio.com/download) и [установите](https://github.com/r57zone/RE4ExtendedControl/assets/9499881/69dafce6-fd57-4768-83eb-c1bb69901f07).
+2. [Загрузите Microsoft Visual Studio Code 2017+](https://visualstudio.microsoft.com/) и [установите](https://github.com/r57zone/RE4ExtendedControl/assets/9499881/69dafce6-fd57-4768-83eb-c1bb69901f07).
 3. Измените в свойствах проекта набор инструментов и SDK на ваш.
 4. Выберите тип сборки `Release` (если установлен `Debug`) и `x86`, после чего скомплириуйте проект.
 
