@@ -17,7 +17,7 @@ Advanced Xbox gamepad emulation for Sony DualSense, DualSense Edge, DualShock 4,
 ✔️ Support for adaptive triggers for Sony DualSense (pistol, rifle, sniper rifle, bow, car pedal);<br>
 ✔️ Various emulation modes for games with adaptive triggers;<br>
 ✔️ Support for two gamepads, the first with full functionality, and the second with simplified features (must be enabled in the config);<br>
-✔️ Support for playing on a single Joy-Con, with full emulation of all buttons using the "gesture wheel" (gamepad tilts);<br>
+✔️ Support for playing on a single Joy-Con, with full emulation of all buttons using the "Motion Wheel Buttons" (gamepad tilts);<br>
 ✔️ Battery level display on the light bar and player indicators (for Sony gamepads);<br>
 ✔️ Turning off the light bar for full immersion in the dark;<br>
 ✔️ Support for external modified racing pedals with any 16 buttons;<br>
@@ -53,7 +53,7 @@ Adaptive triggers for Sony DualSense, you can switch between different modes wit
 
 Additional buttons on the Sony DualSense Edge (L4, R4) and Joy-Cons (SL, SR) are supported. They can be changed in the Xbox profile `XboxProfiles\Default.ini`, more details [here](https://github.com/r57zone/DSAdvance/blob/master/XBOX_BINDINGS.md).
 
-Playing with a single Joy-Con is supported, with full button emulation using the "gesture wheel" and gamepad tilts. For proper, averaged vibration on a single Joy-Con, set the `JoyconRumbleMerge` parameter to `1` in the configuration file. Also, switch the Xbox profile to `Joycon Left/Right Only`. To use the option to switch between driving and aiming modes with a single button, set the `JoyconChangeModesWithButton` parameter to `HOME` or `CAPTURE`. When creating Xbox profiles, you can swap the sticks and triggers by setting the `SWAP-STICKS` and `SWAP-TRIGGERS` parameters to `1`.
+Playing with a single Joy-Con is supported, with full button emulation using the "Motion Wheel Buttons" and gamepad tilts. For proper, averaged vibration on a single Joy-Con, set the `JoyconRumbleMerge` parameter to `1` in the configuration file. Also, switch the Xbox profile to `Joycon Left/Right Only`. To use the option to switch between driving and aiming modes with a single button, set the `JoyconChangeModesWithButton` parameter to `HOME` or `CAPTURE`. When creating Xbox profiles, you can swap the sticks and triggers by setting the `SWAP-STICKS` and `SWAP-TRIGGERS` parameters to `1`.
 
 To connect [external pedals (DInput)](https://github.com/r57zone/GamepadExternalPedals#setup-dinput-pedals-mh-et-live-board) and Digispark joystick based devices, change the parameter change the `DInput` parameter to `1` in the `ExternalPedals` section. To connect [external pedals on Arduino](https://github.com/r57zone/GamepadExternalPedals#setup-arduino-pedals), change the COM port number by modifying the `COMPort` parameter.
 
