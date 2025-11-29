@@ -73,8 +73,8 @@ Any | DPAD Left | `LEFT`
 Any | DPAD Right | `RIGHT`
 Any | Left Stick Press | `L3`
 Any | Right Stick Press | `R3`
-Sony | Cross | `CROSS`
-Sony | Circle | `CIRCLE`
+Sony | X (Cross) | `CROSS`
+Sony | O (Circle) | `CIRCLE`
 Sony | ▢ (Square) | `SQUARE`
 Sony | ▲ (Triangle) | `TRIANGLE`
 Sony | Share / Back / Left System Button | `SHARE`
