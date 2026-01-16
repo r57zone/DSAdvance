@@ -98,7 +98,7 @@ Turn off light bar (Sony) | `PS + L1` or double-tap the brightness area of the t
 5. Unzip and launch DSAdvance.
 6. If necessary, change the dead zones of the sticks, triggers or other parameters in the configuration file `Config.ini`.
 7. (Optional) To enable operation of two gamepads, change the `Enabled` parameter to `1` in the `SecondaryGamepad` section. You can also adjust dead zones for sticks, triggers, and colors.
-8. When used with Steam games, in the controller settings, disable `Playstation personal settings`.
+8. When using Steam games, in the controller settings, disable `PlayStation Controller Support` or uncheck `Enable Steam Input for Switch Pro Controllers`.
 9. It is also recommended to hide the controller for modern games so that games only see the emulated, advanced Xbox 360 controller. To do this, install [HidHide](https://github.com/nefarius/HidHide/releases). Then, in `HidHide Configuration Client`, add `DSAdvance.exe` in the `Applications` section, check your controller (e.g., Sony Wireless Controller) in the `Devices` section, and enable `Enable device hiding` (if it is disabled). You can also refer to [this guide](https://github.com/user-attachments/assets/13ad8583-4b32-4a0d-b9a6-8e6c5bfcca71) showing where to click. Through the Launcher, you can do the same, except adding the gamepad to the hide list.
 10. (Optional) To launch from the notification area (tray), by double-clicking, you can add a shortcut to `Launcher.exe` to Windows startup `%AppData%\Microsoft\Windows\Start Menu\Programs\Startup`.
 11. (Optional) To run third-party utilities via Launcher, specify the title and path to the application in the configuration file.
