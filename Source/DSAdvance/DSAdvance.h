@@ -258,7 +258,7 @@ struct AdvancedGamepad {
 	int DeviceIndex = -1;
 	int DeviceIndex2 = -1;
 	WORD ControllerType;
-	bool USBConnection;
+	bool USBConnection = false;
 	unsigned char BatteryMode;
 	unsigned char BatteryLevel;
 	unsigned char BatteryLevel2;
@@ -331,6 +331,7 @@ struct AdvancedGamepad {
 		float TriggerValuePressKey = 0;
 		float SteeringWheelDeadZone = 0;
 		float SteeringWheelReleaseThreshold = 0;
+		bool SteeringWheelUseDPAD = false;
 		float PrevAxisX = 0.0f;
 		float MaxLeftAxisX = 0.0f;
 		float MaxRightAxisX = 0.0f;

@@ -20,11 +20,12 @@
 
 #pragma comment(lib, "winmm.lib")
 
-void GamepadSearch(AdvancedGamepad &Gamepad, std::string SkipDevPath) {
-	struct hid_device_info *cur_dev;
+void GamepadSearch(AdvancedGamepad &Gamepad, std::string SkipDevPath, std::string SkipDevPath2 = "") {
+	struct hid_device_info *devs, *cur_dev;
 
 	// Sony controllers
-	cur_dev = hid_enumerate(SONY_VENDOR, 0x0);
+	devs = hid_enumerate(SONY_VENDOR, 0x0);
+	cur_dev = devs;
 	while (cur_dev) {
 		if (!SkipDevPath.empty() && SkipDevPath == cur_dev->path) { cur_dev = cur_dev->next; continue; }
 		if (cur_dev->product_id == SONY_DS5 ||
@@ -35,6 +36,7 @@ void GamepadSearch(AdvancedGamepad &Gamepad, std::string SkipDevPath) {
 			cur_dev->product_id == SONY_DS4_DONGLE)
 		{
 			Gamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
+			if (Gamepad.HidHandle == NULL) { cur_dev = cur_dev->next; continue; }
 			Gamepad.DevicePath = cur_dev->path;
 			hid_set_nonblocking(Gamepad.HidHandle, 1);
 
@@ -75,14 +77,17 @@ void GamepadSearch(AdvancedGamepad &Gamepad, std::string SkipDevPath) {
 		}
 		cur_dev = cur_dev->next;
 	}
+	hid_free_enumeration(devs);
 
 	// Sony compatible controllers
-	cur_dev = hid_enumerate(BROOK_DS4_VENDOR, 0x0);
+	devs = hid_enumerate(BROOK_DS4_VENDOR, 0x0);
+	cur_dev = devs;
 	while (cur_dev) {
 		if (!SkipDevPath.empty() && SkipDevPath == cur_dev->path) { cur_dev = cur_dev->next; continue; }
 		if (cur_dev->product_id == BROOK_DS4_USB)
 		{
 			Gamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
+			if (Gamepad.HidHandle == NULL) { cur_dev = cur_dev->next; continue; }
 			hid_set_nonblocking(Gamepad.HidHandle, 1);
 			Gamepad.USBConnection = true;
 			Gamepad.ControllerType = SONY_DUALSHOCK4;
@@ -90,28 +95,36 @@ void GamepadSearch(AdvancedGamepad &Gamepad, std::string SkipDevPath) {
 		}
 		cur_dev = cur_dev->next;
 	}
+	hid_free_enumeration(devs);
 
 	// Nintendo compatible controllers
-	cur_dev = hid_enumerate(NINTENDO_VENDOR, 0x0);
+	devs = hid_enumerate(NINTENDO_VENDOR, 0x0);
+	cur_dev = devs;
 	while (cur_dev) {
-		if (!SkipDevPath.empty() && SkipDevPath == cur_dev->path) { cur_dev = cur_dev->next; continue; }
+		if ((!SkipDevPath.empty() && SkipDevPath == cur_dev->path) || (!SkipDevPath2.empty() && SkipDevPath2 == cur_dev->path)) { cur_dev = cur_dev->next; continue; }
 		if (cur_dev->product_id == NINTENDO_JOYCON_L)
 		{
+			if (Gamepad.HidHandle != NULL) { cur_dev = cur_dev->next; continue; }
 			Gamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
+			if (Gamepad.HidHandle == NULL) { cur_dev = cur_dev->next; continue; }
 			Gamepad.DevicePath = cur_dev->path;
 			hid_set_nonblocking(Gamepad.HidHandle, 1);
 			Gamepad.USBConnection = false;
 			Gamepad.ControllerType = NINTENDO_JOYCONS;
 		}
 		else if (cur_dev->product_id == NINTENDO_JOYCON_R) {
+			if (Gamepad.HidHandle != NULL && Gamepad.ControllerType != NINTENDO_JOYCONS) { cur_dev = cur_dev->next; continue; }
 			Gamepad.HidHandle2 = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
+			if (Gamepad.HidHandle2 == NULL) { cur_dev = cur_dev->next; continue; }
 			Gamepad.DevicePath2 = cur_dev->path;
 			hid_set_nonblocking(Gamepad.HidHandle2, 1);
 			Gamepad.USBConnection = false;
 			Gamepad.ControllerType = NINTENDO_JOYCONS;
 		}
 		else if (cur_dev->product_id == NINTENDO_SWITCH_PRO) {
+			if (Gamepad.HidHandle != NULL) { cur_dev = cur_dev->next; continue; }
 			Gamepad.HidHandle = hid_open(cur_dev->vendor_id, cur_dev->product_id, cur_dev->serial_number);
+			if (Gamepad.HidHandle == NULL) { cur_dev = cur_dev->next; continue; }
 			Gamepad.DevicePath = cur_dev->path;
 			Gamepad.ControllerType = NINTENDO_SWITCH_PRO;
 			hid_set_nonblocking(Gamepad.HidHandle, 1);
@@ -138,11 +151,9 @@ void GamepadSearch(AdvancedGamepad &Gamepad, std::string SkipDevPath) {
 		}
 		cur_dev = cur_dev->next;
 	}
+	hid_free_enumeration(devs);
 
 	//printf("\nFound: %d\n", Gamepad.ControllerType);
-
-	if (cur_dev)
-		hid_free_enumeration(cur_dev);
 }
 
 static float MotorFreqFromStrength(unsigned char motorValue) { // Dynamic frequency
@@ -862,6 +873,8 @@ void LoadKMProfile(std::string ProfileFile) {
 	PrimaryGamepad.KMEmu.JoySensY = IniFile.ReadFloat("MOUSE", "SensitivityY", 100) * 0.21f; // Crysis 2, Last of Us 2 calibration
 
 	// Steering wheel
+	
+	PrimaryGamepad.KMEmu.SteeringWheelUseDPAD = IniFile.ReadBoolean("MOTION", "SteeringWheelUseDPAD", false);
 	PrimaryGamepad.KMEmu.SteeringWheelDeadZone = IniFile.ReadFloat("MOTION", "SteeringWheelDeadZone", 20) * 0.01f;
 	PrimaryGamepad.KMEmu.SteeringWheelReleaseThreshold = IniFile.ReadFloat("MOTION", "SteeringWheelReleaseThreshold", 1) * 0.01f;
 
@@ -1032,7 +1045,7 @@ void DefaultMainText() {
 			else if (PrimaryGamepad.HidHandle2 != NULL) printf(", battery charge: %d\%%", PrimaryGamepad.BatteryLevel2);
 		}
 		if (PrimaryGamepad.BatteryMode == 0x2)
-			printf(" (charging)", PrimaryGamepad.BatteryLevel);
+			printf(" (charging)");
 
 		if (AppStatus.SecondaryGamepadEnabled && AppStatus.ControllerCount > 1 && SecondaryGamepad.DeviceIndex != -1) {
 			printf(". Controller 2");
@@ -1041,8 +1054,8 @@ void DefaultMainText() {
 				printf(", battery charge: %d\%%", SecondaryGamepad.BatteryLevel);
 			else {
 				if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL) printf(", battery level: %d\%%, %d\%%", SecondaryGamepad.BatteryLevel, SecondaryGamepad.BatteryLevel2);
-				else if (SecondaryGamepad.HidHandle != NULL) printf(", battery level: %d\%%", PrimaryGamepad.BatteryLevel);
-				else if (SecondaryGamepad.HidHandle2 != NULL) printf(", battery level: %d\%%", PrimaryGamepad.BatteryLevel2);
+				else if (SecondaryGamepad.HidHandle != NULL) printf(", battery level: %d\%%", SecondaryGamepad.BatteryLevel);
+				else if (SecondaryGamepad.HidHandle2 != NULL) printf(", battery level: %d\%%", SecondaryGamepad.BatteryLevel2);
 			}
 			if (SecondaryGamepad.BatteryMode == 0x2)
 				printf(" (charging)");
@@ -1230,8 +1243,8 @@ void RussianMainText() {
 				printf(", заряд батареи: %d\%%", SecondaryGamepad.BatteryLevel);
 			else {
 				if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL) printf(", заряд батареи: %d\%%, %d\%%", SecondaryGamepad.BatteryLevel, SecondaryGamepad.BatteryLevel2);
-				else if (SecondaryGamepad.HidHandle != NULL) printf(", заряд батареи: %d\%%", PrimaryGamepad.BatteryLevel);
-				else if (SecondaryGamepad.HidHandle2 != NULL) printf(", заряд батареи: %d\%%", PrimaryGamepad.BatteryLevel2);
+				else if (SecondaryGamepad.HidHandle != NULL) printf(", заряд батареи: %d\%%", SecondaryGamepad.BatteryLevel);
+				else if (SecondaryGamepad.HidHandle2 != NULL) printf(", заряд батареи: %d\%%", SecondaryGamepad.BatteryLevel2);
 			}
 			if (SecondaryGamepad.BatteryMode == 0x2)
 				printf(" (зарядка)");
@@ -1378,9 +1391,11 @@ void SyncGamepadsWithJSL()
 
 void RefreshDevices() {
 	PrimaryGamepad.HidHandle = NULL;
+	PrimaryGamepad.HidHandle2 = NULL;
 	PrimaryGamepad.DeviceIndex = -1;
 	PrimaryGamepad.DeviceIndex2 = -1;
 	SecondaryGamepad.HidHandle = NULL;
+	SecondaryGamepad.HidHandle2 = NULL;
 	SecondaryGamepad.DeviceIndex = -1;
 	SecondaryGamepad.DeviceIndex2 = -1;
 
@@ -1430,7 +1445,7 @@ void RefreshDevices() {
 	GamepadSetState(PrimaryGamepad);
 
 	if (AppStatus.SecondaryGamepadEnabled && AppStatus.ControllerCount > 1) {
-		GamepadSearch(SecondaryGamepad, PrimaryGamepad.DevicePath);
+		GamepadSearch(SecondaryGamepad, PrimaryGamepad.DevicePath, PrimaryGamepad.DevicePath2);
 		SyncGamepadsWithJSL();
 		GamepadSetState(SecondaryGamepad);
 	}
@@ -1466,7 +1481,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 2.0");
+	SetConsoleTitle("DSAdvance 2.1");
 	WindowToCenter();
 
 	// if (false)
@@ -1703,7 +1718,7 @@ int main(int argc, char **argv)
 
 			if (AppStatus.SecondaryGamepadEnabled) {
 				report2.sThumbLX = 1;
-				ret = vigem_target_x360_update(client2, x360, report2);
+				ret = vigem_target_x360_update(client2, x3602, report2);
 			}
 
 			Sleep(AppStatus.SleepTimeOut);
@@ -2301,11 +2316,14 @@ int main(int argc, char **argv)
 			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_E ? CurrentXboxProfile.B : 0;
 
 			// Aditional buttons
-			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_SL ? CurrentXboxProfile.JCSL : 0;
-			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_SR ? CurrentXboxProfile.JCSR : 0;
-
-			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_FNL ? CurrentXboxProfile.DSEdgeL4 : 0;
-			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_FNR ? CurrentXboxProfile.DSEdgeR4 : 0;
+			if (PrimaryGamepad.ControllerType == SONY_DUALSENSE) { // Edge
+				XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_FNL ? CurrentXboxProfile.DSEdgeL4 : 0;
+				XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_FNR ? CurrentXboxProfile.DSEdgeR4 : 0;
+			}
+			else if (PrimaryGamepad.ControllerType == NINTENDO_JOYCONS) {
+				XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_SL ? CurrentXboxProfile.JCSL : 0;
+				XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_SR ? CurrentXboxProfile.JCSR : 0;
+			}
 
 			// Custom keys
 			if (XboxButtons & XINPUT_GAMEPAD_LEFT_TRIGGER) { XboxButtons &= ~XINPUT_GAMEPAD_LEFT_TRIGGER; report.bLeftTrigger = 255; }
@@ -2644,7 +2662,7 @@ int main(int argc, char **argv)
 			IsRecordPressed);
 
 		if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
-			
+
 			if (PrimaryGamepad.GamepadActionMode == MotionDrivingMode) {
 
 				float MotionAxisX = CalcMotionStick(MotionState.gravX, MotionState.gravZ, PrimaryGamepad.Motion.SteeringWheelAngle, PrimaryGamepad.Motion.OffsetAxisX);
@@ -2654,7 +2672,8 @@ int main(int argc, char **argv)
 				if (fabs(MotionAxisX) < PrimaryGamepad.KMEmu.SteeringWheelDeadZone) {
 					PrimaryGamepad.KMEmu.MaxLeftAxisX = 0.0f;
 					PrimaryGamepad.KMEmu.MaxRightAxisX = 0.0f;
-				} else {
+				}
+				else {
 
 					// Left
 					if (MotionAxisX < -PrimaryGamepad.KMEmu.SteeringWheelDeadZone) {
@@ -2663,7 +2682,10 @@ int main(int argc, char **argv)
 
 						// Retention of at least 95% of the peak
 						if (MotionAxisX <= PrimaryGamepad.KMEmu.MaxLeftAxisX * (1.0f - PrimaryGamepad.KMEmu.SteeringWheelReleaseThreshold))
-							PrimaryGamepad.InputState.buttons |= JSMASK_LEFT;
+							if (PrimaryGamepad.KMEmu.SteeringWheelUseDPAD)
+								PrimaryGamepad.InputState.buttons |= JSMASK_LEFT;
+							else
+								PrimaryGamepad.InputState.stickLX = -1.0f;
 					}
 
 					// Right
@@ -2671,7 +2693,10 @@ int main(int argc, char **argv)
 						if (MotionAxisX > PrimaryGamepad.KMEmu.MaxRightAxisX) PrimaryGamepad.KMEmu.MaxRightAxisX = MotionAxisX;
 
 						if (MotionAxisX >= PrimaryGamepad.KMEmu.MaxRightAxisX * (1.0f - PrimaryGamepad.KMEmu.SteeringWheelReleaseThreshold))
-							PrimaryGamepad.InputState.buttons |= JSMASK_RIGHT;
+							if (PrimaryGamepad.KMEmu.SteeringWheelUseDPAD)
+								PrimaryGamepad.InputState.buttons |= JSMASK_RIGHT;
+							else
+								PrimaryGamepad.InputState.stickLX = 1.0f;
 					}
 				}
 
@@ -2683,7 +2708,12 @@ int main(int argc, char **argv)
 			KeyPress(PrimaryGamepad.ButtonsStates.LeftBumper.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_L, &PrimaryGamepad.ButtonsStates.LeftBumper, true);
 			KeyPress(PrimaryGamepad.ButtonsStates.RightBumper.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_R, &PrimaryGamepad.ButtonsStates.RightBumper, true);
 
-			KeyPress(PrimaryGamepad.ButtonsStates.Back.KeyCode, DontResetInputState && (PrimaryGamepad.InputState.buttons & JSMASK_SHARE || PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE), &PrimaryGamepad.ButtonsStates.Back, true);
+			// Same - JSMASK_CAPTURE 0x020000 - JSMASK_TOUCHPAD_CLICK 0x020000
+			if (PrimaryGamepad.ControllerType == SONY_DUALSENSE || PrimaryGamepad.ControllerType == SONY_DUALSHOCK4)
+				KeyPress(PrimaryGamepad.ButtonsStates.Back.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_SHARE, &PrimaryGamepad.ButtonsStates.Back, true);
+			else if (PrimaryGamepad.ControllerType == NINTENDO_JOYCONS || PrimaryGamepad.ControllerType == NINTENDO_JOYCONS)
+				KeyPress(PrimaryGamepad.ButtonsStates.Back.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE, &PrimaryGamepad.ButtonsStates.Back, true);
+			
 			KeyPress(PrimaryGamepad.ButtonsStates.Start.KeyCode, DontResetInputState && (PrimaryGamepad.InputState.buttons & JSMASK_OPTIONS || PrimaryGamepad.InputState.buttons & JSMASK_HOME), &PrimaryGamepad.ButtonsStates.Start, true);
 
 			if (PrimaryGamepad.ButtonsStates.DPADAdvancedMode == false) { // Regular mode  ↑ → ↓ ←
@@ -2715,13 +2745,15 @@ int main(int argc, char **argv)
 
 			KMStickMode(PrimaryGamepad, DontResetInputState, true, DeadZoneAxis(PrimaryGamepad.InputState.stickLX, PrimaryGamepad.Sticks.DeadZoneLeftX), DeadZoneAxis(PrimaryGamepad.InputState.stickLY, PrimaryGamepad.Sticks.DeadZoneLeftY), PrimaryGamepad.KMEmu.LeftStickMode);
 			KMStickMode(PrimaryGamepad, DontResetInputState, false, DeadZoneAxis(PrimaryGamepad.InputState.stickRX, PrimaryGamepad.Sticks.DeadZoneRightX), DeadZoneAxis(PrimaryGamepad.InputState.stickRY, PrimaryGamepad.Sticks.DeadZoneRightY), PrimaryGamepad.KMEmu.RightStickMode);
-		
-			// Aditional buttons
-			KeyPress(PrimaryGamepad.ButtonsStates.JCSL.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_SL, &PrimaryGamepad.ButtonsStates.JCSL, true);
-			KeyPress(PrimaryGamepad.ButtonsStates.JCSR.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_SR, &PrimaryGamepad.ButtonsStates.JCSR, true);
 
-			KeyPress(PrimaryGamepad.ButtonsStates.DSEdgeL4.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_FNL, &PrimaryGamepad.ButtonsStates.DSEdgeL4, true);
-			KeyPress(PrimaryGamepad.ButtonsStates.DSEdgeR4.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_FNR, &PrimaryGamepad.ButtonsStates.DSEdgeR4, true);
+			// Aditional buttons
+			if (PrimaryGamepad.ControllerType == SONY_DUALSENSE) { // Edge
+				KeyPress(PrimaryGamepad.ButtonsStates.DSEdgeL4.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_FNL, &PrimaryGamepad.ButtonsStates.DSEdgeL4, true);
+				KeyPress(PrimaryGamepad.ButtonsStates.DSEdgeR4.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_FNR, &PrimaryGamepad.ButtonsStates.DSEdgeR4, true);
+			} else if (PrimaryGamepad.ControllerType == NINTENDO_JOYCONS) {
+				KeyPress(PrimaryGamepad.ButtonsStates.JCSL.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_SL, &PrimaryGamepad.ButtonsStates.JCSL, true);
+				KeyPress(PrimaryGamepad.ButtonsStates.JCSR.KeyCode, DontResetInputState && PrimaryGamepad.InputState.buttons & JSMASK_SR, &PrimaryGamepad.ButtonsStates.JCSR, true);
+			}
 
 			// Motion wheel
 			PrimaryGamepad.ButtonsStates.WheelDefault.IsPressed = false;
@@ -2822,7 +2854,7 @@ int main(int argc, char **argv)
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelDefault.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDefault.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDefault, true);
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelUp.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelUp.IsPressed, &PrimaryGamepad.ButtonsStates.WheelUp, true);
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelUpLeft.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelUpLeft.IsPressed, &PrimaryGamepad.ButtonsStates.WheelUpLeft, true);
-			KeyPress(PrimaryGamepad.ButtonsStates.WheelUpRight.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelUpRight.IsPressed, &PrimaryGamepad.ButtonsStates.WheelRight, true);
+			KeyPress(PrimaryGamepad.ButtonsStates.WheelUpRight.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelUpRight.IsPressed, &PrimaryGamepad.ButtonsStates.WheelUpRight, true);
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelDown.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDown.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDown, true);
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelDownLeft.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDownLeft.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDownLeft, true);
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelDownRight.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDownRight.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDownRight, true);

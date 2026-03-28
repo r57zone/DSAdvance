@@ -9,7 +9,7 @@ Mode | Value
 Pressing WASD | `WASD`
 Pressing arrows | `ARROWS`
 Pressing NUMPADs arrows | `NUMPAD-ARROWS`
-Pressing NUMPADs arrows | `CUSTOM-BUTTONS`
+Pressing the selected buttons | `CUSTOM-BUTTONS`
 Mouse movement | `MOUSE-LOOK`
 Mouse wheel scrolling | `MOUSE-WHEEL`
 
@@ -36,13 +36,13 @@ To enable support for a second player, duplicate the `[FIRST-GAMEPAD]` section a
 ```
 
 ## Steering Wheel (gamepad tilt movement)  
-When switching to driving mode, tilts of the gamepad along the X-axis are used to emulate presses of the D-Pad buttons: left and right.  
+When switching to driving mode, the gamepad tilts along the X-axis are used to emulate the movement of the left stick along the horizontal axis. You can also emulate left and right D-Pad button presses by enabling the parameter `SteeringWheelUseDPAD` and setting it to `1` in the `MOTION` section.
 
-If the tilt is within the dead zone, the wheel is considered centered, and no button presses are emulated.  
+If the tilt is within the dead zone, the steering wheel is considered to be in the neutral position, and button presses are not emulated.
 
-Parameter `SteeringWheelDeadZone` defines the wheel's dead zone, specified in percent, from 0 to 100.  
+The `SteeringWheelDeadZone` parameter defines the steering wheel dead zone, set in percent, from `0` to `100`, in the `MOTION` section.
 
-Parameter `SteeringWheelReleaseThreshold` determines how far the wheel must return to the center to stop holding the direction, specified in percent, from 0 to 100.
+The `SteeringWheelReleaseThreshold` parameter determines how strongly the wheel must return to the center for directional hold to stop, set in percent, from `0` to `100`, in the `MOTION` section.
 
 ## Motion Wheel Buttons (Multi-Button)
 The motion wheel buttons allows assigning up to 9 emulations of other buttons to a single button. This is done by holding the specified `WHEEL-ACTIVATION` button, then tilting the gamepad in one of 4 or 8 directions to trigger the button emulation. If no tilt occurs, the default assigned button `WHEEL-DEFAULT` is emulated.
