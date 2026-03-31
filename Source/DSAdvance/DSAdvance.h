@@ -89,8 +89,11 @@
 #define ScreenShotMultiMode				3
 #define ScreenShotMaxModes				3
 
-#define	SkipPollTimeOut					15
-#define	PSReleasedTimeOut				30
+//#define	SkipPollTimeOut					15
+//#define	PSReleasedTimeOut				30
+#define SkipPollTimeOutMS				225  // 15 ticks * 15 ms
+#define PSReleasedTimeOutMS				450  // 30 ticks * 15 ms
+#define ButtonReleasedTimeOutMS			300  // 20 ticks * 15 ms
 
 #define WASDStickMode					1
 #define ArrowsStickMode					2
@@ -132,7 +135,7 @@
 #define TOUCHPAD_RIGHT_AREA				0.67
 
 // Aiming
-#define FrameTime						0.0166666666666667f // 1.f / 60.f
+//#define FrameTime						0.0166666666666667f // 1.f / 60.f
 #define Tightening						2.f
 
 // Mic LED status
@@ -483,7 +486,11 @@ struct _AppStatus {
 	unsigned int BatteryCriticalColor = 16711680; // WebColorToRGB("ff0000"); // RedPrimaryGamepad.RumbleOffCounter
 
 	bool XboxGamepadReset = false;
-	int SleepTimeOut = 0;
+	int SleepTimeOut = 15;
+	int SkipPollTimeOut = 15;
+	int PSReleasedTimeOut = 30;
+	int ButtonCheckTimeOut = 20;
+	float FrameTime = 0.0166666666666667f;
 }; _AppStatus AppStatus;
 
 //struct _Settings {}; _Settings Settings;

@@ -1389,7 +1389,13 @@ void SyncGamepadsWithJSL()
 	}
 }
 
+std::mutex gamepadMutex;
 void RefreshDevices() {
+	std::lock_guard<std::mutex> lock(gamepadMutex);
+	if (PrimaryGamepad.HidHandle) hid_close(PrimaryGamepad.HidHandle);
+    if (PrimaryGamepad.HidHandle2) hid_close(PrimaryGamepad.HidHandle2);
+    if (SecondaryGamepad.HidHandle) hid_close(SecondaryGamepad.HidHandle);
+    if (SecondaryGamepad.HidHandle2) hid_close(SecondaryGamepad.HidHandle2);
 	PrimaryGamepad.HidHandle = NULL;
 	PrimaryGamepad.HidHandle2 = NULL;
 	PrimaryGamepad.DeviceIndex = -1;
@@ -1440,6 +1446,8 @@ void RefreshDevices() {
 		}
 	}
 
+	Sleep(50); // Temp
+
 	// Find first gamepad
 	GamepadSearch(PrimaryGamepad, "");
 	GamepadSetState(PrimaryGamepad);
@@ -1481,7 +1489,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 2.1");
+	SetConsoleTitle("DSAdvance 2.1.1");
 	WindowToCenter();
 
 	// if (false)
@@ -1509,7 +1517,13 @@ int main(int argc, char **argv)
 	AppStatus.HotKeys.ResetKeyName = IniFile.ReadString("Gamepad", "ResetKey", "NONE");
 	AppStatus.HotKeys.ResetKey = KeyNameToKeyCode(AppStatus.HotKeys.ResetKeyName);
 	AppStatus.ShowBatteryStatusOnLightBar = IniFile.ReadBoolean("Gamepad", "ShowBatteryStatusOnLightBar", true);
-	AppStatus.SleepTimeOut = IniFile.ReadInteger("Gamepad", "SleepTimeOut", 1);
+	AppStatus.SleepTimeOut = IniFile.ReadInteger("Gamepad", "SleepTimeOut", 15);
+	timeBeginPeriod(1);
+	AppStatus.SkipPollTimeOut = SkipPollTimeOutMS / AppStatus.SleepTimeOut;
+	AppStatus.PSReleasedTimeOut = PSReleasedTimeOutMS / AppStatus.SleepTimeOut;
+	AppStatus.ButtonCheckTimeOut = ButtonReleasedTimeOutMS / AppStatus.SleepTimeOut;
+
+	AppStatus.FrameTime = AppStatus.SleepTimeOut / 1000.0f;
 
 	PrimaryGamepad.Sticks.DeadZoneLeftX = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickX", 0);
 	PrimaryGamepad.Sticks.DeadZoneLeftY = IniFile.ReadFloat("Gamepad", "DeadZoneLeftStickY", 0);
@@ -1699,13 +1713,13 @@ int main(int argc, char **argv)
 		if ((AppStatus.SkipPollCount == 0 && (IsKeyPressed(VK_CONTROL) && IsKeyPressed('R')) || IsKeyPressed(AppStatus.HotKeys.ResetKey)) || AppStatus.BTReset)
  		{
 			RefreshDevices();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		// Swap gamepads
 		if (AppStatus.SkipPollCount == 0 && IsKeyPressed(VK_MENU) && IsKeyPressed('V') && AppStatus.SecondaryGamepadEnabled && SecondaryGamepad.DeviceIndex != -1) {
 			SwapGamepads();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		XUSB_REPORT_INIT(&report);
@@ -1743,22 +1757,24 @@ int main(int argc, char **argv)
 		}
 
 		// Secondary controller
-		if (SecondaryGamepad.DeviceIndex2 == -1) {
-			SecondaryGamepad.InputState = JslGetSimpleState(SecondaryGamepad.DeviceIndex);
-			//MotionState = JslGetMotionState(SecondaryGamepad.DeviceIndex);
-			//JslGetAndFlushAccumulatedGyro(SecondaryGamepad.DeviceIndex, velocityX, velocityY, velocityZ);
+		if (AppStatus.SecondaryGamepadEnabled && SecondaryGamepad.DeviceIndex != -1) {
+			if (SecondaryGamepad.DeviceIndex2 == -1) {
+				SecondaryGamepad.InputState = JslGetSimpleState(SecondaryGamepad.DeviceIndex);
+				//MotionState = JslGetMotionState(SecondaryGamepad.DeviceIndex);
+				//JslGetAndFlushAccumulatedGyro(SecondaryGamepad.DeviceIndex, velocityX, velocityY, velocityZ);
 
-		// Split contoller (Joycons)
-		}
-		else {
-			SecondaryGamepad.InputState = JslGetSimpleState(SecondaryGamepad.DeviceIndex);
-			JOY_SHOCK_STATE tempState = JslGetSimpleState(SecondaryGamepad.DeviceIndex2);
-			//MotionState = JslGetMotionState(SecondaryGamepad.DeviceIndex2);
-			SecondaryGamepad.InputState.stickRX = tempState.stickRX;
-			SecondaryGamepad.InputState.stickRY = tempState.stickRY;
-			SecondaryGamepad.InputState.rTrigger = tempState.rTrigger;
-			SecondaryGamepad.InputState.buttons |= tempState.buttons;
-			//JslGetAndFlushAccumulatedGyro(SecondaryGamepad.DeviceIndex2, velocityX, velocityY, velocityZ);
+			// Split contoller (Joycons)
+			}
+			else {
+				SecondaryGamepad.InputState = JslGetSimpleState(SecondaryGamepad.DeviceIndex);
+				JOY_SHOCK_STATE tempState = JslGetSimpleState(SecondaryGamepad.DeviceIndex2);
+				//MotionState = JslGetMotionState(SecondaryGamepad.DeviceIndex2);
+				SecondaryGamepad.InputState.stickRX = tempState.stickRX;
+				SecondaryGamepad.InputState.stickRY = tempState.stickRY;
+				SecondaryGamepad.InputState.rTrigger = tempState.rTrigger;
+				SecondaryGamepad.InputState.buttons |= tempState.buttons;
+				//JslGetAndFlushAccumulatedGyro(SecondaryGamepad.DeviceIndex2, velocityX, velocityY, velocityZ);
+			}
 		}
 
 		// Stick dead zones
@@ -1766,7 +1782,7 @@ int main(int argc, char **argv)
 		{
 			AppStatus.DeadZoneMode = !AppStatus.DeadZoneMode;
 			if (AppStatus.DeadZoneMode == false) MainTextUpdate(); else { system("cls"); printf("\n"); }
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 		if (AppStatus.DeadZoneMode) {
 			if (AppStatus.Lang == LANG_RUSSIAN) {
@@ -1793,7 +1809,7 @@ int main(int argc, char **argv)
 			((PrimaryGamepad.InputState.buttons & JSMASK_LEFT || PrimaryGamepad.InputState.buttons & JSMASK_RIGHT) && PrimaryGamepad.InputState.buttons & JSMASK_PS) // Switching modes always works on a gamepad.
 			))
 		{
-			AppStatus.SkipPollCount = SkipPollTimeOut; // 30 for deatached, 15 is seems not enough to enable or disable Xbox virtual gamepad
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut; // 30 for deatached, 15 is seems not enough to enable or disable Xbox virtual gamepad
 
 			if (PrimaryGamepad.InputState.buttons & JSMASK_LEFT || IsKeyPressed(VK_LEFT)) {
 				
@@ -1872,7 +1888,7 @@ int main(int argc, char **argv)
 		{
 			AppStatus.AimMode = !AppStatus.AimMode;
 			MainTextUpdate();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		// Switch modes by pressing or touching
@@ -1882,7 +1898,7 @@ int main(int argc, char **argv)
 		{
 			AppStatus.ChangeModesWithClick = !AppStatus.ChangeModesWithClick;
 			MainTextUpdate();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		// Switch left stick mode
@@ -1890,7 +1906,7 @@ int main(int argc, char **argv)
 		{
 			AppStatus.LeftStickMode++; if (AppStatus.LeftStickMode > LeftStickMaxModes) AppStatus.LeftStickMode = LeftStickDefaultMode;
 			MainTextUpdate();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		// Switch screenshot mode
@@ -1902,7 +1918,7 @@ int main(int argc, char **argv)
 			else if (AppStatus.ScreenshotMode == ScreenShotSteamMode) AppStatus.ScreenShotKey = VK_STEAM_SCREENSHOT;
 			else if (AppStatus.ScreenshotMode == ScreenShotMultiMode) AppStatus.ScreenShotKey = VK_MULTI_SCREENSHOT;
 			MainTextUpdate();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		// Enable or disable lightbar
@@ -1915,7 +1931,7 @@ int main(int argc, char **argv)
 				PrimaryGamepad.OutState.LEDBrightness = 255;
 			}
 			GamepadSetState(PrimaryGamepad);
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		// Switch keyboard and mouse profile
@@ -1923,7 +1939,7 @@ int main(int argc, char **argv)
 			if ((PrimaryGamepad.InputState.buttons & JSMASK_PS && (PrimaryGamepad.InputState.buttons & JSMASK_UP || PrimaryGamepad.InputState.buttons & JSMASK_DOWN)) ||
 				((IsKeyPressed(VK_MENU) && (IsKeyPressed(VK_UP) || IsKeyPressed(VK_DOWN))) && GetConsoleWindow() == GetForegroundWindow()))
 			{
-				AppStatus.SkipPollCount = SkipPollTimeOut;
+				AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 				if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled) {
 					if (IsKeyPressed(VK_UP) || PrimaryGamepad.InputState.buttons & JSMASK_UP) if (XboxProfileIndex > 0) XboxProfileIndex--; else XboxProfileIndex = XboxProfiles.size() - 1;
 					if (IsKeyPressed(VK_DOWN) || PrimaryGamepad.InputState.buttons & JSMASK_DOWN) if (XboxProfileIndex < XboxProfiles.size() - 1) XboxProfileIndex++; else XboxProfileIndex = 0;
@@ -1950,7 +1966,7 @@ int main(int argc, char **argv)
 			else
 				AppStatus.ExternalPedalsMode = ExPedalsAlwaysRacing;
 			MainTextUpdate();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		// Changing the Rumble strength
@@ -1961,7 +1977,7 @@ int main(int argc, char **argv)
 			if (IsKeyPressed(VK_OEM_PERIOD) && PrimaryGamepad.RumbleStrength < 100)
 				PrimaryGamepad.RumbleStrength += 10;
 			MainTextUpdate();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		// Switch adaptive triigers mode
@@ -1990,7 +2006,7 @@ int main(int argc, char **argv)
 			GamepadSetState(PrimaryGamepad);
 			
 			MainTextUpdate();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		bool IsCombinedRumbleChange = false;
@@ -2006,7 +2022,7 @@ int main(int argc, char **argv)
 			else
 				PrimaryGamepad.RumbleStrength += 10;
 			MainTextUpdate();
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 
 		// Switch modes by touchpad
@@ -2053,7 +2069,7 @@ int main(int argc, char **argv)
 										AppStatus.LockChangeBrightness = !AppStatus.LockChangeBrightness;
 									AppStatus.BrightnessAreaPressed = 0;
 								}
-								AppStatus.SkipPollCount = SkipPollTimeOut;
+								AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 							}
 							PrimaryGamepad.OutState.LEDColor = PrimaryGamepad.DefaultModeColor;
 
@@ -2090,7 +2106,7 @@ int main(int argc, char **argv)
 								PrimaryGamepad.SwitchedToDesktopMode = true;
 								AppStatus.IsDesktopMode = true;
 								MainTextUpdate();
-								AppStatus.SkipPollCount = SkipPollTimeOut;
+								AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 								//printf("Desktop turn on\n");
 							}
 							
@@ -2105,7 +2121,7 @@ int main(int argc, char **argv)
 						if (AppStatus.SkipPollCount == 0 && TouchState.t0Y < 0.3) {
 							PrimaryGamepad.GamepadActionMode = PrimaryGamepad.GamepadActionMode != MotionAimingMode ? MotionAimingMode : MotionAimingModeOnlyPressed;
 							PrimaryGamepad.LastMotionAIMMode = PrimaryGamepad.GamepadActionMode;
-							AppStatus.SkipPollCount = SkipPollTimeOut;
+							AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 						}
 
 						// Motion aiming
@@ -2161,12 +2177,12 @@ int main(int argc, char **argv)
 				} else
 					PrimaryGamepad.GamepadActionMode = MotionDrivingMode;
 
-				AppStatus.SkipPollCount = SkipPollTimeOut;
+				AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 			}
 
 		if (AppStatus.SkipPollCount == 0 && IsKeyPressed(VK_MENU) && IsKeyPressed('I') && GetConsoleWindow() == GetForegroundWindow())
 		{
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 			ShowBatteryLevels();
 			GamepadSetState(PrimaryGamepad);
 			if (AppStatus.SecondaryGamepadEnabled && SecondaryGamepad.DeviceIndex != -1)
@@ -2353,7 +2369,7 @@ int main(int argc, char **argv)
 				if (report.wButtons & CurrentXboxProfile.WheelActivationButton)
 					report.wButtons &= ~CurrentXboxProfile.WheelDefault;
 				//printf("start\n");
-				PrimaryGamepad.Motion.WheelCounter = SkipPollTimeOut;
+				PrimaryGamepad.Motion.WheelCounter = AppStatus.SkipPollTimeOut;
 				PrimaryGamepad.Motion.WheelActive = true;
 				PrimaryGamepad.Motion.WheelAccumX = 0.0f;
 				PrimaryGamepad.Motion.WheelAccumY = 0.0f;
@@ -2423,8 +2439,8 @@ int main(int argc, char **argv)
 			}
 
 			if (PrimaryGamepad.Motion.WheelActive) {
-				PrimaryGamepad.Motion.WheelAccumX += velocityX * FrameTime;
-				PrimaryGamepad.Motion.WheelAccumY += velocityY * FrameTime;
+				PrimaryGamepad.Motion.WheelAccumX += velocityX * AppStatus.FrameTime;
+				PrimaryGamepad.Motion.WheelAccumY += velocityY * AppStatus.FrameTime;
 			}
 		}
 
@@ -2439,7 +2455,7 @@ int main(int argc, char **argv)
 					PrimaryGamepad.GamepadActionMode = GamepadDefaultMode;
 				else
 					PrimaryGamepad.GamepadActionMode = MotionDrivingMode;
-				AppStatus.SkipPollCount = SkipPollTimeOut;
+				AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 			}
 
 			if (AppStatus.SkipPollCount == 0 && ((PrimaryGamepad.InputState.buttons & JSMASK_HOME && AppStatus.JoyconChangeModesWithButton == 0) || (IsKeyPressed(VK_MENU) && IsKeyPressed('2')))) {
@@ -2450,7 +2466,7 @@ int main(int argc, char **argv)
 					PrimaryGamepad.GamepadActionMode = MotionAimingModeOnlyPressed; PrimaryGamepad.LastMotionAIMMode = MotionAimingModeOnlyPressed;
 				}
 				else { PrimaryGamepad.GamepadActionMode = MotionAimingMode; PrimaryGamepad.LastMotionAIMMode = MotionAimingMode; }
-				AppStatus.SkipPollCount = SkipPollTimeOut;
+				AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 			}
 
 			// Change modes on one Joycon
@@ -2468,21 +2484,21 @@ int main(int argc, char **argv)
 				} else
 					PrimaryGamepad.GamepadActionMode = MotionDrivingMode;
 
-				AppStatus.SkipPollCount = SkipPollTimeOut;
+				AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 			}
 
 			// Sony
 		} else {
 			// GameBar & multi keys
 			// PS without any keys
-			if (PrimaryGamepad.PSReleasedCount == 0 && PrimaryGamepad.InputState.buttons == JSMASK_PS) { PrimaryGamepad.PSOnlyCheckCount = 20; PrimaryGamepad.PSOnlyPressed = true; }
+			if (PrimaryGamepad.PSReleasedCount == 0 && PrimaryGamepad.InputState.buttons == JSMASK_PS) { PrimaryGamepad.PSOnlyCheckCount = AppStatus.ButtonCheckTimeOut; PrimaryGamepad.PSOnlyPressed = true; }
 			if (PrimaryGamepad.PSOnlyCheckCount > 0) {
 				if (PrimaryGamepad.PSOnlyCheckCount == 1 && PrimaryGamepad.PSOnlyPressed)
-					PrimaryGamepad.PSReleasedCount = PSReleasedTimeOut; // Timeout to release the PS button and don't execute commands
+					PrimaryGamepad.PSReleasedCount = AppStatus.PSReleasedTimeOut; // Timeout to release the PS button and don't execute commands
 				PrimaryGamepad.PSOnlyCheckCount--;
 				if (PrimaryGamepad.InputState.buttons != JSMASK_PS && PrimaryGamepad.InputState.buttons != 0) { PrimaryGamepad.PSOnlyPressed = false; PrimaryGamepad.PSOnlyCheckCount = 0; }
 			}
-			if (PrimaryGamepad.InputState.buttons & JSMASK_PS && PrimaryGamepad.InputState.buttons != JSMASK_PS) PrimaryGamepad.PSReleasedCount = PSReleasedTimeOut; // printf("PS + any button\n"); }
+			if (PrimaryGamepad.InputState.buttons & JSMASK_PS && PrimaryGamepad.InputState.buttons != JSMASK_PS) PrimaryGamepad.PSReleasedCount = AppStatus.PSReleasedTimeOut; // printf("PS + any button\n"); }
 			if (PrimaryGamepad.PSReleasedCount > 0) PrimaryGamepad.PSReleasedCount--;
 		}
 
@@ -2507,7 +2523,7 @@ int main(int argc, char **argv)
 
 			if (IsSharePressed && PrimaryGamepad.ShareHandled == false && PrimaryGamepad.ShareOnlyCheckCount == 0) {
 				PrimaryGamepad.ShareHandled = true;
-				PrimaryGamepad.ShareOnlyCheckCount = 20;
+				PrimaryGamepad.ShareOnlyCheckCount = AppStatus.ButtonCheckTimeOut;
 				PrimaryGamepad.ShareCheckUnpressed = false;
 				// printf(" Start\n");
 			}
@@ -2546,7 +2562,7 @@ int main(int argc, char **argv)
 			PrimaryGamepad.Motion.CustomMulSens += 0.2f;
 			if (PrimaryGamepad.Motion.CustomMulSens > 2.4f)
 				PrimaryGamepad.Motion.CustomMulSens = 0.2f;
-			AppStatus.SkipPollCount = SkipPollTimeOut;
+			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
 		if ((PrimaryGamepad.InputState.buttons & JSMASK_PS || PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE) && PrimaryGamepad.InputState.buttons & JSMASK_RCLICK) PrimaryGamepad.Motion.CustomMulSens = 1.0f; //printf("%5.2f\n", CustomMulSens);
 
@@ -2565,7 +2581,7 @@ int main(int argc, char **argv)
 				if (InputSize < Tightening && Tightening > 0)
 					TightenedSensitivity *= InputSize / Tightening;
 
-				report.sThumbLX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbLX), -32767, 32767);
+				report.sThumbLX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbLX), -32767, 32767);
 				report.sThumbLY = (SHORT)(CalcMotionStick(MotionState.gravY, MotionState.gravZ, PrimaryGamepad.Motion.AircraftPitchAngle, PrimaryGamepad.Motion.OffsetAxisY) * 32767) * PrimaryGamepad.Motion.AircraftPitchInverted;
 			}
 	
@@ -2591,11 +2607,11 @@ int main(int argc, char **argv)
 					TightenedSensitivity *= InputSize / Tightening;
 
 				if (AppStatus.AimMode == AimMouseMode) {
-					MouseMove(-velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.SensX * PrimaryGamepad.Motion.CustomMulSens, -velocityX * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.SensY * PrimaryGamepad.Motion.CustomMulSens);
+					MouseMove(-velocityY * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.SensX * PrimaryGamepad.Motion.CustomMulSens, -velocityX * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.SensY * PrimaryGamepad.Motion.CustomMulSens);
 				
 				} else { // Mouse-Joystick
-					report.sThumbRX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
-					report.sThumbRY = std::clamp((int)(ClampFloat(velocityX * TightenedSensitivity * FrameTime * PrimaryGamepad.Motion.JoySensY * PrimaryGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
+					report.sThumbRX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
+					report.sThumbRY = std::clamp((int)(ClampFloat(velocityX * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.JoySensY * PrimaryGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
 				}
 			
 		}
@@ -2768,7 +2784,7 @@ int main(int argc, char **argv)
 			
 			if (PrimaryGamepad.ButtonsStates.WheelActivationGamepadButton.KeyCode != 0 && PrimaryGamepad.InputState.buttons & PrimaryGamepad.ButtonsStates.WheelActivationGamepadButton.KeyCode && PrimaryGamepad.Motion.WheelCounter == 0) {
 				//printf("start\n");
-				PrimaryGamepad.Motion.WheelCounter = SkipPollTimeOut;
+				PrimaryGamepad.Motion.WheelCounter = AppStatus.SkipPollTimeOut;
 				PrimaryGamepad.Motion.WheelActive = true;
 				PrimaryGamepad.Motion.WheelAccumX = 0.0f;
 				PrimaryGamepad.Motion.WheelAccumY = 0.0f;
@@ -2847,8 +2863,8 @@ int main(int argc, char **argv)
 			}
 
 			if (PrimaryGamepad.Motion.WheelActive) {
-				PrimaryGamepad.Motion.WheelAccumX += velocityX * FrameTime;
-				PrimaryGamepad.Motion.WheelAccumY += velocityY * FrameTime;
+				PrimaryGamepad.Motion.WheelAccumX += velocityX * AppStatus.FrameTime;
+				PrimaryGamepad.Motion.WheelAccumY += velocityY * AppStatus.FrameTime;
 			}
 
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelDefault.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDefault.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDefault, true);
@@ -2911,7 +2927,7 @@ int main(int argc, char **argv)
 						else
 							SecondaryGamepad.OutState.LEDBrightness = SecondaryGamepad.DefaultLEDBrightness;
 						GamepadSetState(SecondaryGamepad);
-						AppStatus.SkipPollCount = SkipPollTimeOut;
+						AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 					}
 				}
 				else if (JslGetControllerType(SecondaryGamepad.DeviceIndex) == JS_TYPE_PRO_CONTROLLER || JslGetControllerType(SecondaryGamepad.DeviceIndex) == JS_TYPE_JOYCON_LEFT || JslGetControllerType(SecondaryGamepad.DeviceIndex) == JS_TYPE_JOYCON_RIGHT) {
@@ -3010,6 +3026,8 @@ int main(int argc, char **argv)
 		if (AppStatus.SkipPollCount > 0) AppStatus.SkipPollCount--;
 		Sleep(AppStatus.SleepTimeOut);
 	}
+
+	timeEndPeriod(1);
 
 	// Reset keyboard motion driving
 	if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse && PrimaryGamepad.GamepadActionMode == MotionDrivingMode) {
