@@ -215,404 +215,407 @@ void JoyConSimpleRumble(hid_device* jcHandle, bool IsLeft, unsigned char MotorVa
 
 void GamepadSetState(AdvancedGamepad &Gamepad)
 {
-	if (Gamepad.HidHandle != NULL) {
-		if (Gamepad.ControllerType == SONY_DUALSENSE) { // https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/
+	if (Gamepad.HidHandle == NULL && Gamepad.HidHandle2 == NULL) return;
+	if (Gamepad.ControllerType == SONY_DUALSENSE) { // https://www.reddit.com/r/gamedev/comments/jumvi5/dualsense_haptics_leds_and_more_hid_output_report/
 
-			unsigned char PlayersDSPacket = 0;
+		unsigned char PlayersDSPacket = 0;
 
-			if (Gamepad.OutState.PlayersCount == 0) PlayersDSPacket = 0;
-			else if (Gamepad.OutState.PlayersCount == 1) PlayersDSPacket = 4;
-			else if (Gamepad.OutState.PlayersCount == 2) PlayersDSPacket = 2; // Center 2
-			else if (Gamepad.OutState.PlayersCount == 5) PlayersDSPacket = 1; // Both 2
-			else if (Gamepad.OutState.PlayersCount == 3) PlayersDSPacket = 5;
-			else if (Gamepad.OutState.PlayersCount == 4) PlayersDSPacket = 3;
+		if (Gamepad.OutState.PlayersCount == 0) PlayersDSPacket = 0;
+		else if (Gamepad.OutState.PlayersCount == 1) PlayersDSPacket = 4;
+		else if (Gamepad.OutState.PlayersCount == 2) PlayersDSPacket = 2; // Center 2
+		else if (Gamepad.OutState.PlayersCount == 5) PlayersDSPacket = 1; // Both 2
+		else if (Gamepad.OutState.PlayersCount == 3) PlayersDSPacket = 5;
+		else if (Gamepad.OutState.PlayersCount == 4) PlayersDSPacket = 3;
 
-			Gamepad.OutState.LEDRed = (Gamepad.OutState.LEDColor >> 16) & 0xFF;
-			Gamepad.OutState.LEDGreen = (Gamepad.OutState.LEDColor >> 8) & 0xFF;
-			Gamepad.OutState.LEDBlue = Gamepad.OutState.LEDColor & 0xFF;
+		Gamepad.OutState.LEDRed = (Gamepad.OutState.LEDColor >> 16) & 0xFF;
+		Gamepad.OutState.LEDGreen = (Gamepad.OutState.LEDColor >> 8) & 0xFF;
+		Gamepad.OutState.LEDBlue = Gamepad.OutState.LEDColor & 0xFF;
 
-			if (Gamepad.USBConnection) {
-				unsigned char outputReport[48];
-				memset(outputReport, 0, 48);
+		if (Gamepad.USBConnection) {
+			unsigned char outputReport[48];
+			memset(outputReport, 0, 48);
 
-				outputReport[0] = 0x02;
-				outputReport[1] = 0xff;
-				outputReport[2] = 0x15;
-				outputReport[3] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100;
-				outputReport[4] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100;
-				outputReport[5] = 0xff;
-				outputReport[6] = 0xff;
-				outputReport[7] = 0xff;
-				outputReport[8] = 0x0c;
-				//outputReport[9] = OutState.MicLED;
-				outputReport[38] = 0x07;
-				outputReport[44] = PlayersDSPacket;
-				outputReport[45] = std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255);
-				outputReport[46] = std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255);
-				outputReport[47] = std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255);
+			outputReport[0] = 0x02;
+			outputReport[1] = 0xff;
+			outputReport[2] = 0x15;
+			outputReport[3] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100;
+			outputReport[4] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100;
+			outputReport[5] = 0xff;
+			outputReport[6] = 0xff;
+			outputReport[7] = 0xff;
+			outputReport[8] = 0x0c;
+			//outputReport[9] = OutState.MicLED;
+			outputReport[38] = 0x07;
+			outputReport[44] = PlayersDSPacket;
+			outputReport[45] = std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255);
+			outputReport[46] = std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255);
+			outputReport[47] = std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255);
 
-				// Adaptive triggers
-				if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RUMBLE_MODE) // Rumble translation
-				{
-					// Left trigger
-					outputReport[21] = 0x06;   // Continuous Resistance
-					outputReport[22] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 2300; // 2300 - softer
-					outputReport[23] = 0x09;   // Начало триггера (почти с нуля)
-					outputReport[24] = 0xFF;   // Конец триггера (100%)
-					outputReport[25] = 0x00;   // Без вибрации
-
-					// Right trigger
-					outputReport[11] = 0x06;      // Pulse mode
-					outputReport[12] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 2300; // 2300 - softer
-					outputReport[13] = 3;          // старт чуть позже — не так резко
-					outputReport[14] = 8;          // короткая серия импульсов
-					outputReport[15] = 0x18;       // частота импульсов ниже — мягкая отдача
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_PISTOL_MODE) // Pistol / Пистолет
-				{
-					// Пистолет: плавное сопротивление по всему ходу
-					outputReport[11] = 0x02;   // Continuous Resistance
-					outputReport[12] = 35;     // Средняя сила сопротивления
-					outputReport[13] = 0x09;   // Начало триггера (почти с нуля)
-					outputReport[14] = 0xFF;   // Конец триггера (100%)
-					outputReport[15] = 0x00;   // Без вибрации
-
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_AUTOMATIC_MODE) // Automatic / Machine Gun — серия коротких импульсов
-				{
-					outputReport[11] = 0x06;   // Pulse mode
-					outputReport[12] = 15;     // Сила каждого импульса (легкая)
-					outputReport[13] = 2;      // Старт почти сразу при лёгком нажатии
-					outputReport[14] = 10;     // Конец короткой серии импульсов
-					outputReport[15] = 0x20;   // Частота импульсов (выше — имитация очереди)
-
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RIFLE_MODE) // Sniper Rifle — винтовка с усилием
-				{
-					/* Более легкий вариант
-					outputReport[11] = 0x26;   // Resistance + лёгкая вибрация
-					outputReport[12] = 120;    // более сильное сопротивление
-					outputReport[13] = 0x00;   // начало
-					outputReport[14] = 0xE0;   // конец почти полной
-					outputReport[15] = 0x05;   // частота вибрации
-					outputReport[16] = 0xF0;   // короткий резкий толчок
-					outputReport[17] = 0x40;   // сила толчка — ощущается реально*/
-
-					outputReport[11] = 0x25;
-					outputReport[12] = 0x04; // low (1<<2)
-					outputReport[13] = 0x01; // high(1<<8)
-					outputReport[14] = 0x06; // strength-1 (7-1)
-					outputReport[15] = 0x00;
-					outputReport[16] = 0x00;
-					outputReport[17] = 0x00;
-					outputReport[18] = 0x00;
-					outputReport[19] = 0x00;
-					outputReport[20] = 0x00;
-					outputReport[21] = 0x00;
-
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_BOW_MODE) // Лук — прогрессивное натяжение
-				{
-					outputReport[11] = 0x22;
-					outputReport[12] = 0x01; // low (1<<0)
-					outputReport[13] = 0x01; // high(1<<8)
-					outputReport[14] = 0x33; // (strength-1) | ((snap-1)<<3) => (4-1)=3, (7-1)=6 => 0x03 | (0x06<<3)=0x33
-					outputReport[15] = 0x00;
-					outputReport[16] = 0x00;
-					outputReport[17] = 0x00;
-					outputReport[18] = 0x00;
-					outputReport[19] = 0x00;
-					outputReport[20] = 0x00;
-					outputReport[21] = 0x00;
-
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_CAR_MODE) // Педаль авто
-				{
-					/* Слишком сильное
-					outputReport[11] = 0x02;   // Continuous resistance
-					outputReport[12] = 0x10;   // слабое в начале
-					outputReport[13] = 0xFF;   // конец хода
-					outputReport[14] = 0x20;   // начальная сила
-					outputReport[15] = 0xF0;   // максимальная сила — реально чувствуется
-					*/
-
-					outputReport[11] = 0x21;
-					outputReport[12] = 0xFF; // активные зоны 0..9
-					outputReport[13] = 0x03;
-					outputReport[14] = 0x24; // amplitude zones для strength=5 (повтор "100")
-					outputReport[15] = 0x92;
-					outputReport[16] = 0x49;
-					outputReport[17] = 0x24;
-					outputReport[18] = 0x00;
-					outputReport[19] = 0x00;
-					outputReport[20] = 0x00;
-					outputReport[21] = 0x00;
-
-				}
-
+			// Adaptive triggers
+			if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RUMBLE_MODE) // Rumble translation
+			{
 				// Left trigger
-				if (Gamepad.AdaptiveTriggersOutputMode > 1)
-				{
-					outputReport[21] = 0x02;   // Continuous Resistance
-					outputReport[22] = 35;     // Средняя сила сопротивления
-					outputReport[23] = 0x09;   // Начало триггера (почти с нуля)
-					outputReport[24] = 0xFF;   // Конец триггера (100%)
-					outputReport[25] = 0x00;   // Без вибрации
+				outputReport[21] = 0x06;   // Continuous Resistance
+				outputReport[22] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 2300; // 2300 - softer
+				outputReport[23] = 0x09;   // Начало триггера (почти с нуля)
+				outputReport[24] = 0xFF;   // Конец триггера (100%)
+				outputReport[25] = 0x00;   // Без вибрации
 
-				}
+				// Right trigger
+				outputReport[11] = 0x06;      // Pulse mode
+				outputReport[12] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 2300; // 2300 - softer
+				outputReport[13] = 3;          // старт чуть позже — не так резко
+				outputReport[14] = 8;          // короткая серия импульсов
+				outputReport[15] = 0x18;       // частота импульсов ниже — мягкая отдача
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_PISTOL_MODE) // Pistol / Пистолет
+			{
+				// Пистолет: плавное сопротивление по всему ходу
+				outputReport[11] = 0x02;   // Continuous Resistance
+				outputReport[12] = 35;     // Средняя сила сопротивления
+				outputReport[13] = 0x09;   // Начало триггера (почти с нуля)
+				outputReport[14] = 0xFF;   // Конец триггера (100%)
+				outputReport[15] = 0x00;   // Без вибрации
 
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_AUTOMATIC_MODE) // Automatic / Machine Gun — серия коротких импульсов
+			{
+				outputReport[11] = 0x06;   // Pulse mode
+				outputReport[12] = 15;     // Сила каждого импульса (легкая)
+				outputReport[13] = 2;      // Старт почти сразу при лёгком нажатии
+				outputReport[14] = 10;     // Конец короткой серии импульсов
+				outputReport[15] = 0x20;   // Частота импульсов (выше — имитация очереди)
+
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RIFLE_MODE) // Sniper Rifle — винтовка с усилием
+			{
+				/* Более легкий вариант
+				outputReport[11] = 0x26;   // Resistance + лёгкая вибрация
+				outputReport[12] = 120;    // более сильное сопротивление
+				outputReport[13] = 0x00;   // начало
+				outputReport[14] = 0xE0;   // конец почти полной
+				outputReport[15] = 0x05;   // частота вибрации
+				outputReport[16] = 0xF0;   // короткий резкий толчок
+				outputReport[17] = 0x40;   // сила толчка — ощущается реально*/
+
+				outputReport[11] = 0x25;
+				outputReport[12] = 0x04; // low (1<<2)
+				outputReport[13] = 0x01; // high(1<<8)
+				outputReport[14] = 0x06; // strength-1 (7-1)
+				outputReport[15] = 0x00;
+				outputReport[16] = 0x00;
+				outputReport[17] = 0x00;
+				outputReport[18] = 0x00;
+				outputReport[19] = 0x00;
+				outputReport[20] = 0x00;
+				outputReport[21] = 0x00;
+
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_BOW_MODE) // Лук — прогрессивное натяжение
+			{
+				outputReport[11] = 0x22;
+				outputReport[12] = 0x01; // low (1<<0)
+				outputReport[13] = 0x01; // high(1<<8)
+				outputReport[14] = 0x33; // (strength-1) | ((snap-1)<<3) => (4-1)=3, (7-1)=6 => 0x03 | (0x06<<3)=0x33
+				outputReport[15] = 0x00;
+				outputReport[16] = 0x00;
+				outputReport[17] = 0x00;
+				outputReport[18] = 0x00;
+				outputReport[19] = 0x00;
+				outputReport[20] = 0x00;
+				outputReport[21] = 0x00;
+
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_CAR_MODE) // Педаль авто
+			{
+				/* Слишком сильное
+				outputReport[11] = 0x02;   // Continuous resistance
+				outputReport[12] = 0x10;   // слабое в начале
+				outputReport[13] = 0xFF;   // конец хода
+				outputReport[14] = 0x20;   // начальная сила
+				outputReport[15] = 0xF0;   // максимальная сила — реально чувствуется
+				*/
+
+				outputReport[11] = 0x21;
+				outputReport[12] = 0xFF; // активные зоны 0..9
+				outputReport[13] = 0x03;
+				outputReport[14] = 0x24; // amplitude zones для strength=5 (повтор "100")
+				outputReport[15] = 0x92;
+				outputReport[16] = 0x49;
+				outputReport[17] = 0x24;
+				outputReport[18] = 0x00;
+				outputReport[19] = 0x00;
+				outputReport[20] = 0x00;
+				outputReport[21] = 0x00;
+
+			}
+
+			// Left trigger
+			if (Gamepad.AdaptiveTriggersOutputMode > 1)
+			{
+				outputReport[21] = 0x02;   // Continuous Resistance
+				outputReport[22] = 35;     // Средняя сила сопротивления
+				outputReport[23] = 0x09;   // Начало триггера (почти с нуля)
+				outputReport[24] = 0xFF;   // Конец триггера (100%)
+				outputReport[25] = 0x00;   // Без вибрации
+
+			}
+
+			if (Gamepad.HidHandle != NULL)
 				hid_write(Gamepad.HidHandle, outputReport, 48);
-
-				
-			}
-			// DualSense BT
-			else {
-				unsigned char outputReport[79]; // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds5_rumble_light_bt)
-				memset(outputReport, 0, 79);
-
-				outputReport[0] = 0xa2;
-				outputReport[1] = 0x31;
-				outputReport[2] = 0x02;
-				outputReport[3] = 0x03;
-				outputReport[4] = 0x54;
-				outputReport[5] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100;
-				outputReport[6] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100;
-				outputReport[11] = 0x00; // Gamepad.OutState.MicLED - not working
-				outputReport[41] = 0x02;
-				outputReport[44] = 0x02;
-				outputReport[45] = 0x02;
-				outputReport[46] = PlayersDSPacket;
-				//outputReport[46] &= ~(1 << 7);
-				//outputReport[46] &= ~(1 << 8);
-				outputReport[47] = std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255);
-				outputReport[48] = std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255);
-				outputReport[49] = std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255);
-
-				// https://github.com/Valkirie/JoyShockLibrary/commit/f4fffb6faa53f0839130b093690ca292f23f115e
-				if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RUMBLE_MODE) // Rumble translation
-				{
-					// Left trigger (USB: 21..25) -> BT: 24..28
-					outputReport[3] |= 0x08;              // dirty L2
-					outputReport[24] = 0x06;              // Continuous Resistance
-					outputReport[25] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 2300;
-					outputReport[26] = 0x09;              // начало
-					outputReport[27] = 0xFF;              // конец
-					outputReport[28] = 0x00;              // без вибрации
-
-					// Right trigger (USB: 11..15) -> BT: 13..17
-					outputReport[3] |= 0x04;              // dirty R2
-					outputReport[13] = 0x06;              // Pulse mode
-					outputReport[14] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 2300;
-					outputReport[15] = 3;                 // старт чуть позже
-					outputReport[16] = 8;                 // короткая серия
-					outputReport[17] = 0x18;              // частота
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_PISTOL_MODE) // Пистолет
-				{
-					// Только правый, как по USB
-					outputReport[3] |= 0x04;              // dirty R2
-					outputReport[13] = 0x02;              // Continuous Resistance
-					outputReport[14] = 35;                // сила
-					outputReport[15] = 0x09;              // начало
-					outputReport[16] = 0xFF;              // конец
-					outputReport[17] = 0x00;              // без вибрации
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_AUTOMATIC_MODE) // Automatic / очередь
-				{
-					outputReport[3] |= 0x04;              // dirty R2
-					outputReport[13] = 0x06;              // Pulse mode
-					outputReport[14] = 15;                // сила импульса
-					outputReport[15] = 2;                 // старт
-					outputReport[16] = 10;                // конец серии
-					outputReport[17] = 0x20;              // частота
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RIFLE_MODE) // Винтовка
-				{
-					outputReport[3] |= 0x04;              // dirty R2
-					outputReport[13] = 0x25;
-					outputReport[14] = 0x04;
-					outputReport[15] = 0x01;
-					outputReport[16] = 0x06;
-					outputReport[17] = 0x00;
-					outputReport[18] = 0x00;
-					outputReport[19] = 0x00;
-					outputReport[20] = 0x00;
-					outputReport[21] = 0x00;
-					outputReport[22] = 0x00;
-					outputReport[23] = 0x00;
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_BOW_MODE) // Лук
-				{
-					outputReport[3] |= 0x04;              // dirty R2
-					outputReport[13] = 0x22;
-					outputReport[14] = 0x01;              // low
-					outputReport[15] = 0x01;              // high
-					outputReport[16] = 0x33;              // как по USB
-					outputReport[17] = 0x00;
-					outputReport[18] = 0x00;
-					outputReport[19] = 0x00;
-					outputReport[20] = 0x00;
-					outputReport[21] = 0x00;
-					outputReport[22] = 0x00;
-					outputReport[23] = 0x00;
-				}
-				else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_CAR_MODE) // Педаль авто
-				{
-					outputReport[3] |= 0x04;              // dirty R2
-					outputReport[13] = 0x21;
-					outputReport[14] = 0xFF;              // активные зоны 0..9
-					outputReport[15] = 0x03;
-					outputReport[16] = 0x24;              // amplitude zones
-					outputReport[17] = 0x92;
-					outputReport[18] = 0x49;
-					outputReport[19] = 0x24;
-					outputReport[20] = 0x00;
-					outputReport[21] = 0x00;
-					outputReport[22] = 0x00;
-					outputReport[23] = 0x00;
-				}
-				else
-				{
-					// режим 0 / неизвестный — сброс обоих триггеров
-					outputReport[3] |= 0x0C;              // dirty R2+L2
-				}
-
-				// Left trigger
-				if (Gamepad.AdaptiveTriggersOutputMode > 1)
-				{
-					outputReport[3] |= 0x08;              // dirty L2
-					outputReport[24] = 0x02;              // Continuous Resistance
-					outputReport[25] = 35;                // Средняя сила
-					outputReport[26] = 0x09;              // Начало
-					outputReport[27] = 0xFF;              // Конец
-					outputReport[28] = 0x00;              // Без вибрации
-				}
-
-				uint32_t crc = crc_32(outputReport, 75);
-				memcpy(&outputReport[75], &crc, 4);
-
-				hid_write(Gamepad.HidHandle, &outputReport[1], 78);
-			}
-
+	
 		}
-		else if (Gamepad.ControllerType == SONY_DUALSHOCK4) { // JoyShockLibrary rumble working for USB DS4 ??? 
-			Gamepad.OutState.LEDRed = (Gamepad.OutState.LEDColor >> 16) & 0xFF;
-			Gamepad.OutState.LEDGreen = (Gamepad.OutState.LEDColor >> 8) & 0xFF;
-			Gamepad.OutState.LEDBlue = Gamepad.OutState.LEDColor & 0xFF;
+		// DualSense BT
+		else {
+			unsigned char outputReport[79]; // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds5_rumble_light_bt)
+			memset(outputReport, 0, 79);
 
-			if (Gamepad.USBConnection) {
-				unsigned char outputReport[31];
-				memset(outputReport, 0, 31);
+			outputReport[0] = 0xa2;
+			outputReport[1] = 0x31;
+			outputReport[2] = 0x02;
+			outputReport[3] = 0x03;
+			outputReport[4] = 0x54;
+			outputReport[5] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100;
+			outputReport[6] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100;
+			outputReport[11] = 0x00; // Gamepad.OutState.MicLED - not working
+			outputReport[41] = 0x02;
+			outputReport[44] = 0x02;
+			outputReport[45] = 0x02;
+			outputReport[46] = PlayersDSPacket;
+			//outputReport[46] &= ~(1 << 7);
+			//outputReport[46] &= ~(1 << 8);
+			outputReport[47] = std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255);
+			outputReport[48] = std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255);
+			outputReport[49] = std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255);
 
-				outputReport[0] = 0x05;
-				outputReport[1] = 0xff;
-				outputReport[4] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100;
-				outputReport[5] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100;
-				outputReport[6] = std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255);
-				outputReport[7] = std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255);
-				outputReport[8] = std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255);
+			// https://github.com/Valkirie/JoyShockLibrary/commit/f4fffb6faa53f0839130b093690ca292f23f115e
+			if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RUMBLE_MODE) // Rumble translation
+			{
+				// Left trigger (USB: 21..25) -> BT: 24..28
+				outputReport[3] |= 0x08;              // dirty L2
+				outputReport[24] = 0x06;              // Continuous Resistance
+				outputReport[25] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 2300;
+				outputReport[26] = 0x09;              // начало
+				outputReport[27] = 0xFF;              // конец
+				outputReport[28] = 0x00;              // без вибрации
 
+				// Right trigger (USB: 11..15) -> BT: 13..17
+				outputReport[3] |= 0x04;              // dirty R2
+				outputReport[13] = 0x06;              // Pulse mode
+				outputReport[14] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 2300;
+				outputReport[15] = 3;                 // старт чуть позже
+				outputReport[16] = 8;                 // короткая серия
+				outputReport[17] = 0x18;              // частота
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_PISTOL_MODE) // Пистолет
+			{
+				// Только правый, как по USB
+				outputReport[3] |= 0x04;              // dirty R2
+				outputReport[13] = 0x02;              // Continuous Resistance
+				outputReport[14] = 35;                // сила
+				outputReport[15] = 0x09;              // начало
+				outputReport[16] = 0xFF;              // конец
+				outputReport[17] = 0x00;              // без вибрации
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_AUTOMATIC_MODE) // Automatic / очередь
+			{
+				outputReport[3] |= 0x04;              // dirty R2
+				outputReport[13] = 0x06;              // Pulse mode
+				outputReport[14] = 15;                // сила импульса
+				outputReport[15] = 2;                 // старт
+				outputReport[16] = 10;                // конец серии
+				outputReport[17] = 0x20;              // частота
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_RIFLE_MODE) // Винтовка
+			{
+				outputReport[3] |= 0x04;              // dirty R2
+				outputReport[13] = 0x25;
+				outputReport[14] = 0x04;
+				outputReport[15] = 0x01;
+				outputReport[16] = 0x06;
+				outputReport[17] = 0x00;
+				outputReport[18] = 0x00;
+				outputReport[19] = 0x00;
+				outputReport[20] = 0x00;
+				outputReport[21] = 0x00;
+				outputReport[22] = 0x00;
+				outputReport[23] = 0x00;
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_BOW_MODE) // Лук
+			{
+				outputReport[3] |= 0x04;              // dirty R2
+				outputReport[13] = 0x22;
+				outputReport[14] = 0x01;              // low
+				outputReport[15] = 0x01;              // high
+				outputReport[16] = 0x33;              // как по USB
+				outputReport[17] = 0x00;
+				outputReport[18] = 0x00;
+				outputReport[19] = 0x00;
+				outputReport[20] = 0x00;
+				outputReport[21] = 0x00;
+				outputReport[22] = 0x00;
+				outputReport[23] = 0x00;
+			}
+			else if (Gamepad.AdaptiveTriggersOutputMode == ADAPTIVE_TRIGGERS_CAR_MODE) // Педаль авто
+			{
+				outputReport[3] |= 0x04;              // dirty R2
+				outputReport[13] = 0x21;
+				outputReport[14] = 0xFF;              // активные зоны 0..9
+				outputReport[15] = 0x03;
+				outputReport[16] = 0x24;              // amplitude zones
+				outputReport[17] = 0x92;
+				outputReport[18] = 0x49;
+				outputReport[19] = 0x24;
+				outputReport[20] = 0x00;
+				outputReport[21] = 0x00;
+				outputReport[22] = 0x00;
+				outputReport[23] = 0x00;
+			}
+			else
+			{
+				// режим 0 / неизвестный — сброс обоих триггеров
+				outputReport[3] |= 0x0C;              // dirty R2+L2
+			}
+
+			// Left trigger
+			if (Gamepad.AdaptiveTriggersOutputMode > 1)
+			{
+				outputReport[3] |= 0x08;              // dirty L2
+				outputReport[24] = 0x02;              // Continuous Resistance
+				outputReport[25] = 35;                // Средняя сила
+				outputReport[26] = 0x09;              // Начало
+				outputReport[27] = 0xFF;              // Конец
+				outputReport[28] = 0x00;              // Без вибрации
+			}
+
+			uint32_t crc = crc_32(outputReport, 75);
+			memcpy(&outputReport[75], &crc, 4);
+
+			if (Gamepad.HidHandle != NULL)
+				hid_write(Gamepad.HidHandle, &outputReport[1], 78);
+		}
+
+	}
+	else if (Gamepad.ControllerType == SONY_DUALSHOCK4) { // JoyShockLibrary rumble working for USB DS4 ??? 
+		Gamepad.OutState.LEDRed = (Gamepad.OutState.LEDColor >> 16) & 0xFF;
+		Gamepad.OutState.LEDGreen = (Gamepad.OutState.LEDColor >> 8) & 0xFF;
+		Gamepad.OutState.LEDBlue = Gamepad.OutState.LEDColor & 0xFF;
+
+		if (Gamepad.USBConnection) {
+			unsigned char outputReport[31];
+			memset(outputReport, 0, 31);
+
+			outputReport[0] = 0x05;
+			outputReport[1] = 0xff;
+			outputReport[4] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100;
+			outputReport[5] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100;
+			outputReport[6] = std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255);
+			outputReport[7] = std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255);
+			outputReport[8] = std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255);
+
+			if (Gamepad.HidHandle != NULL)
 				hid_write(Gamepad.HidHandle, outputReport, 31);
 
-				// DualShock 4 BT
-			}
-			else { // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds4_rumble_light_bt)
-				unsigned char outputReport[79];
-				memset(outputReport, 0, 79);
-
-				outputReport[0] = 0xa2;
-				outputReport[1] = 0x11;
-				outputReport[2] = 0xc0;
-				outputReport[3] = 0x20;
-				outputReport[4] = 0x07;
-				outputReport[5] = 0x00;
-				outputReport[6] = 0x00;
-
-				outputReport[7] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100;
-				outputReport[8] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100;
-
-				outputReport[9] = std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255);
-				outputReport[10] = std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255);
-				outputReport[11] = std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255);
-
-				outputReport[12] = 0xff;
-				outputReport[13] = 0x00;
-
-				uint32_t crc = crc_32(outputReport, 75);
-				memcpy(&outputReport[75], &crc, 4);
-
-				hid_write(Gamepad.HidHandle, &outputReport[1], 78);
-			}
-
+			// DualShock 4 BT
 		}
-		else if (Gamepad.ControllerType == NINTENDO_JOYCONS && !Gamepad.USBConnection) {
-			if (Gamepad.RumbleStrength != 0) {
-				// Left JoyCon
-				/*unsigned char outputReportLeft[64] = { 0 };
-				outputReportLeft[0] = 0x10;
-				outputReportLeft[1] = Gamepad.PacketCounter++ & 0x0f;
-				outputReportLeft[6] = 0x00;
-				outputReportLeft[7] = 0x01;
-				outputReportLeft[8] = 0x40;
-				outputReportLeft[9] = 0x40;
+		else { // https://github.com/JibbSmart/JoyShockLibrary/blob/master/JoyShockLibrary/JoyShock.cpp (set_ds4_rumble_light_bt)
+			unsigned char outputReport[79];
+			memset(outputReport, 0, 79);
 
-				if (OutState.LargeMotor == 0) {
-					outputReportLeft[2] = 0x00;
-					outputReportLeft[3] = 0x01;
-					outputReportLeft[4] = 0x40;
-					outputReportLeft[5] = 0x40;
-				} else
-					EncodeRumble(&outputReportLeft[2], MotorFreqFromStrength(Gamepad.OutState.LargeMotor), (Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength * 0.9f) / 25500.0f);
-				hid_write(Gamepad.HidHandle, outputReportLeft, sizeof(outputReportLeft));
+			outputReport[0] = 0xa2;
+			outputReport[1] = 0x11;
+			outputReport[2] = 0xc0;
+			outputReport[3] = 0x20;
+			outputReport[4] = 0x07;
+			outputReport[5] = 0x00;
+			outputReport[6] = 0x00;
 
-				// Right JoyCon
-				if (Gamepad.HidHandle2) {
-					unsigned char outputReportRight[64] = { 0 };
-					outputReportRight[0] = 0x10;
-					outputReportRight[1] = Gamepad.PacketCounter++ & 0x0f;
+			outputReport[7] = (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100;
+			outputReport[8] = (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100;
 
+			outputReport[9] = std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255);
+			outputReport[10] = std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255);
+			outputReport[11] = std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255);
+
+			outputReport[12] = 0xff;
+			outputReport[13] = 0x00;
+
+			uint32_t crc = crc_32(outputReport, 75);
+			memcpy(&outputReport[75], &crc, 4);
+
+			if (Gamepad.HidHandle != NULL)
+				hid_write(Gamepad.HidHandle, &outputReport[1], 78);
+		}
+
+	}
+	else if (Gamepad.ControllerType == NINTENDO_JOYCONS && !Gamepad.USBConnection) {
+		
+		if (Gamepad.RumbleStrength != 0) {
+			// Left JoyCon
+			/*unsigned char outputReportLeft[64] = { 0 };
+			outputReportLeft[0] = 0x10;
+			outputReportLeft[1] = Gamepad.PacketCounter++ & 0x0f;
+			outputReportLeft[6] = 0x00;
+			outputReportLeft[7] = 0x01;
+			outputReportLeft[8] = 0x40;
+			outputReportLeft[9] = 0x40;
+
+			if (OutState.LargeMotor == 0) {
+				outputReportLeft[2] = 0x00;
+				outputReportLeft[3] = 0x01;
+				outputReportLeft[4] = 0x40;
+				outputReportLeft[5] = 0x40;
+			} else
+				EncodeRumble(&outputReportLeft[2], MotorFreqFromStrength(Gamepad.OutState.LargeMotor), (Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength * 0.9f) / 25500.0f);
+			hid_write(Gamepad.HidHandle, outputReportLeft, sizeof(outputReportLeft));
+
+			// Right JoyCon
+			if (Gamepad.HidHandle2) {
+				unsigned char outputReportRight[64] = { 0 };
+				outputReportRight[0] = 0x10;
+				outputReportRight[1] = Gamepad.PacketCounter++ & 0x0f;
+
+				outputReportRight[6] = 0x00;
+				outputReportRight[7] = 0x01;
+				outputReportRight[8] = 0x40;
+				outputReportRight[9] = 0x40;
+
+				if (OutState.SmallMotor == 0) {
 					outputReportRight[6] = 0x00;
 					outputReportRight[7] = 0x01;
 					outputReportRight[8] = 0x40;
 					outputReportRight[9] = 0x40;
+				}
+				else
+					EncodeRumble(&outputReportRight[6], MotorFreqFromStrength(Gamepad.OutState.SmallMotor), (Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength * 0.9f) / 25500.0f);
 
-					if (OutState.SmallMotor == 0) {
-						outputReportRight[6] = 0x00;
-						outputReportRight[7] = 0x01;
-						outputReportRight[8] = 0x40;
-						outputReportRight[9] = 0x40;
-					}
-					else
-						EncodeRumble(&outputReportRight[6], MotorFreqFromStrength(Gamepad.OutState.SmallMotor), (Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength * 0.9f) / 25500.0f);
-
-					hid_write(Gamepad.HidHandle2, outputReportRight, sizeof(outputReportRight));
-				}*/
-
+				hid_write(Gamepad.HidHandle2, outputReportRight, sizeof(outputReportRight));
+			}*/
+			if (Gamepad.HidHandle != NULL)
 				JoyConSimpleRumble(Gamepad.HidHandle, true, AppStatus.JoyconRumbleMerge == false ? Gamepad.OutState.LargeMotor : (Gamepad.OutState.LargeMotor + Gamepad.OutState.SmallMotor) / 2);
-				if (Gamepad.HidHandle2)
-					JoyConSimpleRumble(Gamepad.HidHandle2, false, AppStatus.JoyconRumbleMerge == false ? Gamepad.OutState.SmallMotor : (Gamepad.OutState.LargeMotor + Gamepad.OutState.SmallMotor) / 2);
-
+			if (Gamepad.HidHandle2)
+				JoyConSimpleRumble(Gamepad.HidHandle2, false, AppStatus.JoyconRumbleMerge == false ? Gamepad.OutState.SmallMotor : (Gamepad.OutState.LargeMotor + Gamepad.OutState.SmallMotor) / 2);
+		}
+	}
+	else if (Gamepad.ControllerType == NINTENDO_SWITCH_PRO) { // && !Gamepad.USBConnection
+		//printf("rumble\n");
+		//JslSetRumble(0, (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100, (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100);
+		if (Gamepad.RumbleStrength != 0) {
+			if (!Gamepad.USBConnection || Gamepad.RumbleSkipCounter == 0) { // Wireless or wired with skip JoyShockLibrary init
+				unsigned char outputReport[64] = { 0 };
+				outputReport[0] = 0x10;
+				outputReport[1] = Gamepad.PacketCounter++ & 0x0f;
+				EncodeRumble(&outputReport[2], MotorFreqFromStrength(Gamepad.OutState.SmallMotor), (Gamepad.OutState.SmallMotor / 255.0f) * (Gamepad.RumbleStrength / 100.0f));
+				EncodeRumble(&outputReport[6], MotorFreqFromStrength(Gamepad.OutState.LargeMotor), (Gamepad.OutState.LargeMotor / 255.0f) * (Gamepad.RumbleStrength / 100.0f));
+				if (Gamepad.HidHandle != NULL)
+					hid_write(Gamepad.HidHandle, outputReport, 64);
 			}
 		}
-		else if (Gamepad.ControllerType == NINTENDO_SWITCH_PRO) { // && !Gamepad.USBConnection
-			//printf("rumble\n");
-			//JslSetRumble(0, (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100, (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100);
-			if (Gamepad.RumbleStrength != 0) {
-				if (!Gamepad.USBConnection || Gamepad.RumbleSkipCounter == 0) { // Wireless or wired with skip JoyShockLibrary init
-					unsigned char outputReport[64] = { 0 };
-					outputReport[0] = 0x10;
-					outputReport[1] = Gamepad.PacketCounter++ & 0x0f;
-					EncodeRumble(&outputReport[2], MotorFreqFromStrength(Gamepad.OutState.SmallMotor), (Gamepad.OutState.SmallMotor / 255.0f) * (Gamepad.RumbleStrength / 100.0f));
-					EncodeRumble(&outputReport[6], MotorFreqFromStrength(Gamepad.OutState.LargeMotor), (Gamepad.OutState.LargeMotor / 255.0f) * (Gamepad.RumbleStrength / 100.0f));
-					hid_write(Gamepad.HidHandle, outputReport, 64);
-				}
-			}
-		} //else {
-			//if (JslGetControllerType(0) == JS_TYPE_DS || JslGetControllerType(0) == JS_TYPE_DS4)
-				//JslSetLightColour(0, (std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255) << 16) + (std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255) << 8) + std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255)); // https://github.com/CyberPlaton/_Nautilus_/blob/master/Engine/PSGamepad.cpp
-			//JslSetRumble(0, (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100, (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100); // Not working with DualSense USB connection
-		//}
-	}
+	} //else {
+		//if (JslGetControllerType(0) == JS_TYPE_DS || JslGetControllerType(0) == JS_TYPE_DS4)
+			//JslSetLightColour(0, (std::clamp(Gamepad.OutState.LEDRed - Gamepad.OutState.LEDBrightness, 0, 255) << 16) + (std::clamp(Gamepad.OutState.LEDGreen - Gamepad.OutState.LEDBrightness, 0, 255) << 8) + std::clamp(Gamepad.OutState.LEDBlue - Gamepad.OutState.LEDBrightness, 0, 255)); // https://github.com/CyberPlaton/_Nautilus_/blob/master/Engine/PSGamepad.cpp
+		//JslSetRumble(0, (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100, (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100); // Not working with DualSense USB connection
+	//}
 	//else // Unknown controllers - Pro controller, Joy-cons
 		//JslSetRumble(0, (unsigned int)Gamepad.OutState.LargeMotor * Gamepad.RumbleStrength / 100, (unsigned int)Gamepad.OutState.SmallMotor * Gamepad.RumbleStrength / 100);
 }
@@ -1389,9 +1392,9 @@ void SyncGamepadsWithJSL()
 	}
 }
 
-std::mutex gamepadMutex;
+//std::mutex gamepadMutex;
 void RefreshDevices() {
-	std::lock_guard<std::mutex> lock(gamepadMutex);
+	//std::lock_guard<std::mutex> lock(gamepadMutex);
 	if (PrimaryGamepad.HidHandle) hid_close(PrimaryGamepad.HidHandle);
     if (PrimaryGamepad.HidHandle2) hid_close(PrimaryGamepad.HidHandle2);
     if (SecondaryGamepad.HidHandle) hid_close(SecondaryGamepad.HidHandle);
@@ -1446,7 +1449,7 @@ void RefreshDevices() {
 		}
 	}
 
-	Sleep(50); // Temp
+	Sleep(50); // Temporarily, it may help not to crash in random cases with BT reset
 
 	// Find first gamepad
 	GamepadSearch(PrimaryGamepad, "");
@@ -1472,8 +1475,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_DEVICECHANGE: // The list of devices has changed
 		if (wParam == DBT_DEVNODES_CHANGED) {
 			RefreshDevices();
-			if (!PrimaryGamepad.USBConnection || !SecondaryGamepad.USBConnection)
+			if (!PrimaryGamepad.USBConnection || !SecondaryGamepad.USBConnection) {
 				AppStatus.BTReset = true; // Bug with Bluetooth controllers, in which in Input Bluetooth controllers random values (JoyShockLibarary?). Resetting again helps.
+			}
 		}
 		break;
 		/*case WM_CLOSE:
@@ -1489,7 +1493,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 2.1.1");
+	SetConsoleTitle("DSAdvance 2.1.2");
 	WindowToCenter();
 
 	// if (false)
@@ -1710,8 +1714,8 @@ int main(int argc, char **argv)
 		}
 
 		// Reset
-		if ((AppStatus.SkipPollCount == 0 && (IsKeyPressed(VK_CONTROL) && IsKeyPressed('R')) || IsKeyPressed(AppStatus.HotKeys.ResetKey)) || AppStatus.BTReset)
- 		{
+		if ((AppStatus.SkipPollCount == 0 && (IsKeyPressed(VK_CONTROL) && IsKeyPressed('R')) || IsKeyPressed(AppStatus.HotKeys.ResetKey)) || AppStatus.BTReset) 
+  		{
 			RefreshDevices();
 			AppStatus.SkipPollCount = AppStatus.SkipPollTimeOut;
 		}
@@ -2360,7 +2364,6 @@ int main(int argc, char **argv)
 
 			report.wButtons = (WORD)XboxButtons;
 		}
-
 
 
 		// Motion wheel
