@@ -53,6 +53,9 @@ type
     AboutBtn: TMenuItem;
     N13: TMenuItem;
     ManualBtn: TMenuItem;
+    ManualKMProfilesBtn: TMenuItem;
+    ManualXboxProfilesBtn: TMenuItem;
+    N8: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure CloseBtnClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -82,6 +85,8 @@ type
     procedure HidHideRunBtnClick(Sender: TObject);
     procedure ManualBtnClick(Sender: TObject);
     procedure AboutBtnClick(Sender: TObject);
+    procedure ManualXboxProfilesBtnClick(Sender: TObject);
+    procedure ManualKMProfilesBtnClick(Sender: TObject);
   private
     procedure DefaultHandler(var Message); override;
     procedure OpenUtilityOrFolder(FilePath: string);
@@ -297,7 +302,9 @@ begin
     SetupBtn.Caption:='Setup';
     ConfigBtn.Caption:='Options';
     KMProfilesBtn.Caption:='Keyboard && Mouse Profiles';
+    ManualKMProfilesBtn.Caption:='Keyboard && Mouse Profiles';
     XboxProfilesBtn.Caption:='Xbox Gamepad Profiles';
+    ManualXboxProfilesBtn.Caption:='Xbox Gamepad Profiles';
     RunInBgBtn.Caption:='Run in background';
     HidHideSubMenu.Caption:='Hide Gamepad (HidHide)';
     HideGamepadBtn.Caption:='Hide from Games & Apps';
@@ -600,6 +607,16 @@ begin
   Application.MessageBox(PChar(DSAdvanceTitle + #13#10 +
   'https://r57zone.github.io' + #13#10 +
   'r57zone@gmail.com'), PChar(AboutBtn.Caption), MB_ICONINFORMATION);
+end;
+
+procedure TMain.ManualXboxProfilesBtnClick(Sender: TObject);
+begin
+  OpenUtilityOrFolder(PChar(ExtractFilePath(ParamStr(0)) + 'Docs\Xbox bindings' + PrefixLang +'.html'));
+end;
+
+procedure TMain.ManualKMProfilesBtnClick(Sender: TObject);
+begin
+  OpenUtilityOrFolder(PChar(ExtractFilePath(ParamStr(0)) + 'Docs\Keyboard bindings' + PrefixLang +'.html'));
 end;
 
 end.

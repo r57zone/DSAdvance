@@ -155,8 +155,19 @@ object Main: TMain
     object HelpBtn: TMenuItem
       Caption = #1057#1087#1088#1072#1074#1082#1072
       object ManualBtn: TMenuItem
-        Caption = #1048#1085#1089#1090#1088#1091#1082#1094#1080#1103
+        Caption = #1048#1089#1090#1088#1091#1082#1094#1080#1103
         OnClick = ManualBtnClick
+      end
+      object N8: TMenuItem
+        Caption = '-'
+      end
+      object ManualXboxProfilesBtn: TMenuItem
+        Caption = #1055#1088#1086#1092#1080#1083#1080' Xbox '#1075#1077#1081#1084#1087#1072#1076#1072
+        OnClick = ManualXboxProfilesBtnClick
+      end
+      object ManualKMProfilesBtn: TMenuItem
+        Caption = #1055#1088#1086#1092#1080#1083#1080' '#1082#1083#1072#1074'. '#1080' '#1084#1099#1096#1080
+        OnClick = ManualKMProfilesBtnClick
       end
       object N13: TMenuItem
         Caption = '-'
