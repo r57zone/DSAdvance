@@ -57,8 +57,30 @@ Playing with a single Joy-Con is supported, with full button emulation using the
 
 To connect [external pedals (DInput)](https://github.com/r57zone/GamepadExternalPedals#setup-dinput-pedals-mh-et-live-board) and Digispark joystick based devices, change the parameter change the `DInput` parameter to `1` in the `ExternalPedals` section. To connect [external pedals on Arduino](https://github.com/r57zone/GamepadExternalPedals#setup-arduino-pedals), change the COM port number by modifying the `COMPort` parameter.
 
-[![](https://github.com/r57zone/GamepadExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
-[![](https://user-images.githubusercontent.com/9499881/195859587-65cdaca4-5abd-4594-b079-e388721ae25d.gif)](https://youtu.be/liI_7U_R0as)
+<a href="https://youtu.be/aK1SV_eXJ_4">
+  <img src="https://github.com/r57zone/XboxExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171" width="260px" />
+</a>
+
+<a href="https://youtu.be/liI_7U_R0as">
+  <img src="https://user-images.githubusercontent.com/9499881/195859587-65cdaca4-5abd-4594-b079-e388721ae25d.gif" width="260px" />
+</a>
+
+<a href="https://youtu.be/abmBOEUecCI">
+  <img src="https://github.com/user-attachments/assets/4f705212-02a0-4267-b93b-e7d66c801b0b" width="260px" />
+</a>
+
+<a href="https://youtu.be/abmBOEUecCI">
+  <img src="https://github.com/user-attachments/assets/d3141b47-3986-485e-acbb-de3f28de7df8" width="260px" />
+</a>
+
+<a href="https://youtu.be/abmBOEUecCI">
+  <img src="https://github.com/user-attachments/assets/4c560345-1d39-4398-8a46-d799b02c83c6" width="260px" />
+</a>
+
+<a href="https://youtu.be/abmBOEUecCI">
+  <img src="https://github.com/user-attachments/assets/251520d0-42f0-4e78-b3ad-bfc42cc2a13c" width="260px" />
+</a>
+
 
 There are 2 modes:
 1. "Always pedals" - the pedal axes are always bound to the controller triggers.
@@ -82,6 +104,7 @@ Screenshot (`Win + ALT + PrtScn` press) | Microphone button or `PS + X` | `Captu
 Record video (press `Win + ALT + R`) | Hold the microphone button or `PS + X` | Hold `Capture + B` | -
 Aiming mode: mouse emulation or right stick offset | `PS + R1` | `Capture + R1` | `ALT + A`  
 Operation mode (driving or aiming) | Touchpad areas or touchpad press (for controllers without touch panel, enable in config) | `Capture/Home` (press `Capture` again to reset, press `Home` again to toggle aim mode — always/L2) | `ALT + 1`, `ALT + 2` (press `ALT + 1` again to reset, press `ALT + 2` again to toggle aim mode — always/L2)
+Enable/disable motion driving and aiming | - | - | ALT + 5/6 (default value in configuration file)
 Change aiming sensitivity: increase and then decrease | `PS + △` | `Capture + X` | -  
 Reset aiming sensitivity | `PS + RS` | `Capture + RS` | -  
 Change rumble strength or disable it | `PS + Options` | `Capture + Plus` | `ALT + </>`  

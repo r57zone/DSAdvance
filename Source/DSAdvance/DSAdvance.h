@@ -442,6 +442,8 @@ struct _AppStatus {
 	bool LeftStickPressOnce = false;
 	bool ChangeModesWithClick = false;
 	bool ChangeModesWithoutAreas = false;
+	bool DisableAiming = false;
+	bool DisableDriving = false;
 	int JoyconChangeModesWithButton = 0;
 	bool ShowBatteryStatus = false;
 	int BackOutStateCounter = 0;
@@ -1026,8 +1028,8 @@ int SonyNintendoKeyNameToJoyShockKeyCode(std::string KeyName) {
 		{"TRIANGLE", JSMASK_N}, // Y
 		{"L2", JSMASK_ZL},
 		{"R2", JSMASK_ZR},
-		{"L4", JSOFFSET_FNL},
-		{"R4", JSOFFSET_FNR},
+		{"L4", JSMASK_FNL},
+		{"R4", JSMASK_FNR},
 		{"ZL", JSMASK_ZL},
 		{"ZR", JSMASK_ZR},
 		{"B", JSMASK_S}, // A

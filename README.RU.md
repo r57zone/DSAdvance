@@ -56,8 +56,30 @@
 
 Для подключения [внешних педалей (DInput)](https://github.com/r57zone/GamepadExternalPedals#setup-dinput-pedals-mh-et-live-board) и устройств на базе Digispark джойстиков, измените параметр `DInput` на `1`, в разделе `ExternalPedals`.  Для подключения [внешних педалей на Arduino](https://github.com/r57zone/GamepadExternalPedals#setup-arduino-pedals) измените номер COM-порта, изменив параметр `COMPort`.
 
-[![](https://github.com/r57zone/GamepadExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171)](https://youtu.be/aK1SV_eXJ_4)
-[![](https://user-images.githubusercontent.com/9499881/195859587-65cdaca4-5abd-4594-b079-e388721ae25d.gif)](https://youtu.be/liI_7U_R0as)
+<a href="https://youtu.be/aK1SV_eXJ_4">
+  <img src="https://github.com/r57zone/XboxExternalPedals/assets/9499881/f4b55990-d795-4455-918f-a08a59122171" width="260px" />
+</a>
+
+<a href="https://youtu.be/liI_7U_R0as">
+  <img src="https://user-images.githubusercontent.com/9499881/195859587-65cdaca4-5abd-4594-b079-e388721ae25d.gif" width="260px" />
+</a>
+
+<a href="https://youtu.be/abmBOEUecCI">
+  <img src="https://github.com/user-attachments/assets/4f705212-02a0-4267-b93b-e7d66c801b0b" width="260px" />
+</a>
+
+<a href="https://youtu.be/abmBOEUecCI">
+  <img src="https://github.com/user-attachments/assets/d3141b47-3986-485e-acbb-de3f28de7df8" width="260px" />
+</a>
+
+<a href="https://youtu.be/abmBOEUecCI">
+  <img src="https://github.com/user-attachments/assets/4c560345-1d39-4398-8a46-d799b02c83c6" width="260px" />
+</a>
+
+<a href="https://youtu.be/abmBOEUecCI">
+  <img src="https://github.com/user-attachments/assets/251520d0-42f0-4e78-b3ad-bfc42cc2a13c" width="260px" />
+</a>
+
 
 Есть 2 режима:
 1. "Всегда педали" - оси педалей всегда привязаны к триггерам контроллера.
@@ -81,6 +103,7 @@
 Запись видео (нажатие `Win + ALT + R`) | Удерживайте кнопку микрофона или `PS + X` | Удерживайте `Capture + B` | -
 Режим прицеливания: эмуляция мыши или смещение правого стика | `PS + R1` | `Capture + R1` | `ALT + A`
 Режим работы (вождение или прицелинваие) | Области тачпад или нажатие тачпада (для контроллеров без тач панели, необходимо включить в конфиге) | `Capture/Home` (повторно `Capture` - сброс, повторно `Home` переключение прицеливания - всегда/L2) | `ALT + 1`, `ALT + 2` (повторно `ALT + 1` - сброс, повторно `ALT + 2` переключение прицеливания - всегда/L2)
+Включение/выключение вождения и прицеливания | - | - | `ALT + 5/6` (значение по умолчанию в конфигурационном файле)
 Изменение чувствительности прицеливания: увеличение и затем уменьшение | `PS + △` | `Capture + X` | -
 Сброс чувствительности прицеливания | `PS + RS` | `Capture + RS` | -
 Изменение силы вибрации или её отключение | `PS + Options` | `Capture + Плюс` | `ALT + </>`
