@@ -48,6 +48,11 @@ type
     N9: TMenuItem;
     N10: TMenuItem;
     N7: TMenuItem;
+    HelpBtn: TMenuItem;
+    N11: TMenuItem;
+    AboutBtn: TMenuItem;
+    N13: TMenuItem;
+    ManualBtn: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure CloseBtnClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -75,6 +80,8 @@ type
     procedure HideGamepadBtnClick(Sender: TObject);
     procedure HidHideRemBtnClick(Sender: TObject);
     procedure HidHideRunBtnClick(Sender: TObject);
+    procedure ManualBtnClick(Sender: TObject);
+    procedure AboutBtnClick(Sender: TObject);
   private
     procedure DefaultHandler(var Message); override;
     procedure OpenUtilityOrFolder(FilePath: string);
@@ -91,7 +98,7 @@ var
   WM_TASKBARCREATED: Cardinal;
   DSAdvanceStarted: boolean;
   IconStarted: TIcon;
-  DSAdvanceTitle: string;
+  DSAdvanceTitle, PrefixLang: string;
   AppHiden: boolean;
   HidHidePath, HidHideCLIPath: string;
   SleepTimeOut: integer;
@@ -241,6 +248,7 @@ begin
   SetWindowLong(Application.Handle, GWL_EXSTYLE, GetWindowLong(Application.Handle, GWL_EXSTYLE) or WS_EX_TOOLWINDOW);
 
   if GetLocaleInformation(LOCALE_SENGLANGUAGE) = 'Russian' then begin
+    PrefixLang:='.Ru';
     IDS_RUN:='Запустить';
     IDS_STOP:='Остановить';
     IDS_SHOW:='Показать';
@@ -273,6 +281,7 @@ begin
     if Utility10Btn.Caption = '' then
       Utility10Btn.Caption:='Утилита 10';
   end else begin
+    PrefixLang:='';
     IDS_RUN:='Run';
     IDS_STOP:='Stop';
     RunStopBtn.Caption:=IDS_RUN;
@@ -298,6 +307,9 @@ begin
     HideHideClearBtn.Caption := 'Clear Absent';
     GamepadTestBtn.Caption:='Gamepad test';
     AutostartBtn.Caption:='Autostart';
+    HelpBtn.Caption:='Help';
+    ManualBtn.Caption:='Manual';
+    AboutBtn.Caption:='About...';
     CloseBtn.Caption:='Exit';
     UtilitiesBtn.Caption:='Utilities';
     if Utility1Btn.Caption = '' then
@@ -576,6 +588,18 @@ end;
 procedure TMain.HidHideRunBtnClick(Sender: TObject);
 begin
   OpenUtilityOrFolder(HidHidePath + '\x64\HidHideClient.exe');
+end;
+
+procedure TMain.ManualBtnClick(Sender: TObject);
+begin
+  OpenUtilityOrFolder(PChar(ExtractFilePath(ParamStr(0)) + 'ReadMe' + PrefixLang +'.html'));
+end;
+
+procedure TMain.AboutBtnClick(Sender: TObject);
+begin
+  Application.MessageBox(PChar(DSAdvanceTitle + #13#10 +
+  'https://r57zone.github.io' + #13#10 +
+  'r57zone@gmail.com'), PChar(AboutBtn.Caption), MB_ICONINFORMATION);
 end;
 
 end.

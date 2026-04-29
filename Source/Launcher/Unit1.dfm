@@ -149,6 +149,23 @@ object Main: TMain
         OnClick = Utility10BtnClick
       end
     end
+    object N11: TMenuItem
+      Caption = '-'
+    end
+    object HelpBtn: TMenuItem
+      Caption = #1057#1087#1088#1072#1074#1082#1072
+      object ManualBtn: TMenuItem
+        Caption = #1048#1085#1089#1090#1088#1091#1082#1094#1080#1103
+        OnClick = ManualBtnClick
+      end
+      object N13: TMenuItem
+        Caption = '-'
+      end
+      object AboutBtn: TMenuItem
+        Caption = #1054' '#1087#1088#1086#1075#1088#1072#1084#1084#1077'...'
+        OnClick = AboutBtnClick
+      end
+    end
     object N3: TMenuItem
       Caption = '-'
       Visible = False

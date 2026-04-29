@@ -1479,7 +1479,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_DEVICECHANGE: // The list of devices has changed
 		if (wParam == DBT_DEVNODES_CHANGED) {
 			RefreshDevices();
-			if (PrimaryGamepad.ControllerType != NINTENDO_JOYCONS && PrimaryGamepad.ControllerType != NINTENDO_SWITCH_PRO)
+			//if (PrimaryGamepad.ControllerType != NINTENDO_JOYCONS && PrimaryGamepad.ControllerType != NINTENDO_SWITCH_PRO)
 			if (!PrimaryGamepad.USBConnection || !SecondaryGamepad.USBConnection)
 				AppStatus.BTReset = true; // Bug with Bluetooth controllers, in which in Input Bluetooth controllers random values (JoyShockLibarary?). Resetting again helps.
 		}
