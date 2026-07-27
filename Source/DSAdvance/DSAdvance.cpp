@@ -652,14 +652,13 @@ void UpdateBatteryInfo(AdvancedGamepad &Gamepad) {
 				Gamepad.BatteryLevel = (buf[32] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX;
 		}
 		else if (Gamepad.ControllerType == NINTENDO_JOYCONS || Gamepad.ControllerType == NINTENDO_SWITCH_PRO) {
+			unsigned char buf[64];
 			if (Gamepad.HidHandle != NULL) {
-				unsigned char buf[64];
 				memset(buf, 0, sizeof(buf));
 				hid_read(Gamepad.HidHandle, buf, 64);
 				Gamepad.BatteryLevel = ((buf[2] >> 4) & 0x0F) * 100 / 8;
 			}
 			if (Gamepad.HidHandle2 != NULL) {
-				unsigned char buf[64];
 				memset(buf, 0, sizeof(buf));
 				hid_read(Gamepad.HidHandle2, buf, 64);
 				Gamepad.BatteryLevel2 = ((buf[2] >> 4) & 0x0F) * 100 / 8;
