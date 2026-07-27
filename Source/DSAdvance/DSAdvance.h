@@ -155,6 +155,27 @@
 #define ADAPTIVE_TRIGGERS_BOW_MODE			5
 #define ADAPTIVE_TRIGGERS_CAR_MODE			6
 
+// Console colors
+#define COL_RESET     "\033[0m"    // сброс всех настроек цвета
+#define COL_BLACK     "\033[30m"   // чёрный
+#define COL_RED       "\033[31m"   // красный (тёмный)
+#define COL_GREEN     "\033[32m"   // зелёный (тёмный)
+#define COL_YELLOW    "\033[33m"   // жёлтый (тёмный/оливковый)
+#define COL_BLUE      "\033[34m"   // синий
+#define COL_MAGENTA   "\033[35m"   // пурпурный (тёмный)
+#define COL_CYAN      "\033[36m"   // голубой/циан (тёмный)
+#define COL_WHITE     "\033[37m"   // белый (светло-серый)
+
+// Bright / яркие цвета
+#define COL_GRAY      "\033[90m"   // серый (яркий чёрный)
+#define COL_B_RED     "\033[91m"   // ярко-красный
+#define COL_B_GREEN   "\033[92m"   // ярко-зелёный
+#define COL_B_YELLOW  "\033[93m"   // ярко-жёлтый
+#define COL_B_BLUE    "\033[94m"   // ярко-синий
+#define COL_B_MAGENTA "\033[95m"   // ярко-пурпурный/розовый
+#define COL_B_CYAN    "\033[96m"   // ярко-голубой
+#define COL_B_WHITE   "\033[97m"   // чисто белый (ярче обычного)
+
 bool ExternalPedalsConnected = false;
 HANDLE hSerial;
 std::thread *pArduinoReadThread = NULL;
@@ -472,8 +493,10 @@ struct _AppStatus {
 	std::string SteamScrKeyName = "NONE";
 	int SteamScrKey = 0;
 	int AimingButton = 0;
-	bool BTReset = true;
 	bool JoyconRumbleMerge = false;
+
+	bool BTReset = true;
+	bool ResetKBEMuStateOnce = false; // Reset in case of controller loss
 
 	struct _HotKeys
 	{
@@ -968,7 +991,7 @@ int KeyNameToKeyCode(std::string KeyName) {
 		return 0;
 }
 
-int XboxKeyNameToXboxKeyCode(std::string KeyName) {
+/*int XboxKeyNameToXboxKeyCode(std::string KeyName) {
 	std::transform(KeyName.begin(), KeyName.end(), KeyName.begin(), ::toupper);
 
 	std::unordered_map<std::string, int> KeyMap = {
@@ -1004,6 +1027,72 @@ int XboxKeyNameToXboxKeyCode(std::string KeyName) {
 		return KeyMap[KeyName];
 	else
 		return 0;
+}*/
+
+int XboxKeyNameToXboxKeyCode(const std::string& KeyName) {
+	static const std::unordered_map<std::string, int> KeyMap = {
+		{"NONE", 0},
+		{"UP", XINPUT_GAMEPAD_DPAD_UP},
+		{"DOWN", XINPUT_GAMEPAD_DPAD_DOWN},
+		{"LEFT", XINPUT_GAMEPAD_DPAD_LEFT},
+		{"RIGHT", XINPUT_GAMEPAD_DPAD_RIGHT},
+		{"XBOX", XINPUT_GAMEPAD_GUIDE},
+		{"BACK", XINPUT_GAMEPAD_BACK},
+		{"START", XINPUT_GAMEPAD_START},
+		{"LS", XINPUT_GAMEPAD_LEFT_THUMB},
+		{"RS", XINPUT_GAMEPAD_RIGHT_THUMB},
+		{"LB", XINPUT_GAMEPAD_LEFT_SHOULDER},
+		{"RB", XINPUT_GAMEPAD_RIGHT_SHOULDER},
+		{"A", XINPUT_GAMEPAD_A},
+		{"B", XINPUT_GAMEPAD_B},
+		{"X", XINPUT_GAMEPAD_X},
+		{"Y", XINPUT_GAMEPAD_Y},
+		{"LT", XINPUT_GAMEPAD_LEFT_TRIGGER},
+		{"RT", XINPUT_GAMEPAD_RIGHT_TRIGGER},
+		{"LS-UP", XINPUT_GAMEPAD_LEFT_STICK_UP},
+		{"LS-DOWN", XINPUT_GAMEPAD_LEFT_STICK_DOWN},
+		{"LS-LEFT", XINPUT_GAMEPAD_LEFT_STICK_LEFT},
+		{"LS-RIGHT", XINPUT_GAMEPAD_LEFT_STICK_RIGHT},
+		{"RS-UP", XINPUT_GAMEPAD_RIGHT_STICK_UP},
+		{"RS-DOWN", XINPUT_GAMEPAD_RIGHT_STICK_DOWN},
+		{"RS-LEFT", XINPUT_GAMEPAD_RIGHT_STICK_LEFT},
+		{"RS-RIGHT", XINPUT_GAMEPAD_RIGHT_STICK_RIGHT}
+	};
+
+	/*if (KeyMap.find(KeyName) != KeyMap.end())
+		return KeyMap[KeyName];
+	else
+		return 0;*/
+
+	// If there is no "+" in the line, skip it / Если в строке нет "+" пропускаем
+	if (KeyName.find('+') == std::string::npos) {
+		std::string Upper = KeyName;
+		std::transform(Upper.begin(), Upper.end(), Upper.begin(), ::toupper);
+		auto it = KeyMap.find(Upper);
+		return it != KeyMap.end() ? it->second : 0;
+	}
+
+	// We split the codes by "+" and sum them up (OR) / Разбиваем по "+" и суммируем (OR) коды
+	int Result = 0;
+	size_t Start = 0;
+	while (Start <= KeyName.size()) {
+		size_t Pos = KeyName.find('+', Start);
+		std::string Token = (Pos == std::string::npos)
+			? KeyName.substr(Start)
+			: KeyName.substr(Start, Pos - Start);
+
+		std::transform(Token.begin(), Token.end(), Token.begin(), ::toupper);
+
+		auto it = KeyMap.find(Token);
+		if (it != KeyMap.end())
+			Result |= it->second;
+
+		if (Pos == std::string::npos)
+			break;
+		Start = Pos + 1;
+	}
+
+	return Result;
 }
 
 int SonyNintendoKeyNameToJoyShockKeyCode(std::string KeyName) {

@@ -621,7 +621,7 @@ void GamepadSetState(AdvancedGamepad &Gamepad)
 }
 
 void UpdateBatteryInfo(AdvancedGamepad &Gamepad) {
-	if (Gamepad.HidHandle != NULL) {
+	if (Gamepad.HidHandle != NULL || Gamepad.HidHandle2 != NULL) {
 		if (Gamepad.ControllerType == SONY_DUALSENSE) {
 			unsigned char buf[64];
 			memset(buf, 0, 64);
@@ -652,18 +652,21 @@ void UpdateBatteryInfo(AdvancedGamepad &Gamepad) {
 				Gamepad.BatteryLevel = (buf[32] & DS_STATUS_BATTERY_CAPACITY) * 100 / DS_BATTERY_MAX;
 		}
 		else if (Gamepad.ControllerType == NINTENDO_JOYCONS || Gamepad.ControllerType == NINTENDO_SWITCH_PRO) {
-			unsigned char buf[64];
-			memset(buf, 0, sizeof(buf));
-			hid_read(Gamepad.HidHandle, buf, 64);
-			Gamepad.BatteryLevel = ((buf[2] >> 4) & 0x0F) * 100 / 8;
-
+			if (Gamepad.HidHandle != NULL) {
+				unsigned char buf[64];
+				memset(buf, 0, sizeof(buf));
+				hid_read(Gamepad.HidHandle, buf, 64);
+				Gamepad.BatteryLevel = ((buf[2] >> 4) & 0x0F) * 100 / 8;
+			}
 			if (Gamepad.HidHandle2 != NULL) {
+				unsigned char buf[64];
 				memset(buf, 0, sizeof(buf));
 				hid_read(Gamepad.HidHandle2, buf, 64);
 				Gamepad.BatteryLevel2 = ((buf[2] >> 4) & 0x0F) * 100 / 8;
 			}
 		}
-		if (Gamepad.BatteryLevel > 100) Gamepad.BatteryLevel = 100; // It looks like something is not right, once it gave out 125%
+		if (Gamepad.BatteryLevel > 100) Gamepad.BatteryLevel = 100; // It looks like something is not right, once it gave out 125%, Joycon - 112%
+		if (Gamepad.BatteryLevel2 > 100) Gamepad.BatteryLevel2 = 100;
 	}
 }
 
@@ -985,25 +988,25 @@ void LoadXboxProfile(std::string ProfileFile) {
 
 void DefaultMainText() {
 	if (AppStatus.ControllerCount < 1)
-		printf("\n Connect DualSense, DualShock 4, Pro controller or Joycons and reset.");
+		printf(COL_YELLOW "\n Connect DualSense, DualShock 4, Pro controller or Joy-Cons." COL_RESET);
 	else {
-		printf("\n Connected controllers: ");
+		printf("\n " COL_B_CYAN "Connected controllers: " COL_RESET);
 		switch (PrimaryGamepad.ControllerType) {
 			case SONY_DUALSENSE:
-				printf("Sony DualSense (all functions)");
+				printf(COL_GREEN "Sony DualSense (all functions)");
 				break;
 			case SONY_DUALSHOCK4:
-				printf("Sony DualShock 4 (all functions)");
+				printf(COL_GREEN "Sony DualShock 4 (all functions)");
 				break;
 			case NINTENDO_JOYCONS:
-				printf("Nintendo Joy-Cons (");
-				if (PrimaryGamepad.HidHandle != NULL && PrimaryGamepad.HidHandle2 != NULL) printf("left & right");
-				else if (PrimaryGamepad.HidHandle != NULL) printf("left - not enough");
-				else if (PrimaryGamepad.HidHandle2 != NULL) printf("right - not enough");
-				printf(") (all functions)");
+				printf(COL_GREEN "Nintendo Joy-Cons ");
+				if (PrimaryGamepad.HidHandle != NULL && PrimaryGamepad.HidHandle2 != NULL) printf("(left & right)");
+				else if (PrimaryGamepad.HidHandle != NULL) printf(COL_YELLOW "(left - not enough)");
+				else if (PrimaryGamepad.HidHandle2 != NULL) printf(COL_YELLOW "(right - not enough)");
+				printf(COL_GREEN " (all functions)" COL_RESET);
 				break;
 			case NINTENDO_SWITCH_PRO:
-				printf("Nintendo Switch Pro (all functions)");
+				printf(COL_GREEN "Nintendo Switch Pro (all functions)");
 				break;
 			default:
 				break;
@@ -1013,153 +1016,164 @@ void DefaultMainText() {
 				printf(", ");
 				switch (SecondaryGamepad.ControllerType) {
 				case SONY_DUALSENSE:
-					printf("Sony DualSense (simplified)");
+					printf(COL_GREEN "Sony DualSense (simplified)");
 					break;
 				case SONY_DUALSHOCK4:
-					printf("Sony DualShock 4 (simplified)");
+					printf(COL_GREEN "Sony DualShock 4 (simplified)");
 					break;
 				case NINTENDO_JOYCONS:
-					printf("Nintendo Joy-Cons (");
-					if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL) printf("left & right");
-					else if (SecondaryGamepad.HidHandle != NULL) printf("left - limited input");
-					else if (SecondaryGamepad.HidHandle2 != NULL) printf("right - limited input");
-					printf(") (simplified)");
+					printf(COL_GREEN "Nintendo Joy-Cons ");
+					if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL) printf("(left & right)");
+					else if (SecondaryGamepad.HidHandle != NULL) printf(COL_YELLOW "(left - limited input)");
+					else if (SecondaryGamepad.HidHandle2 != NULL) printf(COL_YELLOW "(right - limited input)");
+					printf(COL_GREEN " (simplified)");
 					break;
 				case NINTENDO_SWITCH_PRO:
-					printf("Nintendo Switch Pro Controller (simplified)");
+					printf(COL_GREEN "Nintendo Switch Pro Controller (simplified)");
 					break;
 				default:
 					break;
 				}
 			}
 		} else if (AppStatus.ControllerCount > 1 && SecondaryGamepad.DeviceIndex != -1)
-			printf(", the second gamepad is disabled in the config");
-		printf(".");
+			printf(COL_GRAY "," COL_YELLOW " the second gamepad is disabled in the config");
+		printf(COL_GRAY "." COL_RESET);
 	}
-	printf("\n Press \"CTRL + R\" or \"%s\" to reset/search for controllers, and \"ALT + V\" to swap the first and second ones.\n", AppStatus.HotKeys.ResetKeyName.c_str());
+	printf(COL_GRAY "\n Press \"CTRL + R\" or \"%s\" to reset/search for controllers, and \"ALT + V\" to swap the first and second ones.\n" COL_RESET, AppStatus.HotKeys.ResetKeyName.c_str());
 	if (AppStatus.ControllerCount > 0 && AppStatus.ShowBatteryStatus) {
-		printf(" Controller 1");
-		if (PrimaryGamepad.USBConnection) printf(" wired"); else printf(" wireless");
+		printf(" First controller: ");
+		if (PrimaryGamepad.USBConnection) printf("Wired"); else printf("Wireless");
 		if (PrimaryGamepad.ControllerType != NINTENDO_JOYCONS)
-			printf(", battery charge: %d\%%", PrimaryGamepad.BatteryLevel);
+			printf(", " COL_B_CYAN "Battery:" COL_GREEN " %d\%%" COL_RESET, PrimaryGamepad.BatteryLevel);
 		else {
-			if (PrimaryGamepad.HidHandle != NULL && PrimaryGamepad.HidHandle2 != NULL) printf(", battery charge: %d\%%, %d\%%", PrimaryGamepad.BatteryLevel, PrimaryGamepad.BatteryLevel2);
-			else if (PrimaryGamepad.HidHandle != NULL) printf(", battery charge: %d\%%", PrimaryGamepad.BatteryLevel);
-			else if (PrimaryGamepad.HidHandle2 != NULL) printf(", battery charge: %d\%%", PrimaryGamepad.BatteryLevel2);
+			if (PrimaryGamepad.HidHandle != NULL && PrimaryGamepad.HidHandle2 != NULL)
+				printf(", " COL_B_CYAN "Battery:" COL_GREEN " %d\%%, %d\%%" COL_RESET, PrimaryGamepad.BatteryLevel, PrimaryGamepad.BatteryLevel2);
+			else if (PrimaryGamepad.HidHandle != NULL)
+				printf(", " COL_B_CYAN "Battery:" COL_GREEN " %d\%%" COL_RESET, PrimaryGamepad.BatteryLevel);
+			else if (PrimaryGamepad.HidHandle2 != NULL)
+				printf(", " COL_B_CYAN "Battery:" COL_GREEN " %d\%%" COL_RESET, PrimaryGamepad.BatteryLevel2);
 		}
-		if (PrimaryGamepad.BatteryMode == 0x2)
-			printf(" (charging)");
+		//if (PrimaryGamepad.BatteryMode == 0x2)
+			//printf(" (charging)");
 
 		if (AppStatus.SecondaryGamepadEnabled && AppStatus.ControllerCount > 1 && SecondaryGamepad.DeviceIndex != -1) {
-			printf(". Controller 2");
-			if (SecondaryGamepad.USBConnection) printf(" wired"); else printf(" wireless");
+			printf(". Second Controller: ");
+			if (SecondaryGamepad.USBConnection) printf("Wired"); else printf("Wireless");
 			if (SecondaryGamepad.ControllerType != NINTENDO_JOYCONS)
-				printf(", battery charge: %d\%%", SecondaryGamepad.BatteryLevel);
+				printf(", " COL_B_CYAN "Battery:" COL_GREEN " %d\%%" COL_RESET, SecondaryGamepad.BatteryLevel);
 			else {
-				if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL) printf(", battery level: %d\%%, %d\%%", SecondaryGamepad.BatteryLevel, SecondaryGamepad.BatteryLevel2);
-				else if (SecondaryGamepad.HidHandle != NULL) printf(", battery level: %d\%%", SecondaryGamepad.BatteryLevel);
-				else if (SecondaryGamepad.HidHandle2 != NULL) printf(", battery level: %d\%%", SecondaryGamepad.BatteryLevel2);
+				if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL)
+					printf(", " COL_B_CYAN "Battery:" COL_GREEN " %d\%%, %d\%%" COL_RESET, SecondaryGamepad.BatteryLevel, SecondaryGamepad.BatteryLevel2);
+				else if (SecondaryGamepad.HidHandle != NULL)
+					printf(", " COL_B_CYAN "Battery:" COL_GREEN " %d\%%" COL_RESET, SecondaryGamepad.BatteryLevel);
+				else if (SecondaryGamepad.HidHandle2 != NULL)
+					printf(", " COL_B_CYAN "Battery:" COL_GREEN " %d\%%" COL_RESET, SecondaryGamepad.BatteryLevel2);
 			}
-			if (SecondaryGamepad.BatteryMode == 0x2)
-				printf(" (charging)");
+			//if (SecondaryGamepad.BatteryMode == 0x2)
+				//printf(" (charging)");
 		}
 
-		printf(".\n");
+		printf(COL_GRAY ".\n");
 	}
 
 	if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled)
-		printf(" Emulation: Xbox gamepad, profile: \"%s\".\n Change profiles with \"ALT + Up/Down\" or \"PS/Home + DPAD Up/Down\".\n", XboxProfiles[XboxProfileIndex].substr(0, XboxProfiles[XboxProfileIndex].size() - 4).c_str());
+		printf(COL_B_CYAN " Emulation:" COL_GREEN " Xbox gamepad," COL_RESET " profile: \"%s\"" COL_GRAY ".\n Change profiles with \"ALT + Up/Down\" or \"PS/Home + DPAD Up/Down\".\n" COL_RESET, XboxProfiles[XboxProfileIndex].substr(0, XboxProfiles[XboxProfileIndex].size() - 4).c_str());
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving)
-		printf(" Emulation: Xbox gamepad (only driving) & mouse aiming.\n");
+		printf(COL_B_CYAN " Emulation:" COL_GREEN " Xbox gamepad (only driving) & mouse aiming" COL_GRAY ".\n" COL_RESET);
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled)
-		printf(" Emulation: Only mouse (for mouse aiming).\n");
+		printf(COL_B_CYAN " Emulation:" COL_GREEN " Only mouse (for mouse aiming)" COL_GRAY ".\n" COL_RESET);
 	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
 		if (AppStatus.IsDesktopMode)
-			printf(" Emulation: keyboard and mouse, desktop control, profile: \"Desktop\".\n");
+			printf(COL_B_CYAN " Emulation:" COL_GREEN " keyboard and mouse, desktop control" COL_GRAY "," COL_RESET " profile: \"Desktop\"" COL_GRAY ".\n" COL_RESET);
 		else
-			printf_s(" Emulation: Keyboard and mouse, game profile: \"%s\".\n Change profiles with \"ALT + Up/Down\" or \"PS/Home + DPAD Up/Down\".\n", KMProfiles[KMProfileIndex].substr(0, KMProfiles[KMProfileIndex].size() - 4).c_str());
+			printf_s(COL_B_CYAN " Emulation:" COL_GREEN " Keyboard and mouse" COL_GRAY "," COL_RESET " game profile: \"%s\"" COL_GRAY ".\n Change profiles with \"ALT + Up/Down\" or \"PS/Home + DPAD Up/Down\".\n" COL_RESET, KMProfiles[KMProfileIndex].substr(0, KMProfiles[KMProfileIndex].size() - 4).c_str());
 	}
-	printf(" Press \"ALT + Q/Left/Right\", \"PS/Home + DPAD Left/Right\" to switch emulation.\n");
-	printf(" Press touchpad areas or \"Capture/Home\" buttons to change operating modes.\n");
-	printf(" If there's no touch panel, switch using a touchpad press (enabled in the config) or use \"ALT + 1/2\".\n");
+	printf(COL_GRAY " Press \"ALT + Q/Left/Right\", \"PS/Home + DPAD Left/Right\" to switch emulation.\n");
+	printf(" Press touchpad areas, \"Capture/Home\", or \"Alt + 1/2\" to switch operating modes.\n");
+	if (PrimaryGamepad.ControllerType == SONY_DUALSENSE || PrimaryGamepad.ControllerType == SONY_DUALSHOCK4) {
+		printf(" %s touchpad press for mode switching - \"ALT + W\" or \"PS + Share\" (Sony only).\n", AppStatus.ChangeModesWithClick ? "Disable" : "Enable");
+		if (AppStatus.ChangeModesWithoutAreas == false)
+			printf(" If there's no touch panel, switch using a touchpad press (enabled in the config).\n");
+	}
+	if (PrimaryGamepad.ControllerType == NINTENDO_JOYCONS && AppStatus.JoyconChangeModesWithButton == 0 && (PrimaryGamepad.HidHandle == NULL || PrimaryGamepad.HidHandle2 == NULL))
+		printf(" When using a single Joy-Con, modes can be switched with one button (set it in the config).\n");
 	printf(" Pressing \"Home\" or \"ALT + 2\" again - switches aim mode (always/L2), \"Capture\" - resets.\n");
-	if (PrimaryGamepad.ControllerType == SONY_DUALSENSE) {
-		printf(" Adaptive triggers mode: ");
-		switch (PrimaryGamepad.AdaptiveTriggersMode) {
-			case 0:
-				printf("none");
-				break;
-			case 1:
-				printf("dependent (driving/aiming - pistol)");
-				break;
-			case 2:
-				printf("dependent (driving/aiming - automatic)");
-				break;
-			case 3:
-				printf("dependent (driving/aiming - rifle)");
-				break;
-			case 4:
-				printf("rumble translation");
-				break;
-			case 5:
-				printf("pistol");
-				break;
-			case 6:
-				printf("automatic");
-				break;
-			case 7:
-				printf("rifle");
-				break;
-			case 8:
-				printf("bow");
-				break;
-			case 9:
-				printf("сar pedal");
-				break;
-			default:
-				printf("unknown");
-				break;
-			}
-		printf(". Press \"ALT + 3/4\" to switch.\n");
-	}
 
 	if (AppStatus.ExternalPedalsDInputConnected) {
-		printf(" External DInput pedals are connected. Mode: ");
+		printf(COL_B_CYAN " External DInput pedals are connected. Mode: " COL_GREEN);
 		if (AppStatus.ExternalPedalsMode == ExPedalsAlwaysRacing)
-			printf("always pedals.");
+			printf("always pedals" COL_GRAY ".");
 		else
-			printf("dependent (driving/aiming).");
-		printf(" Press \"ALT + E\" to switch.");
+			printf("dependent (driving/aiming)" COL_GRAY ".");
+		printf(" Press \"ALT + E\" to switch.\n" COL_RESET);
 	}
 	if (AppStatus.ExternalPedalsArduinoConnected)
-		printf(" External pedals Arduino connected.\n");
+		printf(COL_B_CYAN " External pedals Arduino connected.\n");
 
-	if (AppStatus.AimMode == AimMouseMode) printf("\n Aiming mode = Mouse"); else printf("\n Aiming mode = Mouse-Joystick");
-	printf(", press \"ALT + A\" or \"PS/Capture + R1\" to switch.\n");
+	printf(COL_RESET "\n Motion aiming %s" COL_GRAY"," COL_RESET " motion driving %s" COL_GRAY ", change to \"ALT + 5/6\".\n", AppStatus.DisableAiming ? COL_GREEN "disabled" : COL_GREEN "enabled", AppStatus.DisableDriving ? COL_GREEN "disabled" : COL_GREEN "enabled");
 
-	printf(" Motion aiming %s, motion driving %s, change to \"ALT + 5/6\".\n", AppStatus.DisableAiming ? "disabled" : "enabled", AppStatus.DisableDriving ? "disabled" : "enabled");
-
-	printf(" Rumble strength is %d%%, press \"ALT + </>\", \"PS + Options\", or \"Capture + Plus\" to adjust.\n", PrimaryGamepad.RumbleStrength);
-
-	printf(" %s touchpad press for mode switching - \"ALT + W\" or \"PS + Share\" (Sony only).\n", AppStatus.ChangeModesWithClick ? "Disable" : "Enable");
+	if (AppStatus.AimMode == AimMouseMode) printf(COL_B_CYAN " Aiming mode:" COL_GREEN " Mouse"); else printf(COL_B_CYAN " Aiming mode:" COL_GREEN " Mouse-Joystick");
+	printf(COL_GRAY ", press \"ALT + A\" or \"PS/Capture + R1\" to switch.\n" COL_RESET);
 
 	if (AppStatus.LeftStickMode == LeftStickDefaultMode)
-		printf(" Left stick mode: default");
+		printf(COL_B_CYAN " Left stick mode:" COL_GREEN " default");
 	else if (AppStatus.LeftStickMode == LeftStickAutoPressMode)
-		printf(" Left stick mode: auto-press based on value");
+		printf(COL_B_CYAN " Left stick mode:" COL_GREEN " auto-press based on value");
 	else if (AppStatus.LeftStickMode == LeftStickPressOnceMode)
-		printf(" Left stick mode: single press based on value");
-	printf(", press \"ALT + S\" or \"PS/Home + LS\" to switch.\n");
+		printf(COL_B_CYAN " Left stick mode:" COL_GREEN " single press based on value");
+	printf(COL_GRAY ", press \"ALT + S\" or \"PS/Home + LS\" to switch.\n");
+
+	printf(COL_B_CYAN " Rumble strength:" COL_GREEN " %d%%" COL_GRAY ", press \"ALT + </>\", \"PS + Options\", or \"Capture + Plus\" to adjust.\n", PrimaryGamepad.RumbleStrength);
+
+	if (PrimaryGamepad.ControllerType == SONY_DUALSENSE) {
+		printf(COL_B_CYAN " Adaptive triggers mode: " COL_GREEN);
+		switch (PrimaryGamepad.AdaptiveTriggersMode) {
+		case 0:
+			printf("none");
+			break;
+		case 1:
+			printf("dependent (driving/aiming - pistol)");
+			break;
+		case 2:
+			printf("dependent (driving/aiming - automatic)");
+			break;
+		case 3:
+			printf("dependent (driving/aiming - rifle)");
+			break;
+		case 4:
+			printf("rumble translation");
+			break;
+		case 5:
+			printf("pistol");
+			break;
+		case 6:
+			printf("automatic");
+			break;
+		case 7:
+			printf("rifle");
+			break;
+		case 8:
+			printf("bow");
+			break;
+		case 9:
+			printf("car pedal");
+			break;
+		default:
+			printf("unknown");
+			break;
+		}
+		printf(COL_GRAY ". Press \"ALT + 3/4\" to switch.\n" COL_RESET);
+	}
 
 	if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
-		printf(" Screenshot mode: Custom key (%s)", &AppStatus.MicCustomKeyName);
+		printf(COL_B_CYAN " Screenshot mode:" COL_GREEN " Custom key (%s)", &AppStatus.MicCustomKeyName);
 	else if (AppStatus.ScreenshotMode == ScreenShotXboxGameBarMode)
-		printf(" Screenshot mode: Xbox Game Bar");
+		printf(COL_B_CYAN " Screenshot mode:" COL_GREEN " Xbox Game Bar");
 	else if (AppStatus.ScreenshotMode == ScreenShotSteamMode)
-		printf(" Screenshot mode: Steam (%s)", &AppStatus.SteamScrKeyName);
+		printf(COL_B_CYAN " Screenshot mode:" COL_GREEN " Steam (%s)", &AppStatus.SteamScrKeyName);
 	else if (AppStatus.ScreenshotMode == ScreenShotMultiMode)
-		printf(" Screenshot mode: Xbox Game Bar & Steam (F12)");
-	printf(", press \"ALT + X\" to switch.\n");
+		printf(COL_B_CYAN " Screenshot mode:" COL_GREEN " Xbox Game Bar & Steam (F12)");
+	printf(COL_GRAY ", press \"ALT + X\" to switch.\n");
 
 	printf("\n Press \"PS\" or \"Capture + Home\" to open Xbox Game Bar.\n");
 	printf(" Press \"PS/Capture + X\" or microphone button (Sony DualSense) for a screenshot, or hold to record video.\n");
@@ -1169,188 +1183,207 @@ void DefaultMainText() {
 	printf("\n Press \"ALT + F9\" to view stick and trigger dead zones.\n");
 	printf(" Press \"ALT + I\" or the center of the touchpad (Sony only) to view battery status.\n");
 	printf(" Press \"ALT + B\" or \"PS + L1\" to toggle backlight (Sony only).\n");
-	printf(" Press \"ALT + Escape\" to exit.\n");
+	printf(" Press \"ALT + Escape\" to exit.\n" COL_RESET);
 }
 
 void RussianMainText() {
 	if (AppStatus.ControllerCount < 1)
-		printf("\n Подключите DualSense, DualShock 4, Pro контроллер или джойконы и сделайте сброс.");
+		printf(COL_YELLOW "\n Подключите DualSense, DualShock 4, Pro контроллер или джойконы.");
 	else {
-		printf("\n Подключенные контроллеры: ");
+		printf("\n " COL_B_CYAN "Подключенные контроллеры: ");
 		switch (PrimaryGamepad.ControllerType) {
-			case SONY_DUALSENSE:
-				printf("Sony DualSense (все функции)");
-				break;
-			case SONY_DUALSHOCK4:
-				printf("Sony DualShock 4 (все функции)");
-				break;
-			case NINTENDO_JOYCONS:
-				printf("Nintendo Joy-Cons (");
-				if (PrimaryGamepad.HidHandle != NULL && PrimaryGamepad.HidHandle2 != NULL) printf("левый и правый");
-				else if (PrimaryGamepad.HidHandle != NULL) printf("левый - ограниченный ввод");
-				else if (PrimaryGamepad.HidHandle2 != NULL) printf("правый - ограниченный ввод");
-				printf(") (все функции)");
-				break;
-			case NINTENDO_SWITCH_PRO:
-				printf("Nintendo Switch Pro Controller (все функции)");
-				break;
-			default:
-				break;
+		case SONY_DUALSENSE:
+			printf(COL_GREEN "Sony DualSense (все функции)");
+			break;
+		case SONY_DUALSHOCK4:
+			printf(COL_GREEN "Sony DualShock 4 (все функции)");
+			break;
+		case NINTENDO_JOYCONS:
+			printf(COL_GREEN "Nintendo Joy-Cons ");
+			if (PrimaryGamepad.HidHandle != NULL && PrimaryGamepad.HidHandle2 != NULL)
+				printf("(левый и правый)");
+			else if (PrimaryGamepad.HidHandle != NULL)
+				printf(COL_YELLOW "(левый - ограниченный ввод)");
+			else if (PrimaryGamepad.HidHandle2 != NULL)
+				printf(COL_YELLOW "(правый - ограниченный ввод)");
+			printf(COL_GREEN " (все функции)" COL_RESET);
+			break;
+		case NINTENDO_SWITCH_PRO:
+			printf(COL_GREEN "Nintendo Switch Pro Controller (все функции)");
+			break;
+		default:
+			break;
 		}
 		if (AppStatus.SecondaryGamepadEnabled) {
 			if (SecondaryGamepad.DeviceIndex != -1) {
 				printf(", ");
 				switch (SecondaryGamepad.ControllerType) {
-					case SONY_DUALSENSE:
-						printf("Sony DualSense (упрощённый)");
-						break;
-					case SONY_DUALSHOCK4:
-						printf("Sony DualShock 4 (упрощённый)");
-						break;
-					case NINTENDO_JOYCONS:
-						printf("Nintendo Joy-Cons (");
-						if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL) printf("левый и правый");
-						else if (SecondaryGamepad.HidHandle != NULL) printf("левый - недостаточно");
-						else if (SecondaryGamepad.HidHandle2 != NULL) printf("правый - недостаточно");
-						printf(") (упрощённый)");
-						break;
-					case NINTENDO_SWITCH_PRO:
-						printf("Nintendo Switch Pro Controller (упрощённый)");
-						break;
-					default:
-						break;
+				case SONY_DUALSENSE:
+					printf(COL_GREEN "Sony DualSense (упрощённый)");
+					break;
+				case SONY_DUALSHOCK4:
+					printf(COL_GREEN "Sony DualShock 4 (упрощённый)");
+					break;
+				case NINTENDO_JOYCONS:
+					printf(COL_GREEN "Nintendo Joy-Cons ");
+					if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL)
+						printf("(левый и правый)");
+					else if (SecondaryGamepad.HidHandle != NULL)
+						printf(COL_YELLOW "(левый - недостаточно)");
+					else if (SecondaryGamepad.HidHandle2 != NULL)
+						printf(COL_YELLOW "(правый - недостаточно)");
+					printf(COL_GREEN " (упрощённый)");
+					break;
+				case NINTENDO_SWITCH_PRO:
+					printf(COL_GREEN "Nintendo Switch Pro Controller (упрощённый)");
+					break;
+				default:
+					break;
 				}
 			}
-		} else if (AppStatus.ControllerCount > 1 && SecondaryGamepad.DeviceIndex != -1)
-			printf(", второй геймпад отключен в конфиге");
-		printf(".");
+		}
+		else if (AppStatus.ControllerCount > 1 && SecondaryGamepad.DeviceIndex != -1)
+			printf(COL_GRAY "," COL_YELLOW " второй геймпад отключен в конфиге");
+		printf(COL_GRAY "." COL_RESET);
 		//printf(". %d %d  Тип1: %d, Тип2: %d", PrimaryGamepad.DeviceIndex, SecondaryGamepad.DeviceIndex, PrimaryGamepad.ControllerType, SecondaryGamepad.ControllerType);
 	}
 
-	printf("\n Нажмите \"CTRL + R\" или \"%s\" для сброса/поиска контроллеров, а \"ALT + V\" для обмена первого и второго.\n", AppStatus.HotKeys.ResetKeyName.c_str());
+	printf(COL_GRAY " \n Нажмите \"CTRL + R\" или \"%s\" для сброса/поиска контроллеров, а \"ALT + V\" для обмена первого и второго.\n" COL_RESET, AppStatus.HotKeys.ResetKeyName.c_str());
 	if (AppStatus.ControllerCount > 0 && AppStatus.ShowBatteryStatus) {
-		printf(" Контроллер 1");
-		if (PrimaryGamepad.USBConnection) printf(" проводной"); else printf(" беспроводной");
+		printf(" Первый контроллер: ");
+		if (PrimaryGamepad.USBConnection) printf("проводной"); else printf("беспроводной");
 		if (PrimaryGamepad.ControllerType != NINTENDO_JOYCONS)
-			printf(", заряд батареи: %d\%%", PrimaryGamepad.BatteryLevel);
+			printf(", " COL_B_CYAN "батарея:" COL_GREEN " %d\%%" COL_RESET, PrimaryGamepad.BatteryLevel);
 		else {
-			if (PrimaryGamepad.HidHandle != NULL && PrimaryGamepad.HidHandle2 != NULL) printf(", заряд батареи: %d\%%, %d\%%", PrimaryGamepad.BatteryLevel, PrimaryGamepad.BatteryLevel2);
-			else if (PrimaryGamepad.HidHandle != NULL) printf(", заряд батареи: %d\%%", PrimaryGamepad.BatteryLevel);
-			else if (PrimaryGamepad.HidHandle2 != NULL) printf(", заряд батареи: %d\%%", PrimaryGamepad.BatteryLevel2);
+			if (PrimaryGamepad.HidHandle != NULL && PrimaryGamepad.HidHandle2 != NULL)
+				printf(", " COL_B_CYAN "батареи:" COL_GREEN " %d\%%, %d\%%" COL_RESET, PrimaryGamepad.BatteryLevel, PrimaryGamepad.BatteryLevel2);
+			else if (PrimaryGamepad.HidHandle != NULL)
+				printf(", " COL_B_CYAN "батарея:" COL_GREEN " %d\%%" COL_RESET, PrimaryGamepad.BatteryLevel);
+			else if (PrimaryGamepad.HidHandle2 != NULL)
+				printf(", " COL_B_CYAN "батарея:" COL_GREEN " %d\%%" COL_RESET, PrimaryGamepad.BatteryLevel2);
 		}
-		if (PrimaryGamepad.BatteryMode == 0x2)
-			printf(" (зарядка)");
+		//if (PrimaryGamepad.BatteryMode == 0x2)
+			//printf(" (зарядка)");
 
 		if (AppStatus.SecondaryGamepadEnabled && AppStatus.ControllerCount > 1 && SecondaryGamepad.DeviceIndex != -1) {
-			printf(". Контроллер 2");
-			if (SecondaryGamepad.USBConnection) printf(" проводной"); else printf(" беспроводной");
+			printf(". Второй контроллер: ");
+			if (SecondaryGamepad.USBConnection) printf("проводной"); else printf("беспроводной");
 			if (SecondaryGamepad.ControllerType != NINTENDO_JOYCONS)
-				printf(", заряд батареи: %d\%%", SecondaryGamepad.BatteryLevel);
+				printf(", " COL_B_CYAN "батарея:" COL_GREEN " %d\%%" COL_RESET, SecondaryGamepad.BatteryLevel);
 			else {
-				if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL) printf(", заряд батареи: %d\%%, %d\%%", SecondaryGamepad.BatteryLevel, SecondaryGamepad.BatteryLevel2);
-				else if (SecondaryGamepad.HidHandle != NULL) printf(", заряд батареи: %d\%%", SecondaryGamepad.BatteryLevel);
-				else if (SecondaryGamepad.HidHandle2 != NULL) printf(", заряд батареи: %d\%%", SecondaryGamepad.BatteryLevel2);
+				if (SecondaryGamepad.HidHandle != NULL && SecondaryGamepad.HidHandle2 != NULL)
+					printf(", " COL_B_CYAN "батареи:" COL_GREEN " %d\%%, %d\%%" COL_RESET, SecondaryGamepad.BatteryLevel, SecondaryGamepad.BatteryLevel2);
+				else if (SecondaryGamepad.HidHandle != NULL)
+					printf(", " COL_B_CYAN "батарея:" COL_GREEN " %d\%%" COL_RESET, SecondaryGamepad.BatteryLevel);
+				else if (SecondaryGamepad.HidHandle2 != NULL)
+					printf(", " COL_B_CYAN "батарея:" COL_GREEN " %d\%%" COL_RESET, SecondaryGamepad.BatteryLevel2);
 			}
-			if (SecondaryGamepad.BatteryMode == 0x2)
-				printf(" (зарядка)");
+			//if (SecondaryGamepad.BatteryMode == 0x2)
+				//printf(" (зарядка)");
 		}
-			
-		printf(".\n");
+
+		printf(COL_GRAY ".\n");
 	}
 
 	if (AppStatus.GamepadEmulationMode == EmuGamepadEnabled)
-		printf(" Эмуляция: Xbox геймпад, профиль: \"%s\".\n Измените профиль, с помощью \"ALT + Up/Down\" или \"PS/Home + DPAD Up/Down\".\n", XboxProfiles[XboxProfileIndex].substr(0, XboxProfiles[XboxProfileIndex].size() - 4).c_str());
+		printf(COL_B_CYAN " Эмуляция:" COL_GREEN " Xbox геймпад," COL_RESET " профиль: \"%s\"" COL_GRAY ".\n Измените профиль, с помощью \"ALT + Up/Down\" или \"PS/Home + DPAD Up/Down\".\n" COL_RESET, XboxProfiles[XboxProfileIndex].substr(0, XboxProfiles[XboxProfileIndex].size() - 4).c_str());
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadOnlyDriving)
-		printf(" Эмуляция: Xbox геймпад (только вождение) и прицеливание мышкой.\n");
+		printf(COL_B_CYAN " Эмуляция:" COL_GREEN " Xbox геймпад (только вождение) и прицеливание мышкой" COL_GRAY ".\n" COL_RESET);
 	else if (AppStatus.GamepadEmulationMode == EmuGamepadDisabled)
-		printf(" Эмуляция: только мышь (для прицеливания мышкой).\n");
+		printf(COL_B_CYAN " Эмуляция:" COL_GREEN " только мышь (для прицеливания мышкой)" COL_GRAY ".\n" COL_RESET);
 	else if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
 		if (AppStatus.IsDesktopMode)
-			printf(" Эмуляция: клавиатура и мышь, управление рабочим столом, профиль: \"Desktop\".\n");
+			printf(COL_B_CYAN " Эмуляция:" COL_GREEN " клавиатура и мышь, управление рабочим столом" COL_GRAY "," COL_RESET " профиль: \"Desktop\"" COL_GRAY ".\n" COL_RESET);
 		else
-			printf_s(" Эмуляция: клавиатура и мышь, профиль игры: \"%s\".\n Измените профиль, с помощью \"ALT + Up/Down\" или \"PS/Home + DPAD Up/Down\".\n", KMProfiles[KMProfileIndex].substr(0, KMProfiles[KMProfileIndex].size() - 4).c_str());
+			printf_s(COL_B_CYAN " Эмуляция:" COL_GREEN " клавиатура и мышь" COL_GRAY "," COL_RESET " профиль игры: \"%s\"" COL_GRAY ".\n Измените профиль, с помощью \"ALT + Up/Down\" или \"PS/Home + DPAD Up/Down\".\n" COL_RESET, KMProfiles[KMProfileIndex].substr(0, KMProfiles[KMProfileIndex].size() - 4).c_str());
 	}
-	printf(" Нажмите \"ALT + Q/Влево/Вправо\" или \"PS/Home + DPAD Влево/Вправо\" для переключения режима эмуляции.\n");
-	printf(" Нажмите области на сенсорной панели или кнопки \"Capture/Home\" для переключения режимов работы.\n");
-	printf(" Если сенсорной панели нет, переключайтесь нажатием тачпада (включив в конфиге) или на \"ALT + 1/2\".\n");
+	printf(COL_GRAY " Нажмите \"ALT + Q/Влево/Вправо\" или \"PS/Home + DPAD Влево/Вправо\" для переключения режима эмуляции.\n");
+	printf(" Нажмите области на сенсорной панели, \"Capture/Home\" или \"ALT + 1/2\" для переключения режимов работы.\n");
+	if (PrimaryGamepad.ControllerType == SONY_DUALSENSE || PrimaryGamepad.ControllerType == SONY_DUALSHOCK4) {
+		printf(" %s нажатие тачпада для переключения режимов - \"ALT + W\" или \"PS + Share\" (только Sony).\n", AppStatus.ChangeModesWithClick ? "Выключить" : "Включить");
+		if (AppStatus.ChangeModesWithoutAreas == false)
+			printf(" Если сенсорной панели нет, переключайтесь нажатием тачпада (включив в конфиге).\n");
+	}
+	if (PrimaryGamepad.ControllerType == NINTENDO_JOYCONS && AppStatus.JoyconChangeModesWithButton == 0 && (PrimaryGamepad.HidHandle == NULL || PrimaryGamepad.HidHandle2 == NULL))
+		printf(" При использовании одного джойкона переключать режимы можно одной кнопкой (задайте в конфиге).\n");
+
 	printf(" Повторное нажатие \"Home\" или \"ALT + 2\" - переключает режим прицеливания (всегда/L2), \"Capture\" - сброс.\n");
-	if (PrimaryGamepad.ControllerType == SONY_DUALSENSE) {
-		printf(" Режим адаптивных триггеров: ");
-		switch (PrimaryGamepad.AdaptiveTriggersMode) {
-			case 0:
-				printf("нет");
-				break;
-			case 1:
-				printf("зависимый (вождение/прицеливание - пистолет)");
-				break;
-			case 2:
-				printf("зависимый (вождение/прицеливание - автомат)");
-				break;
-			case 3:
-				printf("зависимый (вождение/прицеливание - винтовка)");
-				break;
-			case 4:
-				printf("трансляция вибрации");
-				break;
-			case 5:
-				printf("пистолет");
-				break;
-			case 6:
-				printf("автомат");
-				break;
-			case 7:
-				printf("винтовка");
-				break;
-			case 8:
-				printf("лук");
-				break;
-			case 9:
-				printf("педаль авто");
-				break;
-			default:
-				printf("неизвестно");
-				break;
-			}
-		printf(". Переключение на \"ALT + 3/4\".\n");
-	}
 
 	if (AppStatus.ExternalPedalsDInputConnected) {
-		printf(" Подключены внешние DInput-педали. Режим: ");
+		printf(COL_B_CYAN " Подключены внешние DInput-педали. Режим: " COL_GREEN);
 		if (AppStatus.ExternalPedalsMode == ExPedalsAlwaysRacing)
-			printf("всегда педали.");
+			printf("всегда педали" COL_GRAY ".");
 		else
-			printf("зависимый (вождение/прицеливание).");
-		printf(" Переключение на \"ALT + E\".");
+			printf("зависимый (вождение/прицеливание)" COL_GRAY ".");
+		printf(" Переключение на \"ALT + E\"\n." COL_RESET);
 	}
 	if (AppStatus.ExternalPedalsArduinoConnected)
-		printf(" Подключены внешние Arduino-педали.\n");
+		printf(COL_B_CYAN"\n Подключены внешние Arduino-педали.\n");
 
-	if (AppStatus.AimMode == AimMouseMode) printf("\n Режим прицеливания: мышь"); else printf("\n Режим прицеливания: джойстик-мышь");
-	printf(", нажмите \"ALT + A\" или \"PS/Capture + R1\" для переключения.\n");
+	printf(COL_RESET "\n Прицеливание движением %s" COL_GRAY"," COL_RESET " вождение движением %s" COL_GRAY ", изменить на \"ALT + 5/6\".\n", AppStatus.DisableAiming ? COL_GREEN "выключено" : COL_GREEN "включено", AppStatus.DisableDriving ? COL_GREEN "выключено" : COL_GREEN "включено");
 
-	printf(" Прицеливание движением %s, вождение движением %s, изменить на \"ALT + 5/6\"\.\n""", AppStatus.DisableAiming ? "выключено" : "включено", AppStatus.DisableDriving ? "выключено" : "включено");
-
-	printf(" Сила вибрации %d%%, нажмите \"ALT + </>\", \"PS + Options\" или \"Capture + Плюс\" для изменения.\n", PrimaryGamepad.RumbleStrength);
-
-	printf(" %s нажатие тачпада для переключения режимов - \"ALT + W\" или \"PS + Share\" (только Sony).\n", AppStatus.ChangeModesWithClick ? "Выключить" : "Включить");
+	if (AppStatus.AimMode == AimMouseMode) printf(COL_B_CYAN " Режим прицеливания:" COL_GREEN " мышь"); else printf(COL_B_CYAN " Режим прицеливания:" COL_GREEN " джойстик-мышь");
+	printf(COL_GRAY ", нажмите \"ALT + A\" или \"PS/Capture + R1\" для переключения.\n" COL_RESET);
 
 	if (AppStatus.LeftStickMode == LeftStickDefaultMode)
-		printf(" Режим левого стика: по умолчанию");
+		printf(COL_B_CYAN " Режим левого стика:" COL_GREEN " по умолчанию");
 	else if (AppStatus.LeftStickMode == LeftStickAutoPressMode)
-		printf(" Режим левого стика: автонажатие по значению");
+		printf(COL_B_CYAN " Режим левого стика:" COL_GREEN " автонажатие по значению");
 	else if (AppStatus.LeftStickMode == LeftStickPressOnceMode)
-		printf(" Режим левого стика: разовое нажатие по значению");
-	printf(", нажмите \"ALT + S\" или \"PS/Home + L1\" для переключения.\n");
+		printf(COL_B_CYAN " Режим левого стика:" COL_GREEN " разовое нажатие по значению");
+	printf(COL_GRAY ", нажмите \"ALT + S\" или \"PS/Home + L1\" для переключения.\n");
+
+	printf(COL_B_CYAN " Сила вибрации:" COL_GREEN " %d%%" COL_GRAY ", нажмите \"ALT + </>\", \"PS + Options\" или \"Capture + Плюс\" для изменения.\n" COL_GRAY, PrimaryGamepad.RumbleStrength);
+
+	if (PrimaryGamepad.ControllerType == SONY_DUALSENSE) {
+		printf(COL_B_CYAN " Режим адаптивных триггеров: " COL_GREEN);
+		switch (PrimaryGamepad.AdaptiveTriggersMode) {
+		case 0:
+			printf("нет");
+			break;
+		case 1:
+			printf("зависимый (вождение/прицеливание - пистолет)");
+			break;
+		case 2:
+			printf("зависимый (вождение/прицеливание - автомат)");
+			break;
+		case 3:
+			printf("зависимый (вождение/прицеливание - винтовка)");
+			break;
+		case 4:
+			printf("трансляция вибрации");
+			break;
+		case 5:
+			printf("пистолет");
+			break;
+		case 6:
+			printf("автомат");
+			break;
+		case 7:
+			printf("винтовка");
+			break;
+		case 8:
+			printf("лук");
+			break;
+		case 9:
+			printf("педаль авто");
+			break;
+		default:
+			printf("неизвестно");
+			break;
+		}
+		printf(COL_GRAY ". Переключение на \"ALT + 3/4\".\n" COL_RESET);
+	}
 
 	if (AppStatus.ScreenshotMode == ScreenShotCustomKeyMode)
-		printf(" Режим скриншота: своя кнопка (%s)", &AppStatus.MicCustomKeyName);
+		printf(COL_B_CYAN " Режим скриншота:" COL_GREEN " своя кнопка (%s)", &AppStatus.MicCustomKeyName);
 	else if (AppStatus.ScreenshotMode == ScreenShotXboxGameBarMode)
-		printf(" Режим скриншота: Игровая панель Xbox");
+		printf(COL_B_CYAN " Режим скриншота:" COL_GREEN " Игровая панель Xbox");
 	else if (AppStatus.ScreenshotMode == ScreenShotSteamMode)
-		printf(" Режим скриншота: Steam (%s)", &AppStatus.SteamScrKeyName);
+		printf(COL_B_CYAN " Режим скриншота:" COL_GREEN " Steam (%s)", &AppStatus.SteamScrKeyName);
 	else if (AppStatus.ScreenshotMode == ScreenShotMultiMode)
-		printf(" Режим скриншота: Игровая панель Xbox и Steam (F12)");
-	printf(", нажмите \"ALT + X\" для переключения.\n");
+		printf(COL_B_CYAN " Режим скриншота:" COL_GREEN " Игровая панель Xbox и Steam (F12)");
+	printf(COL_GRAY ", нажмите \"ALT + X\" для переключения.\n");
 
 	printf("\n Нажмите \"PS\" или \"Capture + Home\" для открытия Xbox Game Bar.\n");
 	printf(" Нажмите \"PS/Capture + X\" или кнопку микрофона (Sony DualSense) для скриншота, удерживайте для записи видео.\n");
@@ -1360,7 +1393,7 @@ void RussianMainText() {
 	printf("\n Нажмите \"ALT + F9\" для просмотра мёртвых зон стиков и триггеров.\n");
 	printf(" Нажмите \"ALT + I\" или центр тачпада (только Sony) для просмотра заряда батареи.\n");
 	printf(" Нажмите \"ALT + B\" или \"PS + L1\" для включения или выключения световой панели (только Sony).\n");
-	printf(" Нажмите \"ALT + Escape\" для выхода.\n");
+	printf(" Нажмите \"ALT + Escape\" для выхода.\n" COL_RESET);
 	// printf("%d %d\n", PrimaryGamepad.DeviceIndex, SecondaryGamepad.DeviceIndex);
 }
 
@@ -1482,6 +1515,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			//if (PrimaryGamepad.ControllerType != NINTENDO_JOYCONS && PrimaryGamepad.ControllerType != NINTENDO_SWITCH_PRO)
 			if (!PrimaryGamepad.USBConnection || !SecondaryGamepad.USBConnection)
 				AppStatus.BTReset = true; // Bug with Bluetooth controllers, in which in Input Bluetooth controllers random values (JoyShockLibarary?). Resetting again helps.
+			if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) // Reset in case of controller loss
+				AppStatus.ResetKBEMuStateOnce = true;
 		}
 		break;
 		/*case WM_CLOSE:
@@ -1497,7 +1532,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 2.2");
+	SetConsoleTitle("DSAdvance 2.3");
 	WindowToCenter();
 
 	bool ForceEnLang = false;
@@ -1742,7 +1777,7 @@ int main(int argc, char **argv)
 		if (AppStatus.SecondaryGamepadEnabled)
 			XUSB_REPORT_INIT(&report2);
 
-		if (AppStatus.ControllerCount < 1) { // We don't process anything during idle time
+		if (AppStatus.ControllerCount < 1 && !AppStatus.ResetKBEMuStateOnce) { // We don't process anything during idle time
 			report.sThumbLX = 1; // helps with crash, maybe power saving turns off the controller
 			ret = vigem_target_x360_update(client, x360, report); // Vigem always mode only
 
@@ -2394,7 +2429,8 @@ int main(int argc, char **argv)
 			report.wButtons |= PrimaryGamepad.InputState.buttons & JSMASK_PLUS ? CurrentXboxProfile.Start : 0;
 		}
 
-		if (!(PrimaryGamepad.InputState.buttons & JSMASK_PS && PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE && PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE)) { // During special functions, nothing is pressed in the game
+		
+		if (!(PrimaryGamepad.InputState.buttons & JSMASK_PS || PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE)) { // During special functions, nothing is pressed in the game, JSMASK_HOME same code
 			DWORD XboxButtons = report.wButtons;
 			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_L ? CurrentXboxProfile.LeftBumper : 0;
 			XboxButtons |= PrimaryGamepad.InputState.buttons & JSMASK_R ? CurrentXboxProfile.RightBumper : 0;
@@ -2750,10 +2786,12 @@ int main(int argc, char **argv)
 
 		// Keyboard and mouse mode
 		bool DontResetInputState = !( // Reset clicks when activating some actions / Сброс нажатий при активации некоторых действий
-			PrimaryGamepad.InputState.buttons & JSMASK_PS ||
+			PrimaryGamepad.InputState.buttons & JSMASK_PS || // JSMASK_HOME same code
+			PrimaryGamepad.InputState.buttons & JSMASK_CAPTURE ||
 			IsSharePressed ||
 			IsRecordPressed ||
-			IsKeyPressed(VK_MENU)
+			IsKeyPressed(VK_MENU) ||
+			AppStatus.ResetKBEMuStateOnce
 			);
 
 		if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) {
@@ -2955,6 +2993,9 @@ int main(int argc, char **argv)
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelDownRight.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelDownRight.IsPressed, &PrimaryGamepad.ButtonsStates.WheelDownRight, true);
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelLeft.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelLeft.IsPressed, &PrimaryGamepad.ButtonsStates.WheelLeft, true);
 			KeyPress(PrimaryGamepad.ButtonsStates.WheelRight.KeyCode, DontResetInputState && PrimaryGamepad.ButtonsStates.WheelRight.IsPressed, &PrimaryGamepad.ButtonsStates.WheelRight, true);
+
+			if (AppStatus.ResetKBEMuStateOnce) // Reset in case of controller loss
+				AppStatus.ResetKBEMuStateOnce = false;
 		}
 
 		// After releasing all the buttons you can click on screenshots, so it's here / После отпускания всех кнопок можно нажимать скриншоты, поэтому это здесь
@@ -2978,7 +3019,7 @@ int main(int argc, char **argv)
 				report2.bLeftTrigger = DeadZoneAxis(SecondaryGamepad.InputState.lTrigger, SecondaryGamepad.Triggers.DeadZoneLeft) * 255;
 				report2.bRightTrigger = DeadZoneAxis(SecondaryGamepad.InputState.rTrigger, SecondaryGamepad.Triggers.DeadZoneRight) * 255;
 
-				if (!(SecondaryGamepad.InputState.buttons & JSMASK_PS && SecondaryGamepad.InputState.buttons & JSMASK_CAPTURE && SecondaryGamepad.InputState.buttons & JSMASK_CAPTURE)) { // During special functions, nothing is pressed in the game
+				if (!(SecondaryGamepad.InputState.buttons & JSMASK_PS && SecondaryGamepad.InputState.buttons & JSMASK_CAPTURE)) { // During special functions, nothing is pressed in the game
 					report2.wButtons |= SecondaryGamepad.InputState.buttons & JSMASK_L ? XINPUT_GAMEPAD_LEFT_SHOULDER : 0;
 					report2.wButtons |= SecondaryGamepad.InputState.buttons & JSMASK_R ? XINPUT_GAMEPAD_RIGHT_SHOULDER : 0;
 					report2.wButtons |= SecondaryGamepad.InputState.buttons & JSMASK_LCLICK ? XINPUT_GAMEPAD_LEFT_THUMB : 0;

@@ -59,6 +59,7 @@ Right stick up movement | `RS_UP`
 Right stick down movement | `RS_DOWN`
 Right stick left movement | `RS_LEFT`
 Right stick right movement | `RS_RIGHT`
+If necessary, emulated buttons can be combined, for example `X+Y` or `UP+LEFT+X`.
 
 ## Sony and Nintendo Button Mapping for Wheel Activation, Aiming, Joy-Con Mode Switching, etc.
 Gamepad | Button | Value

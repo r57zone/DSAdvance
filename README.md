@@ -177,4 +177,4 @@ Unfortunately, this feature is not implemented.
 4. Choose the `Release` build type (if `Debug` is installed) and `x86`, then compile the project.
 
 ## Feedback
-`r57zone[at]gmail.com`
+`r57zone@gmail.com`
