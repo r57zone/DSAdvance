@@ -373,6 +373,7 @@ struct AdvancedGamepad {
 		float JoySensX = 0;
 		float JoySensY = 0;
 		float JoySensAvg = 0;
+		float JoyDeadZoneCompensation = 0;
 		float SteeringWheelAngle = 0;
 		bool AircraftEnabled = false;
 		float AircraftPitchAngle = 0;

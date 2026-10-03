@@ -1412,6 +1412,10 @@ void SwapGamepads()
 	std::swap(PrimaryGamepad.DeviceIndex, SecondaryGamepad.DeviceIndex);
 	std::swap(PrimaryGamepad.DeviceIndex2, SecondaryGamepad.DeviceIndex2);
 	std::swap(PrimaryGamepad.ControllerType, SecondaryGamepad.ControllerType);
+
+	std::swap(PrimaryGamepad.USBConnection, SecondaryGamepad.USBConnection);
+	std::swap(PrimaryGamepad.DevicePath, SecondaryGamepad.DevicePath);
+
 	GamepadSetState(PrimaryGamepad);
 	GamepadSetState(SecondaryGamepad);
 	MainTextUpdate();
@@ -1432,9 +1436,9 @@ void SyncGamepadsWithJSL()
 void RefreshDevices() {
 	//std::lock_guard<std::mutex> lock(gamepadMutex);
 	if (PrimaryGamepad.HidHandle) hid_close(PrimaryGamepad.HidHandle);
-    if (PrimaryGamepad.HidHandle2) hid_close(PrimaryGamepad.HidHandle2);
-    if (SecondaryGamepad.HidHandle) hid_close(SecondaryGamepad.HidHandle);
-    if (SecondaryGamepad.HidHandle2) hid_close(SecondaryGamepad.HidHandle2);
+	if (PrimaryGamepad.HidHandle2) hid_close(PrimaryGamepad.HidHandle2);
+	if (SecondaryGamepad.HidHandle) hid_close(SecondaryGamepad.HidHandle);
+	if (SecondaryGamepad.HidHandle2) hid_close(SecondaryGamepad.HidHandle2);
 	PrimaryGamepad.HidHandle = NULL;
 	PrimaryGamepad.HidHandle2 = NULL;
 	PrimaryGamepad.DeviceIndex = -1;
@@ -1511,9 +1515,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_DEVICECHANGE: // The list of devices has changed
 		if (wParam == DBT_DEVNODES_CHANGED) {
 			RefreshDevices();
-			//if (PrimaryGamepad.ControllerType != NINTENDO_JOYCONS && PrimaryGamepad.ControllerType != NINTENDO_SWITCH_PRO)
-			if (!PrimaryGamepad.USBConnection || !SecondaryGamepad.USBConnection)
-				AppStatus.BTReset = true; // Bug with Bluetooth controllers, in which in Input Bluetooth controllers random values (JoyShockLibarary?). Resetting again helps.
+			// Bug with Bluetooth controllers, in which in Input Bluetooth controllers random values (JoyShockLibarary?). Resetting again helps.
+			AppStatus.BTReset = // Any Bluetooth controller works
+				(PrimaryGamepad.HidHandle && !PrimaryGamepad.USBConnection) ||
+				(PrimaryGamepad.HidHandle2 && !PrimaryGamepad.USBConnection) ||
+				(SecondaryGamepad.HidHandle && !SecondaryGamepad.USBConnection) ||
+				(SecondaryGamepad.HidHandle2 && !SecondaryGamepad.USBConnection);
+
 			if (AppStatus.GamepadEmulationMode == EmuKeyboardAndMouse) // Reset in case of controller loss
 				AppStatus.ResetKBEMuStateOnce = true;
 		}
@@ -1531,7 +1539,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(int argc, char **argv)
 {
-	SetConsoleTitle("DSAdvance 2.3");
+	SetConsoleTitle("DSAdvance 2.4");
 	WindowToCenter();
 
 	bool ForceEnLang = false;
@@ -1613,6 +1621,7 @@ int main(int argc, char **argv)
 	PrimaryGamepad.Motion.JoySensX = IniFile.ReadFloat("Motion", "JoySensX", 100) * 0.0025f; // Calibration with Crysis 2, old 0.0013;
 	PrimaryGamepad.Motion.JoySensY = IniFile.ReadFloat("Motion", "JoySensY", 90) * 0.0025f;  // Calibration with Crysis 2, old 0.0013;
 	PrimaryGamepad.Motion.JoySensAvg = (PrimaryGamepad.Motion.JoySensX + PrimaryGamepad.Motion.JoySensY) * 0.5f; // Sens Average
+	PrimaryGamepad.Motion.JoyDeadZoneCompensation = ClampFloat(IniFile.ReadFloat("Motion", "JoyDeadZoneCompensation", 15) * 0.01f, 0, 1.0f);
 	PrimaryGamepad.Motion.MotionWheelButtonsDeadZone = IniFile.ReadFloat("Motion", "MotionWheelButtonsDeadZone", 12.0f);
 
 	PrimaryGamepad.DefaultModeColor = WebColorToRGB(IniFile.ReadString("Gamepad", "DefaultModeColor", "0000ff"));
@@ -2715,15 +2724,29 @@ int main(int argc, char **argv)
 
 				float TightenedSensitivity = AppStatus.AimMode == AimMouseMode ? PrimaryGamepad.Motion.SensAvg * PrimaryGamepad.Motion.CustomMulSens * 50.f : PrimaryGamepad.Motion.JoySensAvg * PrimaryGamepad.Motion.CustomMulSens * 50.f;
 
-				if (InputSize < Tightening && Tightening > 0)
-					TightenedSensitivity *= InputSize / Tightening;
-
 				if (AppStatus.AimMode == AimMouseMode) {
+					if (InputSize < Tightening && Tightening > 0)
+						TightenedSensitivity *= InputSize / Tightening;
+
 					MouseMove(-velocityY * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.SensX * PrimaryGamepad.Motion.CustomMulSens, -velocityX * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.SensY * PrimaryGamepad.Motion.CustomMulSens);
-				
-				} else { // Mouse-Joystick
-					report.sThumbRX = std::clamp((int)(ClampFloat(-(velocityY * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens), -1, 1) * 32767 + report.sThumbRX), -32767, 32767);
-					report.sThumbRY = std::clamp((int)(ClampFloat(velocityX * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.JoySensY * PrimaryGamepad.Motion.CustomMulSens, -1, 1) * 32767 + report.sThumbRY), -32767, 32767);
+
+				}
+				else { // Mouse-Joystick
+					float MouseJoyX = -velocityY * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.JoySensX * PrimaryGamepad.Motion.CustomMulSens;
+					float MouseJoyY = velocityX * TightenedSensitivity * AppStatus.FrameTime * PrimaryGamepad.Motion.JoySensY * PrimaryGamepad.Motion.CustomMulSens;
+					float MouseJoyDeflection = sqrtf(MouseJoyX * MouseJoyX + MouseJoyY * MouseJoyY);
+
+					if (InputSize > 0.25f && MouseJoyDeflection > 0.f) {
+						float DeadZoneScale = ClampFloat(PrimaryGamepad.Motion.JoyDeadZoneCompensation + MouseJoyDeflection * (1.f - PrimaryGamepad.Motion.JoyDeadZoneCompensation), 0.f, 1.f) / MouseJoyDeflection;
+						MouseJoyX *= DeadZoneScale;
+						MouseJoyY *= DeadZoneScale;
+					} else {
+						MouseJoyX = 0;
+						MouseJoyY = 0;
+					}
+
+					report.sThumbRX = std::clamp((int)(MouseJoyX * 32767) + report.sThumbRX, -32767, 32767);
+					report.sThumbRY = std::clamp((int)(MouseJoyY * 32767) + report.sThumbRY, -32767, 32767);
 				}
 			
 		}
